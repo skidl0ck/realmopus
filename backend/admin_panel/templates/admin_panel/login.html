@@ -1,0 +1,20 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Sign in — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <form method="post" class="w-full max-w-sm eo-card eo-card-pad">
+    {% csrf_token %}
+    <p class="eo-wordmark text-xl mb-6">EstateOS</p>
+    <h1 class="eo-title mb-1" style="font-size: 1.125rem;">Staff sign in</h1>
+    <p class="eo-subtitle mb-6">Internal use only.</p>
+
+    <label class="eo-eyebrow block mb-1">Username</label>
+    <input type="text" name="username" required class="eo-input mb-4">
+
+    <label class="eo-eyebrow block mb-1">Password</label>
+    <input type="password" name="password" required class="eo-input mb-6">
+
+    <button type="submit" class="eo-btn-primary w-full">Sign in</button>
+  </form>
+</div>
+{% endblock %}

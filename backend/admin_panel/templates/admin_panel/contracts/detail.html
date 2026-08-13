@@ -1,0 +1,130 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}{{ contract.contract_number }} — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-1">
+  <h1 class="eo-title eo-num">{{ contract.contract_number }}</h1>
+  <span class="eo-stamp
+    {% if contract.status == 'active' %}eo-stamp--green
+    {% elif contract.status == 'completed' %}eo-stamp--blue
+    {% else %}eo-stamp--gray{% endif %}">
+    {{ contract.get_status_display }}
+  </span>
+</div>
+<p class="eo-subtitle mb-8">
+  {{ contract.client.get_full_name|default:contract.buyer_full_name }}
+  {% if not contract.client %}<span style="color: var(--gold);">(not yet claimed by an account)</span>{% endif %}
+  — Blk {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}
+</p>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+  <div class="eo-stat">
+    <p class="eo-stat-value">₱{{ contract.total_contract_price|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Total price</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">₱{{ contract.down_payment|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Down payment</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">₱{{ contract.total_paid|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Total paid</p>
+  </div>
+  <div class="eo-stat" style="border-top-color: var(--gold);">
+    <p class="eo-stat-value" style="color: var(--gold);">₱{{ contract.outstanding_balance|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Balance</p>
+  </div>
+</div>
+
+<div class="flex flex-wrap gap-3 mb-8">
+  {% if not contract.installments.all and contract.payment_plan_type == 'installment' %}
+  <form method="post" action="{% url 'admin_panel:contract_generate_schedule' contract.id %}">
+    {% csrf_token %}
+    <button type="submit" class="eo-btn-primary">Generate Amortization Schedule</button>
+  </form>
+  {% endif %}
+  {% if contract.agent and not contract.commission %}
+  <form method="post" action="{% url 'admin_panel:contract_set_commission' contract.id %}">
+    {% csrf_token %}
+    <button type="submit" class="eo-btn-secondary">Set Agent Commission</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="grid sm:grid-cols-2 gap-6 mb-8">
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">Fees</h2>
+    <div class="space-y-2 text-sm mb-4">
+      {% for fee in contract.fees.all %}
+      <div class="flex justify-between">
+        <span class="eo-subtitle">{{ fee.name }} <span style="opacity: 0.7;">({{ fee.get_fee_type_display }})</span></span>
+        <span class="eo-num font-medium">₱{{ fee.amount|floatformat:2|intcomma }}</span>
+      </div>
+      {% empty %}
+      <p class="eo-subtitle">No fees added.</p>
+      {% endfor %}
+    </div>
+    <form method="post" action="{% url 'admin_panel:contract_add_fee' contract.id %}" class="flex gap-2 items-end flex-wrap">
+      {% csrf_token %}
+      {% for field in fee_form %}
+        <div>
+          <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+          {{ field }}
+        </div>
+      {% endfor %}
+      <button type="submit" class="eo-btn-secondary">Add</button>
+    </form>
+  </div>
+
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">Commission</h2>
+    {% if contract.commission %}
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="eo-subtitle">Agent</span><span class="font-medium">{{ contract.agent.get_full_name }}</span></div>
+        <div class="flex justify-between"><span class="eo-subtitle">Amount</span><span class="eo-num font-medium">₱{{ contract.commission.amount|floatformat:2|intcomma }}</span></div>
+        <div class="flex justify-between"><span class="eo-subtitle">Status</span><span class="font-medium">{{ contract.commission.get_status_display }}</span></div>
+      </div>
+    {% else %}
+      <p class="eo-subtitle text-sm">No commission set{% if not contract.agent %} — no agent assigned{% endif %}.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <h2 class="eo-display font-semibold text-base px-6 pt-6 pb-4">Payment Schedule</h2>
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Due date</th>
+        <th>Amount due</th>
+        <th>Paid</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inst in contract.installments.all %}
+      <tr>
+        <td class="eo-num">{{ inst.installment_number }}</td>
+        <td class="eo-num">{{ inst.due_date }}</td>
+        <td class="eo-num">₱{{ inst.amount_due|floatformat:2|intcomma }}</td>
+        <td class="eo-num">₱{{ inst.amount_paid|floatformat:2|intcomma }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if inst.status == 'paid' %}eo-stamp--green
+            {% elif inst.status == 'partially_paid' %}eo-stamp--gold
+            {% elif inst.status == 'overdue' %}eo-stamp--red
+            {% else %}eo-stamp--gray{% endif %}">
+            {{ inst.get_status_display }}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">
+        {% if contract.payment_plan_type == 'installment' %}No schedule generated yet.{% else %}Full payment plan — no schedule.{% endif %}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

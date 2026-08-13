@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}EstateOS Staff{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #14231D;
+      --paper: #FBFAF7;
+      --surface: #FFFFFF;
+      --ledger: #1F5D45;
+      --ledger-dark: #163F2F;
+      --gold: #B98B2E;
+      --stamp: #B23A2E;
+      --blue: #2B5C8A;
+      --hairline: #DCD6C9;
+      --muted: #6B675C;
+    }
+    body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; }
+    .eo-display { font-family: 'Space Grotesk', sans-serif; }
+    .eo-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+    .eo-sidebar { background: var(--surface); border-right: 1px solid var(--hairline); }
+    .eo-wordmark { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+    .eo-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+    .eo-nav-link {
+      display: block; padding: 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 500;
+      color: var(--muted); border-left: 2px solid transparent; transition: all 0.12s ease;
+    }
+    .eo-nav-link:hover { color: var(--ink); border-left-color: var(--hairline); }
+    .eo-nav-link.active { color: var(--ledger); border-left-color: var(--ledger); background: rgba(31,93,69,0.06); }
+
+    .eo-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.5rem; color: var(--ink); letter-spacing: -0.01em; }
+    .eo-subtitle { color: var(--muted); font-size: 0.875rem; }
+
+    .eo-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 0.5rem; }
+    .eo-card-pad { padding: 1.5rem; }
+
+    .eo-stat { background: var(--surface); border: 1px solid var(--hairline); border-top: 2px solid var(--ledger); border-radius: 0.375rem; padding: 1rem; }
+    .eo-stat-value { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; font-size: 1.5rem; font-weight: 600; color: var(--ink); }
+    .eo-stat-label { color: var(--muted); font-size: 0.8125rem; margin-top: 0.125rem; }
+
+    .eo-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+    .eo-table thead { background: rgba(20,35,29,0.03); }
+    .eo-table th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+    .eo-table td { padding: 0.75rem 1rem; border-top: 1px solid var(--hairline); }
+    .eo-table .eo-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+    .eo-btn-primary {
+      display: inline-block; background: var(--ledger); color: white; border-radius: 9999px;
+      padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 500; font-family: 'Space Grotesk', sans-serif;
+      transition: background 0.12s ease; border: none; cursor: pointer;
+    }
+    .eo-btn-primary:hover { background: var(--ledger-dark); }
+    .eo-btn-secondary {
+      display: inline-block; background: transparent; color: var(--ink); border: 1px solid var(--hairline);
+      border-radius: 9999px; padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 500;
+      font-family: 'Space Grotesk', sans-serif; transition: all 0.12s ease;
+    }
+    .eo-btn-secondary:hover { border-color: var(--ink); }
+
+    /* Signature element: status stamps — squared, bordered, uppercase mono, evoking a rubber ink stamp
+       rather than a soft SaaS pill badge. Fits a system whose real-world artifacts get literally stamped. */
+    .eo-stamp {
+      display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.6875rem;
+      font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.1875rem 0.5rem; border: 1.5px solid currentColor; border-radius: 2px;
+      transform: rotate(-1deg);
+    }
+    .eo-stamp--green { color: var(--ledger); }
+    .eo-stamp--gold { color: var(--gold); }
+    .eo-stamp--red { color: var(--stamp); }
+    .eo-stamp--blue { color: var(--blue); }
+    .eo-stamp--gray { color: var(--muted); }
+
+    .eo-input, select.eo-input, textarea.eo-input {
+      width: 100%; border: 1px solid var(--hairline); border-radius: 0.375rem; padding: 0.5rem 0.75rem;
+      font-size: 0.875rem; font-family: 'Inter', sans-serif; background: var(--surface); color: var(--ink);
+    }
+    .eo-input:focus { outline: none; border-color: var(--ledger); box-shadow: 0 0 0 3px rgba(31,93,69,0.12); }
+    .eo-checkbox { border-radius: 0.25rem; border: 1px solid var(--hairline); accent-color: var(--ledger); }
+
+    .eo-alert { font-size: 0.875rem; border-radius: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid; }
+    .eo-alert--error { background: rgba(178,58,46,0.06); color: var(--stamp); border-color: rgba(178,58,46,0.25); }
+    .eo-alert--success { background: rgba(31,93,69,0.06); color: var(--ledger); border-color: rgba(31,93,69,0.25); }
+
+    .eo-link { color: var(--ledger); font-weight: 500; }
+    .eo-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body class="h-full antialiased">
+  <div class="min-h-full flex">
+    {% if user.is_authenticated %}
+    <aside class="eo-sidebar w-64 shrink-0 px-4 py-8 hidden sm:block">
+      <p class="eo-wordmark text-lg px-3 mb-0.5">EstateOS</p>
+      <p class="eo-eyebrow px-3 mb-6">{{ user.get_role_display }}</p>
+      <nav class="space-y-0.5">
+        <a href="{% url 'admin_panel:dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Overview</a>
+        <a href="{% url 'admin_panel:project_list' %}" class="eo-nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}">Projects</a>
+        <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if 'lot_list' == request.resolver_match.url_name or 'lot_create' == request.resolver_match.url_name or 'lot_edit' == request.resolver_match.url_name %}active{% endif %}">Lots</a>
+        <a href="{% url 'admin_panel:lot_bulk_upload' %}" class="eo-nav-link {% if 'bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Lots (CSV)</a>
+        <a href="{% url 'admin_panel:contract_list' %}" class="eo-nav-link {% if 'contract' in request.resolver_match.url_name %}active{% endif %}">Contracts</a>
+        {% if user.role == 'admin' or user.role == 'accountant' %}
+        <a href="{% url 'admin_panel:payment_list' %}" class="eo-nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">Payments</a>
+        <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Expenses</a>
+        <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">Cash Flow</a>
+        {% endif %}
+      </nav>
+      <form method="post" action="{% url 'admin_panel:logout' %}" class="mt-8 px-3">
+        {% csrf_token %}
+        <button type="submit" class="text-sm" style="color: var(--muted);">Sign out</button>
+      </form>
+    </aside>
+    {% endif %}
+
+    <main class="flex-1 px-6 sm:px-10 py-10 max-w-5xl">
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for message in messages %}
+            <p class="eo-alert {% if message.tags == 'error' %}eo-alert--error{% else %}eo-alert--success{% endif %}">
+              {{ message }}
+            </p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

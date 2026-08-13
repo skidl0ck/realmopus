@@ -1,0 +1,49 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Payments — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Payments</h1>
+    <p class="eo-subtitle">All recorded payments across contracts.</p>
+  </div>
+  <a href="{% url 'admin_panel:payment_create' %}"
+     class="eo-btn-primary">
+    Record Payment
+  </a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Contract</th>
+        <th>Amount</th>
+        <th>Method</th>
+        <th>Status</th>
+        <th>Recorded by</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td class="eo-num">{{ payment.contract.contract_number }}</td>
+        <td class="eo-num">₱{{ payment.amount|floatformat:2|intcomma }}</td>
+        <td class="eo-subtitle">{{ payment.get_method_display }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if payment.status == 'completed' %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {{ payment.get_status_display }}
+          </span>
+        </td>
+        <td class="eo-subtitle">{{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }}</td>
+        <td class="eo-subtitle eo-num">{{ payment.paid_at|date:"Y-m-d" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No payments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

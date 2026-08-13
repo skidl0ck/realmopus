@@ -1,0 +1,47 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Overview — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Overview</h1>
+<p class="eo-subtitle mb-8">A snapshot of inventory, sales, and cash flow.</p>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ project_count }}</p>
+    <p class="eo-stat-label">Projects</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ lot_count }}</p>
+    <p class="eo-stat-label">Total lots</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ contract_counts.active }}</p>
+    <p class="eo-stat-label">Active contracts</p>
+  </div>
+  <div class="eo-stat" style="border-top-color: var(--blue);">
+    <p class="eo-stat-value">{{ contract_counts.completed }}</p>
+    <p class="eo-stat-label">Completed contracts</p>
+  </div>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-6">
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">Lot inventory</h2>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between"><span class="eo-subtitle">Available</span><span class="eo-num font-medium">{{ lot_counts.available }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">Reserved</span><span class="eo-num font-medium">{{ lot_counts.reserved }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">Sold</span><span class="eo-num font-medium">{{ lot_counts.sold }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">On hold</span><span class="eo-num font-medium">{{ lot_counts.on_hold }}</span></div>
+    </div>
+  </div>
+
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">Cash flow</h2>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between"><span class="eo-subtitle">Total collections</span><span class="eo-num font-medium" style="color: var(--ledger);">₱{{ total_collections|floatformat:2|intcomma }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">Total expenses</span><span class="eo-num font-medium" style="color: var(--stamp);">₱{{ total_expenses|floatformat:2|intcomma }}</span></div>
+      <div class="flex justify-between pt-3" style="border-top: 1px solid var(--hairline);"><span class="font-medium">Net</span><span class="eo-num eo-display font-semibold text-base">₱{{ net_cash_flow|floatformat:2|intcomma }}</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

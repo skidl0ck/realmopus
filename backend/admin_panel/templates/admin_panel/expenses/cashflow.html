@@ -1,0 +1,47 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Cash Flow — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="font-serif text-2xl mb-1">Cash Flow</h1>
+<p class="text-stone-500 text-sm mb-8">Collections vs. expenses, overall and by month.</p>
+
+<div class="grid grid-cols-3 gap-4 mb-8">
+  <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+    <p class="text-2xl font-serif text-emerald-800">₱{{ total_collections|floatformat:2|intcomma }}</p>
+    <p class="text-sm text-emerald-700">Total collections</p>
+  </div>
+  <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-4">
+    <p class="text-2xl font-serif text-red-700">₱{{ total_expenses|floatformat:2|intcomma }}</p>
+    <p class="text-sm text-red-600">Total expenses</p>
+  </div>
+  <div class="rounded-xl border border-stone-200 bg-white px-4 py-4">
+    <p class="text-2xl font-serif">₱{{ net_cash_flow|floatformat:2|intcomma }}</p>
+    <p class="text-sm text-stone-500">Net</p>
+  </div>
+</div>
+
+<div class="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-sm">
+  <table class="w-full text-sm">
+    <thead class="bg-stone-50 text-stone-500 text-left">
+      <tr>
+        <th class="px-4 py-3 font-medium">Month</th>
+        <th class="px-4 py-3 font-medium">Collections</th>
+        <th class="px-4 py-3 font-medium">Expenses</th>
+        <th class="px-4 py-3 font-medium">Net</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in monthly %}
+      <tr class="border-t border-stone-100">
+        <td class="px-4 py-3">{{ row.month }}</td>
+        <td class="px-4 py-3 text-emerald-700">₱{{ row.collections|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-red-600">₱{{ row.expenses|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 font-medium">₱{{ row.net|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-6 text-center text-stone-400">No activity yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

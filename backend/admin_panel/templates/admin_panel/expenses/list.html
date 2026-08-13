@@ -1,0 +1,50 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Expenses — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Expenses</h1>
+    <p class="eo-subtitle">Company-wide and per-project expenses.</p>
+  </div>
+  <div class="flex gap-3">
+    <a href="{% url 'admin_panel:cash_flow_dashboard' %}"
+       class="eo-btn-secondary">
+      Cash Flow
+    </a>
+    <a href="{% url 'admin_panel:expense_create' %}"
+       class="eo-btn-primary">
+      Record Expense
+    </a>
+  </div>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Scope</th>
+        <th>Category</th>
+        <th>Amount</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for expense in expenses %}
+      <tr>
+        <td>{{ expense.description }}</td>
+        <td class="eo-subtitle">
+          {% if expense.scope == 'project' %}{{ expense.project.name }}{% else %}Company-wide{% endif %}
+        </td>
+        <td class="eo-subtitle">{{ expense.category.name }}</td>
+        <td class="eo-num" style="color: var(--stamp);">₱{{ expense.amount|floatformat:2|intcomma }}</td>
+        <td class="eo-subtitle eo-num">{{ expense.incurred_on }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">No expenses yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

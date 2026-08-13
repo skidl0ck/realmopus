@@ -1,0 +1,18 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ title }} — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-6">{{ title }}</h1>
+<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+  {% csrf_token %}
+  {% for field in form %}
+    <div>
+      <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <button type="submit" class="eo-btn-primary">
+    Record Payment
+  </button>
+</form>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Contracts — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Contracts</h1>
+    <p class="eo-subtitle">All sale contracts across projects.</p>
+  </div>
+  <a href="{% url 'admin_panel:contract_create' %}"
+     class="eo-btn-primary">
+    New Contract
+  </a>
+</div>
+
+<form method="get" class="mb-4">
+  <select name="status" onchange="this.form.submit()" class="eo-input">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Contract #</th>
+        <th>Buyer</th>
+        <th>Lot</th>
+        <th>Total price</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for contract in contracts %}
+      <tr>
+        <td class="eo-num">{{ contract.contract_number }}</td>
+        <td>{{ contract.client.get_full_name|default:contract.buyer_full_name }}</td>
+        <td class="eo-subtitle">Blk {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td>
+        <td class="eo-num">₱{{ contract.total_contract_price|floatformat:2|intcomma }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if contract.status == 'active' %}eo-stamp--green
+            {% elif contract.status == 'completed' %}eo-stamp--blue
+            {% elif contract.status == 'draft' %}eo-stamp--gray
+            {% else %}eo-stamp--red{% endif %}">
+            {{ contract.get_status_display }}
+          </span>
+        </td>
+        <td class="text-right">
+          <a href="{% url 'admin_panel:contract_detail' contract.id %}" class="eo-link">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No contracts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
