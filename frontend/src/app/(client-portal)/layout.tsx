@@ -5,22 +5,25 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { getStoredUser, logout } from "@/lib/auth";
 import { useAuthStore, NAV_ITEMS_BY_ROLE } from "@/lib/auth-store";
+import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 export default function ClientPortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, setUser } = useAuthStore();
+  const openAuthModal = useAuthModalStore((s) => s.open);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const stored = getStoredUser();
     if (!stored || stored.role !== "client") {
-      router.replace("/login");
+      openAuthModal("login", pathname);
+      router.replace("/");
       return;
     }
     setUser(stored);
     setReady(true);
-  }, [router, setUser]);
+  }, [router, setUser, openAuthModal, pathname]);
 
   if (!ready || !user) {
     return <div className="flex-1 flex items-center justify-center text-stone-400">Loading…</div>;
@@ -52,7 +55,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
         <button
           onClick={() => {
             logout();
-            router.push("/login");
+            router.push("/");
           }}
           className="mt-8 px-3 text-sm text-stone-400 hover:text-stone-600"
         >
