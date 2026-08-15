@@ -2,7 +2,8 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
-<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+
+<form method="post" enctype="multipart/form-data" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
   {% for field in form %}
     <div>
@@ -11,8 +12,63 @@
       {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
     </div>
   {% endfor %}
-  <button type="submit" class="eo-btn-primary">
-    Save
-  </button>
+
+  {% if is_create %}
+    <div>
+      <label class="eo-eyebrow block mb-1">Photos (optional, up to 5)</label>
+      <input type="file" name="images" accept="image/*" multiple class="text-sm">
+    </div>
+  {% endif %}
+
+  <button type="submit" class="eo-btn-primary">Save</button>
 </form>
+
+{% if not is_create %}
+<div class="eo-card eo-card-pad max-w-lg mt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="eo-display font-semibold text-base">Photos</h2>
+    <span class="eo-subtitle text-sm">{{ image_count }} / 5</span>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+    {% for image in lot.images.all %}
+    <div class="relative">
+      <div class="aspect-square rounded-lg overflow-hidden border" style="border-color: var(--hairline);">
+        <img src="{{ image.image.url }}" alt="" class="w-full h-full object-cover">
+      </div>
+      {% if image.is_thumbnail %}
+        <span class="eo-stamp eo-stamp--green" style="position: absolute; top: 0.375rem; left: 0.375rem;">Thumbnail</span>
+      {% endif %}
+      <div class="flex gap-2 mt-2 text-xs">
+        {% if not image.is_thumbnail %}
+        <form method="post" action="{% url 'admin_panel:lot_image_set_thumbnail' lot.id image.id %}">
+          {% csrf_token %}
+          <button type="submit" class="eo-link">Set as thumbnail</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'admin_panel:lot_image_delete' lot.id image.id %}" onsubmit="return confirm('Remove this image?');">
+          {% csrf_token %}
+          <button type="submit" style="color: var(--stamp);">Delete</button>
+        </form>
+      </div>
+    </div>
+    {% empty %}
+    <p class="eo-subtitle text-sm col-span-full">No photos uploaded yet.</p>
+    {% endfor %}
+  </div>
+
+  {% if image_count < 5 %}
+  <form method="post" action="{% url 'admin_panel:lot_image_upload' lot.id %}" enctype="multipart/form-data" class="flex items-center gap-3 pt-4" style="border-top: 1px solid var(--hairline);">
+    {% csrf_token %}
+    <input type="file" name="images" accept="image/*" multiple class="text-sm">
+    <button type="submit" class="eo-btn-secondary shrink-0">Upload</button>
+    <span class="eo-subtitle text-xs">Up to {{ remaining_uploads }} more (5 max total)</span>
+  </form>
+  {% else %}
+  <p class="eo-subtitle text-sm pt-4" style="border-top: 1px solid var(--hairline);">
+    Maximum of 5 photos reached — delete one to upload another.
+  </p>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}

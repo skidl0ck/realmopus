@@ -2,6 +2,7 @@ import csv
 import io
 
 from django.core.exceptions import ValidationError
+from django.db.models import F
 from django.utils import timezone
 from rest_framework import viewsets, filters, serializers as drf_serializers, status
 from rest_framework.decorators import action
@@ -46,6 +47,16 @@ class LotViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated or user.role not in ("admin", "sales_agent", "accountant"):
             qs = qs.filter(project__is_published=True, status=Lot.Status.AVAILABLE)
         return qs
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Count public/client detail views for the "trending lots" dashboard —
+        # excludes staff browsing their own inventory so numbers reflect real interest.
+        if not request.user.is_authenticated or request.user.role not in ("admin", "sales_agent", "accountant"):
+            Lot.objects.filter(pk=instance.pk).update(view_count=F("view_count") + 1)
+            instance.refresh_from_db(fields=["view_count"])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @action(
         detail=False, methods=["post"],

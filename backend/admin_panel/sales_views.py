@@ -5,6 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from sales.models import Contract, Fee, Commission
 from sales.services import generate_amortization_schedule
+from sales.pdf import regenerate_contract_documents
+from properties.models import Reservation
 
 from .decorators import staff_required, audit_action
 from .forms import ContractForm, FeeForm
@@ -26,20 +28,45 @@ def contract_list(request):
 @staff_required(roles=("admin", "sales_agent"))
 @audit_action("created_contract", model_name="Contract", get_object_id=lambda request: None)
 def contract_create(request):
+    reservation = None
+    reservation_id = request.POST.get("reservation_id") or request.GET.get("reservation")
+    if reservation_id:
+        reservation = Reservation.objects.filter(pk=reservation_id, status=Reservation.Status.ACTIVE).first()
+
     if request.method == "POST":
         form = ContractForm(request.POST)
         if form.is_valid():
             contract = form.save(commit=False)
             contract.contract_number = _generate_contract_number()
             contract.status = Contract.Status.ACTIVE
+            if reservation:
+                contract.reservation = reservation
             contract.save()
             contract.lot.status = contract.lot.Status.SOLD
             contract.lot.save(update_fields=["status"])
+
+            if reservation:
+                reservation.status = Reservation.Status.CONVERTED
+                reservation.save(update_fields=["status"])
+
+            regenerate_contract_documents(contract, include_contract_pdf=True)
+
             messages.success(request, f"Contract {contract.contract_number} created.")
             return redirect("admin_panel:contract_detail", pk=contract.pk)
     else:
-        form = ContractForm()
-    return render(request, "admin_panel/contracts/form.html", {"form": form, "title": "New Contract"})
+        initial = {}
+        if reservation:
+            initial = {
+                "lot": reservation.lot_id,
+                "buyer_full_name": reservation.buyer_full_name,
+                "buyer_email": reservation.buyer_email,
+                "buyer_phone": reservation.buyer_phone,
+                "agent": reservation.agent_id,
+            }
+        form = ContractForm(initial=initial)
+    return render(request, "admin_panel/contracts/form.html", {
+        "form": form, "title": "New Contract", "reservation": reservation,
+    })
 
 
 def _generate_contract_number():
@@ -87,6 +114,7 @@ def contract_generate_schedule(request, pk):
         try:
             installments = generate_amortization_schedule(contract)
             messages.success(request, f"Generated {len(installments)} installments.")
+            regenerate_contract_documents(contract)
         except ValueError as exc:
             messages.error(request, str(exc))
     return redirect("admin_panel:contract_detail", pk=pk)

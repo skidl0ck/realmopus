@@ -1,0 +1,13 @@
+<table width="100%" style="margin-bottom: 16px;">
+  <tr>
+    <td width="70%" style="vertical-align: top;">
+      <h1 style="font-size: 18px; margin: 0 0 4px 0; color: #14231D;">{{ settings.company_name }}</h1>
+      {% if settings.company_address %}<p style="font-size: 9px; color: #6B675C; margin: 0;">{{ settings.company_address }}</p>{% endif %}
+      {% if settings.support_email %}<p style="font-size: 9px; color: #6B675C; margin: 0;">{{ settings.support_email }}</p>{% endif %}
+    </td>
+    <td width="30%" style="text-align: right; vertical-align: top;">
+      {% if settings.company_logo %}<img src="{{ settings.company_logo.path }}" height="40" />{% endif %}
+    </td>
+  </tr>
+</table>
+<hr style="border: none; border-top: 1px solid #DCD6C9; margin-bottom: 16px;" />

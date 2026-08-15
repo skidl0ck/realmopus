@@ -105,11 +105,16 @@
         <a href="{% url 'admin_panel:project_list' %}" class="eo-nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}">Projects</a>
         <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if 'lot_list' == request.resolver_match.url_name or 'lot_create' == request.resolver_match.url_name or 'lot_edit' == request.resolver_match.url_name %}active{% endif %}">Lots</a>
         <a href="{% url 'admin_panel:lot_bulk_upload' %}" class="eo-nav-link {% if 'bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Lots (CSV)</a>
+        <a href="{% url 'admin_panel:reservation_list' %}" class="eo-nav-link {% if 'reservation' in request.resolver_match.url_name %}active{% endif %}">Reservations</a>
         <a href="{% url 'admin_panel:contract_list' %}" class="eo-nav-link {% if 'contract' in request.resolver_match.url_name %}active{% endif %}">Contracts</a>
         {% if user.role == 'admin' or user.role == 'accountant' %}
         <a href="{% url 'admin_panel:payment_list' %}" class="eo-nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">Payments</a>
         <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Expenses</a>
+        <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-nav-link {% if 'expense_bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Expenses (CSV)</a>
         <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">Cash Flow</a>
+        {% endif %}
+        {% if user.role == 'admin' %}
+        <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if 'document_settings' in request.resolver_match.url_name %}active{% endif %}">Document Settings</a>
         {% endif %}
       </nav>
       <form method="post" action="{% url 'admin_panel:logout' %}" class="mt-8 px-3">

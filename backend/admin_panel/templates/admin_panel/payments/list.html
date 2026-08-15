@@ -23,6 +23,7 @@
         <th>Status</th>
         <th>Recorded by</th>
         <th>Date</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -39,9 +40,14 @@
         </td>
         <td class="eo-subtitle">{{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }}</td>
         <td class="eo-subtitle eo-num">{{ payment.paid_at|date:"Y-m-d" }}</td>
+        <td class="text-right">
+          {% if payment.receipt.pdf_file %}
+          <a href="{{ payment.receipt.pdf_file.url }}" class="eo-link" target="_blank">Receipt</a>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="text-center eo-subtitle py-6">No payments yet.</td></tr>
+      <tr><td colspan="7" class="text-center eo-subtitle py-6">No payments yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -1,0 +1,24 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Document Settings — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Document Settings</h1>
+<p class="eo-subtitle mb-6">
+  This letterhead and footer appear on every generated contract, Statement of Account, and receipt.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="max-w-lg eo-card eo-card-pad space-y-4">
+  {% csrf_token %}
+  {% for field in form %}
+    <div>
+      <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+      {% if field.name == "company_logo" and form.instance.company_logo %}
+        <img src="{{ form.instance.company_logo.url }}" style="height: 40px; margin-bottom: 0.5rem;">
+      {% endif %}
+      {{ field }}
+      {% if field.help_text %}<p class="eo-subtitle text-xs mt-1">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <button type="submit" class="eo-btn-primary">Save</button>
+</form>
+{% endblock %}

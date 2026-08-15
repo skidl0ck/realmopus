@@ -60,7 +60,8 @@
           </span>
         </td>
         <td class="text-right">
-          <a href="{% url 'admin_panel:lot_edit' lot.id %}" class="eo-link">Edit</a>
+          <a href="{% url 'admin_panel:lot_detail' lot.id %}" class="eo-link">View</a>
+          <a href="{% url 'admin_panel:lot_edit' lot.id %}" class="eo-link" style="margin-left: 0.75rem;">Edit</a>
         </td>
       </tr>
       {% empty %}

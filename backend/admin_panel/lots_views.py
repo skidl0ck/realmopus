@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
-from properties.models import Project, Lot
+from properties.models import Project, Lot, LotImage
 
 from .decorators import staff_required, audit_action
 from .forms import LotForm, LotCSVUploadForm
@@ -27,6 +27,33 @@ def lot_list(request):
     })
 
 
+def _save_uploaded_images(lot, files, request):
+    """
+    Saves up to LotImage.MAX_IMAGES_PER_LOT images for a lot, respecting any
+    already-uploaded count. Returns (created_count, ignored_count) and adds
+    a message to the request if any files had to be dropped for exceeding the cap.
+    """
+    if not files:
+        return 0, 0
+
+    existing_count = lot.images.count()
+    remaining_slots = max(LotImage.MAX_IMAGES_PER_LOT - existing_count, 0)
+    to_save = files[:remaining_slots]
+    ignored = files[remaining_slots:]
+
+    for f in to_save:
+        LotImage.objects.create(lot=lot, image=f)
+
+    if ignored:
+        messages.warning(
+            request,
+            f"Only {len(to_save)} of {len(files)} image(s) were saved — a lot can have at most "
+            f"{LotImage.MAX_IMAGES_PER_LOT} photos. {len(ignored)} file(s) were not uploaded.",
+        )
+
+    return len(to_save), len(ignored)
+
+
 @staff_required(roles=("admin", "sales_agent"))
 @audit_action("created_lot", model_name="Lot", get_object_id=lambda request: None)
 def lot_create(request):
@@ -34,11 +61,15 @@ def lot_create(request):
         form = LotForm(request.POST)
         if form.is_valid():
             lot = form.save()
-            messages.success(request, f"Lot Blk {lot.block_number} Lot {lot.lot_number} created.")
-            return redirect("admin_panel:lot_list")
+            created, _ = _save_uploaded_images(lot, request.FILES.getlist("images"), request)
+            if created:
+                messages.success(request, f"Lot Blk {lot.block_number} Lot {lot.lot_number} created with {created} photo(s).")
+            else:
+                messages.success(request, f"Lot Blk {lot.block_number} Lot {lot.lot_number} created.")
+            return redirect("admin_panel:lot_edit", pk=lot.pk)
     else:
         form = LotForm()
-    return render(request, "admin_panel/lots/form.html", {"form": form, "title": "New Lot"})
+    return render(request, "admin_panel/lots/form.html", {"form": form, "title": "New Lot", "is_create": True})
 
 
 @staff_required(roles=("admin", "sales_agent"))
@@ -50,10 +81,18 @@ def lot_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Lot updated.")
-            return redirect("admin_panel:lot_list")
+            return redirect("admin_panel:lot_edit", pk=pk)
     else:
         form = LotForm(instance=lot)
-    return render(request, "admin_panel/lots/form.html", {"form": form, "title": f"Edit Lot {lot}"})
+    image_count = lot.images.count()
+    return render(request, "admin_panel/lots/form.html", {
+        "form": form,
+        "title": f"Edit Lot {lot}",
+        "is_create": False,
+        "lot": lot,
+        "image_count": image_count,
+        "remaining_uploads": LotImage.MAX_IMAGES_PER_LOT - image_count,
+    })
 
 
 def _resolve_project(project_ref: str):
@@ -129,3 +168,43 @@ def lot_bulk_upload(request):
             form = LotCSVUploadForm()  # reset the file input after processing
 
     return render(request, "admin_panel/lots/upload.html", {"form": form, "result": result})
+
+
+@staff_required
+def lot_detail(request, pk):
+    lot = get_object_or_404(Lot.objects.select_related("project").prefetch_related("images"), pk=pk)
+    return render(request, "admin_panel/lots/detail.html", {"lot": lot})
+
+
+@staff_required(roles=("admin", "sales_agent"))
+@audit_action("uploaded_lot_images", model_name="Lot", get_object_id=lambda request, pk: pk)
+def lot_image_upload(request, pk):
+    lot = get_object_or_404(Lot, pk=pk)
+    if request.method == "POST":
+        files = request.FILES.getlist("images")
+        if not files:
+            messages.error(request, "Choose at least one image to upload.")
+        else:
+            created, _ = _save_uploaded_images(lot, files, request)
+            if created:
+                messages.success(request, f"{created} image(s) uploaded.")
+    return redirect("admin_panel:lot_edit", pk=pk)
+
+
+@staff_required(roles=("admin", "sales_agent"))
+@audit_action("set_lot_thumbnail", model_name="LotImage", get_object_id=lambda request, pk, image_id: image_id)
+def lot_image_set_thumbnail(request, pk, image_id):
+    image = get_object_or_404(LotImage, pk=image_id, lot_id=pk)
+    image.is_thumbnail = True
+    image.save()  # save() handles unsetting any previous thumbnail for this lot
+    messages.success(request, "Thumbnail updated.")
+    return redirect("admin_panel:lot_edit", pk=pk)
+
+
+@staff_required(roles=("admin", "sales_agent"))
+@audit_action("deleted_lot_image", model_name="LotImage", get_object_id=lambda request, pk, image_id: image_id)
+def lot_image_delete(request, pk, image_id):
+    image = get_object_or_404(LotImage, pk=image_id, lot_id=pk)
+    image.delete()
+    messages.success(request, "Image removed.")
+    return redirect("admin_panel:lot_edit", pk=pk)

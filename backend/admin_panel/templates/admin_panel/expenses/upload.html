@@ -1,0 +1,64 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Upload Expenses — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Upload Expenses (CSV)</h1>
+<p class="eo-subtitle mb-8">Bulk-record expenses from a CSV.</p>
+
+<div class="eo-card eo-card-pad max-w-2xl">
+  <p class="eo-subtitle mb-4">
+    Required columns: <code class="eo-eyebrow">scope</code> (company or project),
+    <code class="eo-eyebrow">category</code> (created automatically if new),
+    <code class="eo-eyebrow">description</code>,
+    <code class="eo-eyebrow">amount</code>,
+    <code class="eo-eyebrow">incurred_on</code> (YYYY-MM-DD). Optional:
+    <code class="eo-eyebrow">project</code> (slug or ID — required when scope is 'project').
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="flex items-center gap-3">
+    {% csrf_token %}
+    {{ form.file }}
+    <button type="submit" class="eo-btn-primary shrink-0">Upload</button>
+  </form>
+</div>
+
+{% if result %}
+<div class="mt-8 max-w-2xl space-y-6">
+  <div class="flex gap-4">
+    <div class="flex-1 eo-stat">
+      <p class="eo-stat-value">{{ result.created|length }}</p>
+      <p class="eo-stat-label">Expenses recorded</p>
+    </div>
+    <div class="flex-1 eo-stat" style="border-top-color: var(--stamp);">
+      <p class="eo-stat-value" style="color: var(--stamp);">{{ result.errors|length }}</p>
+      <p class="eo-stat-label">Rows skipped</p>
+    </div>
+  </div>
+
+  {% if result.created %}
+  <div class="eo-card overflow-hidden">
+    <table class="eo-table">
+      <thead><tr><th>Row</th><th>Expense recorded</th></tr></thead>
+      <tbody>
+        {% for row in result.created %}
+        <tr><td class="eo-num">{{ row.row }}</td><td>{{ row.expense }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if result.errors %}
+  <div class="eo-card overflow-hidden" style="border-color: var(--stamp);">
+    <table class="eo-table">
+      <thead><tr><th style="color: var(--stamp);">Row</th><th style="color: var(--stamp);">Error</th></tr></thead>
+      <tbody>
+        {% for row in result.errors %}
+        <tr><td class="eo-num">{{ row.row }}</td><td style="color: var(--stamp);">{{ row.errors }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

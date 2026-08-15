@@ -2,8 +2,18 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
+
+{% if reservation %}
+<div class="eo-alert eo-alert--success max-w-2xl mb-4">
+  Converting reservation for <strong>{{ reservation.buyer_full_name }}</strong>
+  ({{ reservation.lot.project.name }} — Blk {{ reservation.lot.block_number }}, Lot {{ reservation.lot.lot_number }}).
+  Fields below are pre-filled from the reservation.
+</div>
+{% endif %}
+
 <form method="post" class="max-w-2xl eo-card eo-card-pad space-y-4">
   {% csrf_token %}
+  {% if reservation %}<input type="hidden" name="reservation_id" value="{{ reservation.id }}">{% endif %}
   {% for field in form %}
     <div>
       <label class="eo-eyebrow block mb-1">{{ field.label }}</label>

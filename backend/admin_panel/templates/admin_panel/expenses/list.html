@@ -8,14 +8,9 @@
     <p class="eo-subtitle">Company-wide and per-project expenses.</p>
   </div>
   <div class="flex gap-3">
-    <a href="{% url 'admin_panel:cash_flow_dashboard' %}"
-       class="eo-btn-secondary">
-      Cash Flow
-    </a>
-    <a href="{% url 'admin_panel:expense_create' %}"
-       class="eo-btn-primary">
-      Record Expense
-    </a>
+    <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-btn-secondary">Cash Flow</a>
+    <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-btn-secondary">Upload CSV</a>
+    <a href="{% url 'admin_panel:expense_create' %}" class="eo-btn-primary">Record Expense</a>
   </div>
 </div>
 

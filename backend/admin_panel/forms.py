@@ -20,7 +20,7 @@ class ProjectForm(forms.ModelForm):
 class LotForm(forms.ModelForm):
     class Meta:
         model = Lot
-        fields = ["project", "block_number", "lot_number", "area_sqm", "price_per_sqm", "total_price", "status"]
+        fields = ["project", "block_number", "lot_number", "area_sqm", "price_per_sqm", "total_price", "status", "description"]
         widgets = {
             "project": forms.Select(attrs={"class": INPUT_CLASSES}),
             "block_number": forms.TextInput(attrs={"class": INPUT_CLASSES}),
@@ -29,11 +29,13 @@ class LotForm(forms.ModelForm):
             "price_per_sqm": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "total_price": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "status": forms.Select(attrs={"class": INPUT_CLASSES}),
+            "description": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["total_price"].required = False
+        self.fields["description"].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -93,6 +95,14 @@ class ContractForm(forms.ModelForm):
         term_months = cleaned.get("term_months")
         if plan_type == Contract.PaymentPlanType.INSTALLMENT and not term_months:
             self.add_error("term_months", "Required for installment payment plans.")
+        # These fields are optional in the form (blank=True) but NOT NULL in the DB —
+        # fall back to their model defaults rather than letting None reach save().
+        if cleaned.get("term_months") is None:
+            cleaned["term_months"] = 0
+        if cleaned.get("interest_rate") is None:
+            cleaned["interest_rate"] = Contract._meta.get_field("interest_rate").default
+        if cleaned.get("penalty_rate_percent") is None:
+            cleaned["penalty_rate_percent"] = Contract._meta.get_field("penalty_rate_percent").default
         down_payment = cleaned.get("down_payment")
         total_price = cleaned.get("total_contract_price")
         if down_payment is not None and total_price is not None and down_payment > total_price:
@@ -189,3 +199,76 @@ class ExpenseCategoryForm(forms.ModelForm):
         model = ExpenseCategory
         fields = ["name"]
         widgets = {"name": forms.TextInput(attrs={"class": INPUT_CLASSES})}
+
+
+class ExpenseCSVUploadForm(forms.Form):
+    file = forms.FileField(
+        label="Expenses CSV",
+        widget=forms.ClearableFileInput(attrs={"class": "text-sm"}),
+    )
+
+
+# --- Reservations ---------------------------------------------------------------
+from properties.models import Reservation
+
+
+class ReservationForm(forms.ModelForm):
+    class Meta:
+        model = Reservation
+        fields = ["lot", "buyer_full_name", "buyer_email", "buyer_phone", "agent", "reservation_fee", "deadline"]
+        widgets = {
+            "lot": forms.Select(attrs={"class": INPUT_CLASSES}),
+            "buyer_full_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
+            "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "agent": forms.Select(attrs={"class": INPUT_CLASSES}),
+            "reservation_fee": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+            "deadline": forms.DateInput(attrs={"class": INPUT_CLASSES, "type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.db.models import Q
+        from properties.models import Lot
+        from accounts.models import User
+
+        # A lot is reservable if it's currently available, OR it's the lot already
+        # tied to this reservation being edited (so editing doesn't lose the option).
+        lot_filter = Q(status=Lot.Status.AVAILABLE)
+        if self.instance and self.instance.pk:
+            lot_filter |= Q(pk=self.instance.lot_id)
+        self.fields["lot"].queryset = Lot.objects.filter(lot_filter).select_related("project")
+
+        self.fields["agent"].queryset = User.objects.filter(role=User.Role.SALES_AGENT)
+        self.fields["agent"].required = False
+        self.fields["reservation_fee"].required = False
+
+    def clean_lot(self):
+        lot = self.cleaned_data["lot"]
+        if not self.instance.pk:
+            if lot.reservations.filter(status=Reservation.Status.ACTIVE).exists():
+                raise forms.ValidationError("This lot already has an active reservation.")
+        return lot
+
+
+# --- Document Settings ------------------------------------------------------------
+from .models import PlatformSettings
+
+
+class DocumentSettingsForm(forms.ModelForm):
+    class Meta:
+        model = PlatformSettings
+        fields = ["company_name", "company_address", "company_logo", "support_email", "document_footer_note"]
+        widgets = {
+            "company_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "company_address": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "support_email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
+            "document_footer_note": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["company_address"].required = False
+        self.fields["company_logo"].required = False
+        self.fields["support_email"].required = False
+        self.fields["document_footer_note"].required = False

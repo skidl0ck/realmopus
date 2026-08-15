@@ -20,6 +20,12 @@ class Contract(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     contract_number = models.CharField(max_length=32, unique=True)
     lot = models.OneToOneField("properties.Lot", on_delete=models.PROTECT, related_name="contract")
+    # Set when this contract was created by converting an active Reservation —
+    # kept for traceability (who reserved it first, how long ago) even though
+    # buyer_full_name/email/phone are copied over independently at creation time.
+    reservation = models.OneToOneField(
+        "properties.Reservation", on_delete=models.SET_NULL, null=True, blank=True, related_name="contract"
+    )
 
     # The buyer's real identity, recorded by staff at contract creation time —
     # independent of whether a client portal account has been claimed yet.
@@ -41,15 +47,21 @@ class Contract(models.Model):
     payment_plan_type = models.CharField(max_length=20, choices=PaymentPlanType.choices)
     total_contract_price = models.DecimalField(max_digits=14, decimal_places=2)
     down_payment = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
-    term_months = models.PositiveIntegerField(default=0, help_text="0 for full payment")
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0"), help_text="Annual %, if financed")
+    term_months = models.PositiveIntegerField(default=0, blank=True, help_text="0 for full payment")
+    interest_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("0"), blank=True, help_text="Annual %, if financed"
+    )
     penalty_rate_percent = models.DecimalField(
-        max_digits=5, decimal_places=2, default=Decimal("2.00"),
+        max_digits=5, decimal_places=2, default=Decimal("2.00"), blank=True,
         help_text="Late penalty as % of the overdue installment amount",
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     contract_date = models.DateField()
     contract_pdf = models.FileField(upload_to="contracts/", blank=True, null=True)
+    soa_pdf = models.FileField(
+        upload_to="contracts/soa/", blank=True, null=True,
+        help_text="Statement of Account — regenerated after every payment.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -16,5 +16,5 @@ class LotAdmin(admin.ModelAdmin):
 
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = ("lot", "client", "agent", "status", "expires_at")
+    list_display = ("lot", "buyer_full_name", "agent", "status", "deadline")
     list_filter = ("status",)

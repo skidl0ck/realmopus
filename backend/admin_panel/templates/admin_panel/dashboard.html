@@ -24,7 +24,77 @@
   </div>
 </div>
 
-<div class="grid sm:grid-cols-2 gap-6">
+<!-- Collections due -->
+<div class="eo-card eo-card-pad mb-8">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="eo-display font-semibold text-base">Collections Due</h2>
+    <button type="button" onclick="document.getElementById('upcoming-3d').classList.toggle('hidden'); this.textContent = this.textContent.includes('Show') ? 'Hide upcoming (next 3 days)' : 'Show upcoming (next 3 days)';" class="eo-btn-secondary" style="padding: 0.375rem 1rem; font-size: 0.8125rem;">
+      Show upcoming (next 3 days)
+    </button>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-6">
+    <div>
+      <p class="eo-eyebrow mb-2">Due Today ({{ due_today|length }})</p>
+      {% for inst in due_today %}
+      <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
+        <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
+          <span class="eo-subtitle">— {{ inst.contract.contract_number }}</span></span>
+        <span class="eo-num font-medium">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+      </div>
+      {% empty %}
+      <p class="eo-subtitle text-sm py-2">No installments due today.</p>
+      {% endfor %}
+    </div>
+
+    <div>
+      <p class="eo-eyebrow mb-2" style="color: var(--stamp);">Overdue ({{ overdue|length }})</p>
+      {% for inst in overdue %}
+      <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
+        <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
+          <span class="eo-subtitle">— {{ inst.contract.contract_number }} · due {{ inst.due_date }}</span></span>
+        <span class="eo-num font-medium" style="color: var(--stamp);">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+      </div>
+      {% empty %}
+      <p class="eo-subtitle text-sm py-2">No overdue installments.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="upcoming-3d" class="hidden mt-6 pt-6" style="border-top: 1px solid var(--hairline);">
+    <p class="eo-eyebrow mb-2" style="color: var(--gold);">Due in the next 3 days ({{ upcoming_3d|length }})</p>
+    {% for inst in upcoming_3d %}
+    <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
+      <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
+        <span class="eo-subtitle">— {{ inst.contract.contract_number }} · due {{ inst.due_date }}</span></span>
+      <span class="eo-num font-medium" style="color: var(--gold);">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+    </div>
+    {% empty %}
+    <p class="eo-subtitle text-sm py-2">Nothing due in the next 3 days.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Sales trend -->
+<div class="eo-card eo-card-pad mb-8">
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <h2 class="eo-display font-semibold text-base">Sales Trend <span class="eo-subtitle text-sm">— contracts signed per day</span></h2>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="?range=7d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '7d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">7 days</a>
+      <a href="?range=30d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '30d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">30 days</a>
+      <a href="?range=90d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '90d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">90 days</a>
+      <form method="get" class="flex items-center gap-2">
+        <input type="date" name="start" value="{{ start_param }}" class="eo-input" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">
+        <span class="eo-subtitle text-xs">to</span>
+        <input type="date" name="end" value="{{ end_param }}" class="eo-input" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">
+        <button type="submit" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == 'custom' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">Apply</button>
+      </form>
+    </div>
+  </div>
+  <canvas id="salesTrendChart" height="80"></canvas>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-6 mb-8">
   <div class="eo-card eo-card-pad">
     <h2 class="eo-display font-semibold text-base mb-4">Lot inventory</h2>
     <div class="space-y-2 text-sm">
@@ -44,4 +114,69 @@
     </div>
   </div>
 </div>
+
+<!-- Reservations needing attention -->
+{% if reservations_needing_attention %}
+<div class="eo-card eo-card-pad mb-8" style="border-top: 2px solid var(--gold);">
+  <h2 class="eo-display font-semibold text-base mb-1">Reservations Needing Attention</h2>
+  <p class="eo-subtitle text-sm mb-4">
+    Past deadline, within the 1-day grace period — cancel now, or they'll auto-expire once the grace period lapses.
+  </p>
+  {% for res in reservations_needing_attention %}
+  <div class="flex items-center justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
+    <span>
+      {{ res.buyer_full_name }}
+      <span class="eo-subtitle">— {{ res.lot.project.name }}, Blk {{ res.lot.block_number }} Lot {{ res.lot.lot_number }}
+        · deadline was {{ res.deadline }} · auto-expires {{ res.grace_period_end }}</span>
+    </span>
+    <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" onsubmit="return confirm('Cancel this reservation and release the lot?');">
+      {% csrf_token %}
+      <button type="submit" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem;">Cancel reservation</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Trending lots -->
+<div class="eo-card eo-card-pad">
+  <h2 class="eo-display font-semibold text-base mb-4">Trending Lots <span class="eo-subtitle text-sm">— most viewed by prospective buyers</span></h2>
+  {% for lot in top_viewed_lots %}
+  <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
+    <span>{{ lot.project.name }} — Blk {{ lot.block_number }}, Lot {{ lot.lot_number }}
+      <span class="eo-subtitle">({{ lot.get_status_display }})</span></span>
+    <span class="eo-num font-medium">{{ lot.view_count }} view{{ lot.view_count|pluralize }}</span>
+  </div>
+  {% empty %}
+  <p class="eo-subtitle text-sm">No lot views recorded yet.</p>
+  {% endfor %}
+</div>
+
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_counts|json_script:"chart-counts" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+  const counts = JSON.parse(document.getElementById('chart-counts').textContent);
+  new Chart(document.getElementById('salesTrendChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Contracts signed',
+        data: counts,
+        borderColor: '#1F5D45',
+        backgroundColor: 'rgba(31,93,69,0.08)',
+        fill: true,
+        tension: 0.25,
+        pointRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    },
+  });
+</script>
 {% endblock %}

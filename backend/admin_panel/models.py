@@ -44,8 +44,16 @@ class PlatformSettings(models.Model):
 
     default_penalty_rate_percent = models.DecimalField(max_digits=5, decimal_places=2, default=2.00)
     default_interest_rate_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    default_reservation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=10000)
+    reservation_hold_days = models.PositiveIntegerField(default=3)
     company_name = models.CharField(max_length=200, default="EstateOS")
+    company_address = models.CharField(max_length=255, blank=True)
+    company_logo = models.ImageField(upload_to="settings/", blank=True, null=True)
     support_email = models.EmailField(blank=True)
+    document_footer_note = models.TextField(
+        blank=True,
+        help_text="Appears at the bottom of every generated Statement of Account and receipt.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -1,0 +1,32 @@
+<html>
+{% load humanize %}
+<head>
+<style>
+  body { font-family: Helvetica, sans-serif; font-size: 10px; color: #14231D; }
+  h2 { font-size: 14px; margin: 16px 0 8px 0; }
+  table.info { width: 100%; margin-bottom: 12px; }
+  table.info td { padding: 4px 0; }
+  table.info td.label { width: 35%; color: #6B675C; }
+  .amount { font-size: 20px; font-weight: bold; color: #1F5D45; margin: 16px 0; }
+</style>
+</head>
+<body>
+{% include "core/pdf/_letterhead.html" %}
+
+<h2>Official Receipt — {{ receipt.receipt_number }}</h2>
+<p style="font-size: 9px; color: #6B675C;">Issued {{ receipt.issued_at|date:"Y-m-d H:i" }}</p>
+
+<div class="amount">₱{{ payment.amount|floatformat:2|intcomma }}</div>
+
+<table class="info">
+  <tr><td class="label">Received From</td><td>{{ payment.contract.client.get_full_name|default:payment.contract.buyer_full_name }}</td></tr>
+  <tr><td class="label">Contract</td><td>{{ payment.contract.contract_number }}</td></tr>
+  <tr><td class="label">Property</td><td>{{ payment.contract.lot.project.name }} — Block {{ payment.contract.lot.block_number }}, Lot {{ payment.contract.lot.lot_number }}</td></tr>
+  <tr><td class="label">Payment Method</td><td>{{ payment.get_method_display }}</td></tr>
+  <tr><td class="label">Date Paid</td><td>{{ payment.paid_at|date:"Y-m-d" }}</td></tr>
+  {% if payment.installment %}<tr><td class="label">Installment #</td><td>{{ payment.installment.installment_number }}</td></tr>{% endif %}
+</table>
+
+{% include "core/pdf/_footer.html" %}
+</body>
+</html>

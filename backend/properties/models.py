@@ -1,4 +1,5 @@
 import uuid
+from datetime import date, timedelta
 from django.db import models
 
 
@@ -39,8 +40,9 @@ class Lot(models.Model):
     price_per_sqm = models.DecimalField(max_digits=12, decimal_places=2)
     total_price = models.DecimalField(max_digits=14, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AVAILABLE)
+    view_count = models.PositiveIntegerField(default=0)
+    description = models.TextField(blank=True, help_text="e.g. corner lot, mountain view, near clubhouse")
     floor_plan = models.FileField(upload_to="lots/floor_plans/", blank=True, null=True)
-    photos = models.JSONField(default=list, blank=True, help_text="List of image URLs/keys")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -51,9 +53,41 @@ class Lot(models.Model):
     def __str__(self):
         return f"{self.project.name} - Blk {self.block_number} Lot {self.lot_number}"
 
+    @property
+    def thumbnail(self):
+        """The staff-chosen thumbnail image, or the first uploaded image as a fallback, or None."""
+        thumb = self.images.filter(is_thumbnail=True).first()
+        return thumb or self.images.first()
+
+
+class LotImage(models.Model):
+    """A single photo attached to a Lot. Up to 5 per lot, one optionally marked as the thumbnail."""
+
+    MAX_IMAGES_PER_LOT = 5
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="lots/photos/")
+    is_thumbnail = models.BooleanField(default=False)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"Image for {self.lot}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_thumbnail:
+            # Only one thumbnail per lot — unset any others.
+            LotImage.objects.filter(lot=self.lot, is_thumbnail=True).exclude(pk=self.pk).update(is_thumbnail=False)
+
 
 class Reservation(models.Model):
     """Holds a lot for a prospective buyer before a full Contract is drawn up."""
+
+    GRACE_PERIOD_DAYS = 1
 
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -62,16 +96,50 @@ class Reservation(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    lot = models.OneToOneField(Lot, on_delete=models.CASCADE, related_name="reservation")
-    client = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="reservations")
+    # A lot can be reserved more than once over its lifetime (e.g. a prior
+    # reservation expired or was cancelled) — so this is a plain FK, not a
+    # one-to-one. "Only one ACTIVE reservation per lot at a time" is enforced
+    # in application logic (see ReservationForm / serializer validation),
+    # not at the database level.
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name="reservations")
+
+    # The prospect's identity, captured directly (public reservation requests and
+    # most staff-created reservations happen before any account exists — mirrors
+    # Contract.buyer_full_name/email/phone). client is only ever set later, if this
+    # reservation is converted into a Contract that gets claimed by a registered account.
+    buyer_full_name = models.CharField(max_length=200, default="")
+    buyer_email = models.EmailField(blank=True)
+    buyer_phone = models.CharField(max_length=32, blank=True)
+    client = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="reservations"
+    )
     agent = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="agent_reservations", limit_choices_to={"role": "sales_agent"},
     )
-    reservation_fee = models.DecimalField(max_digits=12, decimal_places=2)
-    expires_at = models.DateTimeField()
+    # Optional — e.g. the owner reserving a lot for a friend, free of charge.
+    reservation_fee = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    deadline = models.DateField(
+        default=date.today,
+        help_text="Date by which a contract must be signed, or the reservation lapses.",
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return f"Reservation: {self.lot} for {self.client}"
+        return f"Reservation: {self.lot} for {self.buyer_full_name}"
+
+    @property
+    def grace_period_end(self):
+        return self.deadline + timedelta(days=self.GRACE_PERIOD_DAYS)
+
+    @property
+    def is_past_deadline(self):
+        return date.today() > self.deadline
+
+    @property
+    def is_past_grace_period(self):
+        return date.today() > self.grace_period_end

@@ -1,0 +1,75 @@
+<html>
+{% load humanize %}
+<head>
+<style>
+  body { font-family: Helvetica, sans-serif; font-size: 10px; color: #14231D; }
+  h2 { font-size: 14px; margin: 16px 0 8px 0; }
+  table.info { width: 100%; margin-bottom: 12px; }
+  table.info td { padding: 3px 0; }
+  table.info td.label { width: 35%; color: #6B675C; }
+  table.summary { width: 100%; margin-bottom: 12px; }
+  table.summary td { padding: 4px 0; }
+  table.summary td.label { color: #6B675C; }
+  table.summary td.value { text-align: right; font-weight: bold; }
+  table.sched, table.hist { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  table.sched th, table.sched td, table.hist th, table.hist td {
+    border: 1px solid #DCD6C9; padding: 4px 6px; text-align: left; font-size: 9px;
+  }
+  .status-paid { color: #1F5D45; }
+  .status-overdue { color: #B23A2E; }
+  .status-partial { color: #B98B2E; }
+</style>
+</head>
+<body>
+{% include "core/pdf/_letterhead.html" %}
+
+<h2>Statement of Account — {{ contract.contract_number }}</h2>
+<p style="font-size: 9px; color: #6B675C;">Generated {{ generated_at|date:"Y-m-d" }}</p>
+
+<table class="info">
+  <tr><td class="label">Buyer</td><td>{{ contract.client.get_full_name|default:contract.buyer_full_name }}</td></tr>
+  <tr><td class="label">Property</td><td>{{ contract.lot.project.name }} — Block {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td></tr>
+</table>
+
+<table class="summary">
+  <tr><td class="label">Total Contract Price</td><td class="value">₱{{ contract.total_contract_price|floatformat:2|intcomma }}</td></tr>
+  <tr><td class="label">Down Payment</td><td class="value">₱{{ contract.down_payment|floatformat:2|intcomma }}</td></tr>
+  <tr><td class="label">Total Paid</td><td class="value">₱{{ contract.total_paid|floatformat:2|intcomma }}</td></tr>
+  <tr><td class="label">Outstanding Balance</td><td class="value">₱{{ contract.outstanding_balance|floatformat:2|intcomma }}</td></tr>
+</table>
+
+{% if installments %}
+<h2>Amortization Schedule</h2>
+<table class="sched">
+  <tr><th>#</th><th>Due Date</th><th>Amount Due</th><th>Amount Paid</th><th>Status</th></tr>
+  {% for inst in installments %}
+  <tr>
+    <td>{{ inst.installment_number }}</td>
+    <td>{{ inst.due_date }}</td>
+    <td>₱{{ inst.amount_due|floatformat:2|intcomma }}</td>
+    <td>₱{{ inst.amount_paid|floatformat:2|intcomma }}</td>
+    <td class="{% if inst.status == 'paid' %}status-paid{% elif inst.status == 'overdue' %}status-overdue{% elif inst.status == 'partially_paid' %}status-partial{% endif %}">{{ inst.get_status_display }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>Payment History</h2>
+{% if payments %}
+<table class="hist">
+  <tr><th>Date</th><th>Amount</th><th>Method</th></tr>
+  {% for payment in payments %}
+  <tr>
+    <td>{{ payment.paid_at|date:"Y-m-d" }}</td>
+    <td>₱{{ payment.amount|floatformat:2|intcomma }}</td>
+    <td>{{ payment.get_method_display }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p style="color: #6B675C;">No payments recorded yet.</p>
+{% endif %}
+
+{% include "core/pdf/_footer.html" %}
+</body>
+</html>

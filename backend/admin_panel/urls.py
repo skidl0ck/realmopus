@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, project_views, lots_views, sales_views, payments_views, expenses_views
+from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views
 
 app_name = "admin_panel"
 
@@ -14,8 +14,16 @@ urlpatterns = [
 
     path('lots/', lots_views.lot_list, name='lot_list'),
     path('lots/new/', lots_views.lot_create, name='lot_create'),
+    path('lots/<uuid:pk>/', lots_views.lot_detail, name='lot_detail'),
     path('lots/<uuid:pk>/edit/', lots_views.lot_edit, name='lot_edit'),
+    path('lots/<uuid:pk>/images/upload/', lots_views.lot_image_upload, name='lot_image_upload'),
+    path('lots/<uuid:pk>/images/<uuid:image_id>/set-thumbnail/', lots_views.lot_image_set_thumbnail, name='lot_image_set_thumbnail'),
+    path('lots/<uuid:pk>/images/<uuid:image_id>/delete/', lots_views.lot_image_delete, name='lot_image_delete'),
     path('lots/upload/', lots_views.lot_bulk_upload, name='lot_bulk_upload'),
+
+    path('reservations/', reservations_views.reservation_list, name='reservation_list'),
+    path('reservations/new/', reservations_views.reservation_create, name='reservation_create'),
+    path('reservations/<uuid:pk>/cancel/', reservations_views.reservation_cancel, name='reservation_cancel'),
 
     path('contracts/', sales_views.contract_list, name='contract_list'),
     path('contracts/new/', sales_views.contract_create, name='contract_create'),
@@ -29,5 +37,8 @@ urlpatterns = [
 
     path('expenses/', expenses_views.expense_list, name='expense_list'),
     path('expenses/new/', expenses_views.expense_create, name='expense_create'),
+    path('expenses/upload/', expenses_views.expense_bulk_upload, name='expense_bulk_upload'),
     path('expenses/cash-flow/', expenses_views.cash_flow_dashboard, name='cash_flow_dashboard'),
+
+    path('settings/documents/', settings_views.document_settings, name='document_settings'),
 ]

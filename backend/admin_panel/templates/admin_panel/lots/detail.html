@@ -1,0 +1,48 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Blk {{ lot.block_number }}, Lot {{ lot.lot_number }} — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-1">
+  <h1 class="eo-title">{{ lot.project.name }} — Blk {{ lot.block_number }}, Lot {{ lot.lot_number }}</h1>
+  <div class="flex items-center gap-3">
+    <span class="eo-stamp
+      {% if lot.status == 'available' %}eo-stamp--green
+      {% elif lot.status == 'reserved' %}eo-stamp--gold
+      {% elif lot.status == 'sold' %}eo-stamp--gray
+      {% else %}eo-stamp--red{% endif %}">
+      {{ lot.get_status_display }}
+    </span>
+    <a href="{% url 'admin_panel:lot_edit' lot.id %}" class="eo-btn-secondary">Edit</a>
+  </div>
+</div>
+<p class="eo-subtitle mb-8">{{ lot.area_sqm }} sqm · ₱{{ lot.total_price|floatformat:2|intcomma }}</p>
+
+{% if lot.description %}
+<div class="eo-card eo-card-pad mb-8">
+  <h2 class="eo-display font-semibold text-base mb-2">Description</h2>
+  <p class="eo-subtitle text-sm" style="white-space: pre-wrap;">{{ lot.description }}</p>
+</div>
+{% endif %}
+
+<div class="eo-card eo-card-pad">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="eo-display font-semibold text-base">Photos</h2>
+    <span class="eo-subtitle text-sm">{{ lot.images.count }} / 5</span>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    {% for image in lot.images.all %}
+    <div class="relative">
+      <div class="aspect-square rounded-lg overflow-hidden border" style="border-color: var(--hairline);">
+        <img src="{{ image.image.url }}" alt="" class="w-full h-full object-cover">
+      </div>
+      {% if image.is_thumbnail %}
+        <span class="eo-stamp eo-stamp--green" style="position: absolute; top: 0.375rem; left: 0.375rem;">Thumbnail</span>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="eo-subtitle text-sm col-span-full">No photos uploaded yet — add some from the Edit page.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

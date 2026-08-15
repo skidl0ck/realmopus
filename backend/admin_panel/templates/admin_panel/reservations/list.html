@@ -1,0 +1,68 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Reservations — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Reservations</h1>
+    <p class="eo-subtitle">Lots held for prospective buyers ahead of a contract.</p>
+  </div>
+  <a href="{% url 'admin_panel:reservation_create' %}" class="eo-btn-primary">New Reservation</a>
+</div>
+
+<form method="get" class="mb-4">
+  <select name="status" onchange="this.form.submit()" class="eo-input" style="width: auto;">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Lot</th>
+        <th>Buyer</th>
+        <th>Agent</th>
+        <th>Reserved on</th>
+        <th>Deadline</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for res in reservations %}
+      <tr>
+        <td>{{ res.lot.project.name }} — Blk {{ res.lot.block_number }}, Lot {{ res.lot.lot_number }}</td>
+        <td>{{ res.buyer_full_name }}</td>
+        <td class="eo-subtitle">{{ res.agent.get_full_name|default:"—" }}</td>
+        <td class="eo-num">{{ res.created_at|date:"Y-m-d" }}</td>
+        <td class="eo-num">{{ res.deadline }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if res.status == 'active' %}eo-stamp--green
+            {% elif res.status == 'converted' %}eo-stamp--blue
+            {% elif res.status == 'expired' %}eo-stamp--gray
+            {% else %}eo-stamp--red{% endif %}">
+            {{ res.get_status_display }}
+          </span>
+        </td>
+        <td class="text-right">
+          {% if res.status == 'active' %}
+            <a href="{% url 'admin_panel:contract_create' %}?reservation={{ res.id }}" class="eo-link">Convert</a>
+            <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" style="display:inline;" onsubmit="return confirm('Cancel this reservation and release the lot?');">
+              {% csrf_token %}
+              <button type="submit" style="color: var(--stamp); margin-left: 0.75rem;">Cancel</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center eo-subtitle py-6">No reservations yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
