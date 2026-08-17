@@ -101,6 +101,12 @@
       <p class="eo-wordmark text-lg px-3 mb-0.5">EstateOS</p>
       <p class="eo-eyebrow px-3 mb-6">{{ user.get_role_display }}</p>
       <nav class="space-y-0.5">
+        <a href="{% url 'admin_panel:notification_list' %}" class="eo-nav-link {% if 'notification' in request.resolver_match.url_name %}active{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Notifications</span>
+          {% if unread_notification_count %}
+            <span class="eo-stamp eo-stamp--gold" style="padding: 0.0625rem 0.375rem; transform: none;">{{ unread_notification_count }}</span>
+          {% endif %}
+        </a>
         <a href="{% url 'admin_panel:dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Overview</a>
         <a href="{% url 'admin_panel:project_list' %}" class="eo-nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}">Projects</a>
         <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if 'lot_list' == request.resolver_match.url_name or 'lot_create' == request.resolver_match.url_name or 'lot_edit' == request.resolver_match.url_name %}active{% endif %}">Lots</a>
@@ -112,8 +118,10 @@
         <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Expenses</a>
         <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-nav-link {% if 'expense_bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Expenses (CSV)</a>
         <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">Cash Flow</a>
+        <a href="{% url 'admin_panel:commission_list' %}" class="eo-nav-link {% if 'commission' in request.resolver_match.url_name %}active{% endif %}">Commissions</a>
         {% endif %}
         {% if user.role == 'admin' %}
+        <a href="{% url 'admin_panel:agent_list' %}" class="eo-nav-link {% if 'agent' in request.resolver_match.url_name %}active{% endif %}">Sales Agents</a>
         <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if 'document_settings' in request.resolver_match.url_name %}active{% endif %}">Document Settings</a>
         {% endif %}
       </nav>

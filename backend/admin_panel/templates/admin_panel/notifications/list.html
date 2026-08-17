@@ -1,0 +1,38 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Notifications — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Notifications</h1>
+    <p class="eo-subtitle">Payment, reservation, and contract activity relevant to you.</p>
+  </div>
+  {% if unread_notification_count %}
+  <form method="post" action="{% url 'admin_panel:notification_mark_all_read' %}">
+    {% csrf_token %}
+    <button type="submit" class="eo-btn-secondary">Mark all read</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="space-y-2">
+  {% for n in notifications %}
+  <div class="eo-card eo-card-pad" {% if not n.is_read %}style="border-left: 3px solid var(--gold);"{% endif %}>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="font-medium {% if not n.is_read %}eo-display{% endif %}">{{ n.title }}</p>
+        <p class="eo-subtitle text-sm mt-1">{{ n.message }}</p>
+        <p class="eo-subtitle text-xs mt-2 eo-num">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+      </div>
+      {% if not n.is_read %}
+      <form method="post" action="{% url 'admin_panel:notification_mark_read' n.id %}">
+        {% csrf_token %}
+        <button type="submit" class="eo-link text-sm shrink-0">Mark read</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <p class="eo-subtitle text-center py-8">No notifications yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

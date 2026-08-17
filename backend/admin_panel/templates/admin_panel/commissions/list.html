@@ -1,0 +1,59 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Commissions — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Commissions</h1>
+<p class="eo-subtitle mb-6">Agent commissions across all contracts.</p>
+
+<form method="get" class="mb-4">
+  <select name="status" onchange="this.form.submit()" class="eo-input" style="width: auto;">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Agent</th>
+        <th>Contract</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Released</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in commissions %}
+      <tr>
+        <td>{{ c.agent.get_full_name|default:c.agent.username }}</td>
+        <td class="eo-num">{{ c.contract.contract_number }}</td>
+        <td class="eo-num">₱{{ c.amount|floatformat:2|intcomma }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if c.status == 'released' %}eo-stamp--green
+            {% elif c.status == 'cancelled' %}eo-stamp--red
+            {% else %}eo-stamp--gold{% endif %}">
+            {{ c.get_status_display }}
+          </span>
+        </td>
+        <td class="eo-subtitle eo-num">{{ c.released_at|date:"Y-m-d"|default:"—" }}</td>
+        <td class="text-right">
+          {% if c.status == 'pending' %}
+          <form method="post" action="{% url 'admin_panel:commission_release' c.id %}" onsubmit="return confirm('Release this commission and record it as an expense?');">
+            {% csrf_token %}
+            <button type="submit" class="eo-link">Release</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No commissions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

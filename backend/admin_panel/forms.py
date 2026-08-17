@@ -272,3 +272,98 @@ class DocumentSettingsForm(forms.ModelForm):
         self.fields["company_logo"].required = False
         self.fields["support_email"].required = False
         self.fields["document_footer_note"].required = False
+
+
+# --- Agents & Commissions ---------------------------------------------------------
+from accounts.models import User, SalesAgentProfile
+from django.contrib.auth.password_validation import validate_password as _validate_password
+
+
+class AgentCreateForm(forms.Form):
+    username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    first_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    last_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
+    phone_number = forms.CharField(max_length=32, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES}))
+    commission_type = forms.ChoiceField(
+        choices=SalesAgentProfile.CommissionType.choices, widget=forms.Select(attrs={"class": INPUT_CLASSES})
+    )
+    commission_rate = forms.DecimalField(
+        max_digits=8, decimal_places=2,
+        widget=forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+        help_text="Percentage (e.g. 3.00 for 3%) or a flat amount, depending on the type selected above.",
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        _validate_password(password)
+        return password
+
+    def save(self):
+        user = User.objects.create_user(
+            username=self.cleaned_data["username"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data["last_name"],
+            email=self.cleaned_data["email"],
+            phone_number=self.cleaned_data["phone_number"],
+            password=self.cleaned_data["password"],
+            role=User.Role.SALES_AGENT,
+        )
+        SalesAgentProfile.objects.create(
+            user=user,
+            commission_type=self.cleaned_data["commission_type"],
+            commission_rate=self.cleaned_data["commission_rate"],
+        )
+        return user
+
+
+class AgentEditForm(forms.Form):
+    first_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    last_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
+    phone_number = forms.CharField(max_length=32, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    account_active = forms.BooleanField(required=False, label="Account active (can log in)")
+    commission_type = forms.ChoiceField(
+        choices=SalesAgentProfile.CommissionType.choices, widget=forms.Select(attrs={"class": INPUT_CLASSES})
+    )
+    commission_rate = forms.DecimalField(
+        max_digits=8, decimal_places=2, widget=forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"})
+    )
+    profile_active = forms.BooleanField(required=False, label="Eligible for new commissions")
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        initial = kwargs.pop("initial", {})
+        if user is not None:
+            initial.update({
+                "first_name": user.first_name, "last_name": user.last_name,
+                "email": user.email, "phone_number": user.phone_number,
+                "account_active": user.is_active,
+                "commission_type": user.agent_profile.commission_type,
+                "commission_rate": user.agent_profile.commission_rate,
+                "profile_active": user.agent_profile.is_active,
+            })
+        super().__init__(*args, initial=initial, **kwargs)
+
+    def save(self):
+        user = self.user
+        user.first_name = self.cleaned_data["first_name"]
+        user.last_name = self.cleaned_data["last_name"]
+        user.email = self.cleaned_data["email"]
+        user.phone_number = self.cleaned_data["phone_number"]
+        user.is_active = self.cleaned_data["account_active"]
+        user.save(update_fields=["first_name", "last_name", "email", "phone_number", "is_active"])
+
+        profile = user.agent_profile
+        profile.commission_type = self.cleaned_data["commission_type"]
+        profile.commission_rate = self.cleaned_data["commission_rate"]
+        profile.is_active = self.cleaned_data["profile_active"]
+        profile.save(update_fields=["commission_type", "commission_rate", "is_active"])
+        return user

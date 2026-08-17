@@ -8,8 +8,11 @@ class Notification(models.Model):
     class NotificationType(models.TextChoices):
         PAYMENT_DUE_SOON = "payment_due_soon", "Payment Due Soon"
         PAYMENT_OVERDUE = "payment_overdue", "Payment Overdue"
-        RESERVATION_EXPIRING = "reservation_expiring", "Reservation Expiring"
         PAYMENT_RECEIVED = "payment_received", "Payment Received"
+        PAYMENT_FAILED = "payment_failed", "Payment Failed"
+        RESERVATION_EXPIRING = "reservation_expiring", "Reservation Expiring"
+        RESERVATION_CREATED = "reservation_created", "Reservation Created"
+        CONTRACT_COMPLETED = "contract_completed", "Contract Fully Paid"
         GENERAL = "general", "General"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

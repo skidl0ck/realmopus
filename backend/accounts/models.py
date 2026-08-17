@@ -22,6 +22,10 @@ class User(AbstractUser):
         "sales.Contract", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="active_account_holder",
     )
+    email_notifications_enabled = models.BooleanField(
+        default=False,
+        help_text="Client opt-in for email notifications about their account/payments. Staff are always emailed.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

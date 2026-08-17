@@ -149,6 +149,10 @@ class Commission(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     released_at = models.DateTimeField(null=True, blank=True)
+    expense = models.OneToOneField(
+        "expenses.Expense", on_delete=models.SET_NULL, null=True, blank=True, related_name="commission",
+        help_text="The company expense created when this commission was released.",
+    )
 
     def __str__(self):
         return f"Commission for {self.agent} on {self.contract.contract_number}"

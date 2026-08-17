@@ -5,6 +5,8 @@ from django.db import transaction
 
 from sales.models import Contract, Installment
 from sales.pdf import regenerate_contract_documents
+from core.services import notify
+from core.models import Notification
 from .models import Payment, Receipt
 
 logger = logging.getLogger(__name__)
@@ -53,8 +55,40 @@ def apply_payment(payment: Payment) -> Payment:
     if contract.outstanding_balance <= Decimal("0") and contract.status == Contract.Status.ACTIVE:
         contract.status = Contract.Status.COMPLETED
         contract.save(update_fields=["status"])
+        for recipient in _contract_notification_recipients(contract):
+            notify(
+                recipient, Notification.NotificationType.CONTRACT_COMPLETED,
+                "Contract fully paid",
+                f"Contract {contract.contract_number} has been fully paid.",
+                related_object_id=contract.id,
+            )
+
+    for recipient in _contract_client_and_agent(payment.contract):
+        notify(
+            recipient, Notification.NotificationType.PAYMENT_RECEIVED,
+            "Payment received",
+            f"A payment of ₱{payment.amount:,.2f} was received for contract {contract.contract_number}.",
+            related_object_id=payment.id,
+        )
 
     # A new payment changes the balance/schedule shown on the SOA — keep it current.
     regenerate_contract_documents(contract)
 
     return payment
+
+
+def _contract_client_and_agent(contract):
+    recipients = []
+    if contract.client:
+        recipients.append(contract.client)
+    if contract.agent:
+        recipients.append(contract.agent)
+    return recipients
+
+
+def _contract_notification_recipients(contract):
+    """Client + agent, plus all admins/accountants — used for milestone events like full payment."""
+    from accounts.models import User
+    recipients = _contract_client_and_agent(contract)
+    recipients += list(User.objects.filter(role__in=[User.Role.ADMIN, User.Role.ACCOUNTANT], is_active=True))
+    return recipients

@@ -1,0 +1,52 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Sales Agents — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Sales Agents</h1>
+    <p class="eo-subtitle">Staff who sell lots and earn commission.</p>
+  </div>
+  <a href="{% url 'admin_panel:agent_create' %}" class="eo-btn-primary">New Agent</a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Username</th>
+        <th>Commission</th>
+        <th>Account</th>
+        <th>Eligible</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for agent in agents %}
+      <tr>
+        <td>{{ agent.get_full_name|default:"—" }}</td>
+        <td class="eo-subtitle">{{ agent.username }}</td>
+        <td class="eo-num">
+          {% if agent.agent_profile.commission_type == 'percent' %}{{ agent.agent_profile.commission_rate }}%
+          {% else %}₱{{ agent.agent_profile.commission_rate|floatformat:2|intcomma }}{% endif %}
+        </td>
+        <td>
+          <span class="eo-stamp {% if agent.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if agent.is_active %}Active{% else %}Disabled{% endif %}
+          </span>
+        </td>
+        <td>
+          <span class="eo-stamp {% if agent.agent_profile.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if agent.agent_profile.is_active %}Yes{% else %}No{% endif %}
+          </span>
+        </td>
+        <td class="text-right"><a href="{% url 'admin_panel:agent_edit' agent.id %}" class="eo-link">Edit</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No sales agents yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

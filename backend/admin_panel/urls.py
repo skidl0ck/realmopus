@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views
+from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, agents_views, commissions_views, notifications_views
 
 app_name = "admin_panel"
 
@@ -41,4 +41,15 @@ urlpatterns = [
     path('expenses/cash-flow/', expenses_views.cash_flow_dashboard, name='cash_flow_dashboard'),
 
     path('settings/documents/', settings_views.document_settings, name='document_settings'),
+
+    path('agents/', agents_views.agent_list, name='agent_list'),
+    path('agents/new/', agents_views.agent_create, name='agent_create'),
+    path('agents/<uuid:pk>/edit/', agents_views.agent_edit, name='agent_edit'),
+
+    path('commissions/', commissions_views.commission_list, name='commission_list'),
+    path('commissions/<uuid:pk>/release/', commissions_views.commission_release, name='commission_release'),
+
+    path('notifications/', notifications_views.notification_list, name='notification_list'),
+    path('notifications/<uuid:pk>/mark-read/', notifications_views.notification_mark_read, name='notification_mark_read'),
+    path('notifications/mark-all-read/', notifications_views.notification_mark_all_read, name='notification_mark_all_read'),
 ]

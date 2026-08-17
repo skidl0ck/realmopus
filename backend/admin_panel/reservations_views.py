@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from properties.models import Lot, Reservation
 from properties.services import expire_stale_reservations
+from core.services import notify
+from core.models import Notification
 
 from .decorators import staff_required, audit_action
 from .forms import ReservationForm
@@ -33,6 +35,13 @@ def reservation_create(request):
             reservation = form.save()
             reservation.lot.status = Lot.Status.RESERVED
             reservation.lot.save(update_fields=["status"])
+            if reservation.agent:
+                notify(
+                    reservation.agent, Notification.NotificationType.RESERVATION_CREATED,
+                    "New reservation assigned to you",
+                    f"{reservation.buyer_full_name} reserved {reservation.lot} — deadline {reservation.deadline}.",
+                    related_object_id=reservation.id,
+                )
             messages.success(request, f"Reservation created for {reservation.buyer_full_name}.")
             return redirect("admin_panel:reservation_list")
     else:

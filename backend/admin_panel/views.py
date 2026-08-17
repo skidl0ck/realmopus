@@ -12,6 +12,9 @@ from properties.services import expire_stale_reservations
 from sales.models import Contract, Installment
 from payments.models import Payment
 from expenses.models import Expense
+from core.services import notify_once
+from core.models import Notification
+from accounts.models import User
 
 from .decorators import staff_required, _client_ip
 from .models import AdminLoginAttempt
@@ -81,6 +84,8 @@ def dashboard(request):
     overdue = unpaid.filter(due_date__lt=today)
     upcoming_3d = unpaid.filter(due_date__gt=today, due_date__lte=today + timedelta(days=3))
 
+    _notify_overdue_installments(overdue)
+
     # --- Sales trend: contracts signed per day, default last 7 days, or a custom range ---
     start_param = request.GET.get("start")
     end_param = request.GET.get("end")
@@ -131,6 +136,7 @@ def dashboard(request):
         .select_related("lot", "lot__project")
         .order_by("deadline")
     )
+    _notify_reservations_needing_attention(reservations_needing_attention)
 
     context = {
         "project_count": Project.objects.count(),
@@ -153,3 +159,50 @@ def dashboard(request):
         "reservations_needing_attention": reservations_needing_attention,
     }
     return render(request, "admin_panel/dashboard.html", context)
+
+
+def _notify_overdue_installments(overdue_qs):
+    """Idempotent — each installment triggers this at most once, not on every dashboard load."""
+    admins_and_accountants = None
+    for installment in overdue_qs.select_related("contract__agent"):
+        contract = installment.contract
+        recipients = []
+        if contract.client:
+            recipients.append(contract.client)
+        if contract.agent:
+            recipients.append(contract.agent)
+        if admins_and_accountants is None:
+            admins_and_accountants = list(
+                User.objects.filter(role__in=[User.Role.ADMIN, User.Role.ACCOUNTANT], is_active=True)
+            )
+        recipients += admins_and_accountants
+
+        for recipient in recipients:
+            notify_once(
+                recipient, Notification.NotificationType.PAYMENT_OVERDUE, installment.id,
+                "Installment overdue",
+                f"Installment #{installment.installment_number} for contract {contract.contract_number} "
+                f"was due {installment.due_date} and remains unpaid.",
+            )
+
+
+def _notify_reservations_needing_attention(reservations_qs):
+    """Idempotent — each reservation triggers this at most once per entry into its grace period."""
+    admins_and_accountants = None
+    for reservation in reservations_qs:
+        recipients = []
+        if reservation.agent:
+            recipients.append(reservation.agent)
+        if admins_and_accountants is None:
+            admins_and_accountants = list(
+                User.objects.filter(role__in=[User.Role.ADMIN, User.Role.ACCOUNTANT], is_active=True)
+            )
+        recipients += admins_and_accountants
+
+        for recipient in recipients:
+            notify_once(
+                recipient, Notification.NotificationType.RESERVATION_EXPIRING, reservation.id,
+                "Reservation past deadline",
+                f"{reservation.buyer_full_name}'s reservation on {reservation.lot} passed its deadline "
+                f"({reservation.deadline}) and will auto-expire on {reservation.grace_period_end}.",
+            )
