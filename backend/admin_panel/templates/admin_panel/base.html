@@ -119,16 +119,23 @@
         <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-nav-link {% if 'expense_bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Expenses (CSV)</a>
         <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">Cash Flow</a>
         <a href="{% url 'admin_panel:commission_list' %}" class="eo-nav-link {% if 'commission' in request.resolver_match.url_name %}active{% endif %}">Commissions</a>
+        <a href="{% url 'admin_panel:reports_index' %}" class="eo-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">Reports</a>
+        <a href="{% url 'admin_panel:client_list' %}" class="eo-nav-link {% if 'client' in request.resolver_match.url_name %}active{% endif %}">Clients</a>
         {% endif %}
         {% if user.role == 'admin' %}
-        <a href="{% url 'admin_panel:agent_list' %}" class="eo-nav-link {% if 'agent' in request.resolver_match.url_name %}active{% endif %}">Sales Agents</a>
+        <a href="{% url 'admin_panel:staff_list' %}" class="eo-nav-link {% if 'staff' in request.resolver_match.url_name %}active{% endif %}">Staff Users</a>
         <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if 'document_settings' in request.resolver_match.url_name %}active{% endif %}">Document Settings</a>
+        <a href="{% url 'admin_panel:business_settings' %}" class="eo-nav-link {% if 'business_settings' in request.resolver_match.url_name %}active{% endif %}">Business Settings</a>
+        <a href="{% url 'admin_panel:audit_log_list' %}" class="eo-nav-link {% if 'audit_log' in request.resolver_match.url_name %}active{% endif %}">Audit Log</a>
         {% endif %}
       </nav>
-      <form method="post" action="{% url 'admin_panel:logout' %}" class="mt-8 px-3">
-        {% csrf_token %}
-        <button type="submit" class="text-sm" style="color: var(--muted);">Sign out</button>
-      </form>
+      <div class="mt-8 px-3 space-y-2">
+        <a href="{% url 'admin_panel:change_password' %}" class="block text-sm" style="color: var(--muted);">Change password</a>
+        <form method="post" action="{% url 'admin_panel:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="text-sm" style="color: var(--muted);">Sign out</button>
+        </form>
+      </div>
     </aside>
     {% endif %}
 

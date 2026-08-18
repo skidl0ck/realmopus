@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: UserRole;
   phone_number?: string;
+  email_notifications_enabled: boolean;
 }
 
 export type LotStatus = "available" | "reserved" | "sold" | "on_hold";
@@ -72,4 +73,14 @@ export interface Receipt {
   receipt_number: string;
   pdf_file: string | null;
   issued_at: string;
+}
+
+export interface Notification {
+  id: string;
+  notification_type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  related_object_id: string;
+  created_at: string;
 }

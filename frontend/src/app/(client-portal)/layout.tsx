@@ -3,9 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { getStoredUser, logout } from "@/lib/auth";
 import { useAuthStore, NAV_ITEMS_BY_ROLE } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
+import { apiClient } from "@/lib/api-client";
+
+async function fetchUnreadCount(): Promise<number> {
+  const { data } = await apiClient.get("/notifications/unread_count/");
+  return data.unread_count;
+}
 
 export default function ClientPortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -25,6 +32,13 @@ export default function ClientPortalLayout({ children }: { children: React.React
     setReady(true);
   }, [router, setUser, openAuthModal, pathname]);
 
+  const { data: unreadCount } = useQuery({
+    queryKey: ["unread-notification-count"],
+    queryFn: fetchUnreadCount,
+    enabled: ready,
+    refetchInterval: 30000,
+  });
+
   if (!ready || !user) {
     return <div className="flex-1 flex items-center justify-center text-stone-400">Loading…</div>;
   }
@@ -42,13 +56,18 @@ export default function ClientPortalLayout({ children }: { children: React.React
             <Link
               key={item.href}
               href={item.href}
-              className={`block rounded-lg px-3 py-2 text-sm font-medium transition ${
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition ${
                 pathname === item.href
                   ? "bg-emerald-50 text-emerald-800"
                   : "text-stone-600 hover:bg-stone-50"
               }`}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.href === "/portal/notifications" && !!unreadCount && (
+                <span className="rounded-full bg-emerald-600 text-white text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                  {unreadCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

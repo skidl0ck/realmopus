@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "id", "username", "email", "first_name", "last_name", "role", "phone_number",
-            "is_active", "active_contract", "has_active_transaction",
+            "is_active", "active_contract", "has_active_transaction", "email_notifications_enabled",
         ]
         read_only_fields = ["id", "active_contract"]
 
@@ -42,6 +42,14 @@ class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
         fields = ["id", "user", "address", "valid_id_number", "date_of_birth", "occupation", "referred_by"]
+
+
+class NotificationPreferenceSerializer(serializers.ModelSerializer):
+    """Deliberately narrow — the only field a user may self-edit via /me/ PATCH."""
+
+    class Meta:
+        model = User
+        fields = ["email_notifications_enabled"]
 
 
 class ClientRegistrationSerializer(serializers.Serializer):

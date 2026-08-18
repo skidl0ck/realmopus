@@ -1,0 +1,46 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ title }} — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-1 flex-wrap gap-3">
+  <h1 class="eo-title">{{ title }}</h1>
+  {% if show_date_filter %}
+  <div class="flex items-center gap-2 flex-wrap">
+    <a href="?range=7d{{ extra_qs }}" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '7d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">7 days</a>
+    <a href="?range=30d{{ extra_qs }}" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '30d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">30 days</a>
+    <a href="?range=90d{{ extra_qs }}" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '90d' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">90 days</a>
+    <form method="get" class="flex items-center gap-2">
+      <input type="date" name="start" value="{{ start_date|date:'Y-m-d' }}" class="eo-input" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">
+      <span class="eo-subtitle text-xs">to</span>
+      <input type="date" name="end" value="{{ end_date|date:'Y-m-d' }}" class="eo-input" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto;">
+      <button type="submit" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == 'custom' %}background: var(--ledger); color: white; border-color: var(--ledger);{% endif %}">Apply</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+<p class="eo-subtitle mb-6">{{ subtitle }}</p>
+
+<div class="flex gap-3 mb-6">
+  <a href="{{ csv_url }}" class="eo-btn-secondary">Export CSV</a>
+  <a href="{{ pdf_url }}" class="eo-btn-secondary">Export PDF</a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% empty %}
+      <tr><td colspan="{{ headers|length }}" class="text-center eo-subtitle py-6">No data for the selected range.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if totals %}
+    <tfoot>
+      <tr style="border-top: 2px solid var(--hairline);">{% for cell in totals %}<td class="font-medium">{{ cell }}</td>{% endfor %}</tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

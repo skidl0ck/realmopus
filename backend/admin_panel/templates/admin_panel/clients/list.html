@@ -1,0 +1,55 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Clients — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Clients</h1>
+<p class="eo-subtitle mb-6">Registered buyer accounts.</p>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Username</th>
+        <th>Contracts</th>
+        <th>Can log in</th>
+        <th>Account</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr>
+        <td>{{ client.get_full_name|default:"—" }}</td>
+        <td class="eo-subtitle">{{ client.username }}</td>
+        <td>
+          {% for contract in client.contracts.all %}
+            <a href="{% url 'admin_panel:contract_detail' contract.id %}" class="eo-link eo-num" style="display: block;">{{ contract.contract_number }}</a>
+          {% empty %}
+            <span class="eo-subtitle">—</span>
+          {% endfor %}
+        </td>
+        <td>
+          <span class="eo-stamp {% if client.is_active and client.has_active_transaction %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if client.is_active and client.has_active_transaction %}Yes{% else %}No{% endif %}
+          </span>
+        </td>
+        <td>
+          <span class="eo-stamp {% if client.is_active %}eo-stamp--green{% else %}eo-stamp--red{% endif %}">
+            {% if client.is_active %}Active{% else %}Disabled{% endif %}
+          </span>
+        </td>
+        <td class="text-right">
+          <form method="post" action="{% url 'admin_panel:client_toggle_active' client.id %}"
+                onsubmit="return confirm('{% if client.is_active %}Disable{% else %}Re-activate{% endif %} this account?');">
+            {% csrf_token %}
+            <button type="submit" class="eo-link">{% if client.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No registered clients yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

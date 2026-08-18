@@ -7,7 +7,7 @@ from core.permissions import IsAdmin
 from .models import User, SalesAgentProfile, ClientProfile
 from .serializers import (
     UserSerializer, UserCreateSerializer, SalesAgentProfileSerializer, ClientProfileSerializer,
-    ClientRegistrationSerializer, ReactivateAccountSerializer,
+    ClientRegistrationSerializer, ReactivateAccountSerializer, NotificationPreferenceSerializer,
 )
 
 
@@ -56,8 +56,12 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserCreateSerializer
         return UserSerializer
 
-    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
+        if request.method == "PATCH":
+            serializer = NotificationPreferenceSerializer(request.user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
         return Response(UserSerializer(request.user).data)
 
 

@@ -89,6 +89,16 @@ class ContractForm(forms.ModelForm):
         self.fields["agent"].queryset = User.objects.filter(role=User.Role.SALES_AGENT)
         self.fields["agent"].required = False
 
+        # Pre-fill new contracts with the platform's suggested rates — staff can still
+        # override per contract. Only applies on create, not when editing an instance.
+        # Note: instance.pk is NOT a reliable "is this new" check here — Contract's
+        # UUID primary key has a Python-side default (uuid.uuid4), so even a brand
+        # new, never-saved instance already has a non-None pk. Use _state.adding instead.
+        if self.instance._state.adding:
+            settings_row = PlatformSettings.load()
+            self.initial["interest_rate"] = settings_row.default_interest_rate_percent
+            self.initial["penalty_rate_percent"] = settings_row.default_penalty_rate_percent
+
     def clean(self):
         cleaned = super().clean()
         plan_type = cleaned.get("payment_plan_type")
@@ -274,25 +284,54 @@ class DocumentSettingsForm(forms.ModelForm):
         self.fields["document_footer_note"].required = False
 
 
-# --- Agents & Commissions ---------------------------------------------------------
+class BusinessSettingsForm(forms.ModelForm):
+    class Meta:
+        model = PlatformSettings
+        fields = [
+            "default_penalty_rate_percent", "default_interest_rate_percent",
+            "default_reservation_fee", "reservation_hold_days",
+        ]
+        widgets = {
+            "default_penalty_rate_percent": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+            "default_interest_rate_percent": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+            "default_reservation_fee": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+            "reservation_hold_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+        }
+        help_texts = {
+            "default_penalty_rate_percent": "Suggested late-payment penalty rate for new installment contracts (staff can still override per contract).",
+            "default_interest_rate_percent": "Suggested annual interest rate for new installment contracts (staff can still override per contract).",
+            "default_reservation_fee": "Used by the public 'Reserve this lot' flow when no fee is specified.",
+            "reservation_hold_days": "How many days a public reservation holds a lot before its deadline, when auto-created.",
+        }
+
+
+# --- Staff Users (Admin / Sales Agent / Accountant) & Commissions -----------------
 from accounts.models import User, SalesAgentProfile
 from django.contrib.auth.password_validation import validate_password as _validate_password
 
+STAFF_ROLE_CHOICES = [
+    (User.Role.ADMIN, "Admin"),
+    (User.Role.SALES_AGENT, "Sales Agent"),
+    (User.Role.ACCOUNTANT, "Accountant"),
+]
 
-class AgentCreateForm(forms.Form):
+
+class StaffCreateForm(forms.Form):
+    role = forms.ChoiceField(choices=STAFF_ROLE_CHOICES, widget=forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_role"}))
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     first_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     last_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
     phone_number = forms.CharField(max_length=32, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES}))
+    # Only required/used when role == sales_agent — see clean().
     commission_type = forms.ChoiceField(
-        choices=SalesAgentProfile.CommissionType.choices, widget=forms.Select(attrs={"class": INPUT_CLASSES})
+        choices=SalesAgentProfile.CommissionType.choices, required=False, widget=forms.Select(attrs={"class": INPUT_CLASSES})
     )
     commission_rate = forms.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8, decimal_places=2, required=False,
         widget=forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
-        help_text="Percentage (e.g. 3.00 for 3%) or a flat amount, depending on the type selected above.",
+        help_text="Sales agents only — percentage (e.g. 3.00 for 3%) or a flat amount, depending on the type.",
     )
 
     def clean_username(self):
@@ -306,6 +345,15 @@ class AgentCreateForm(forms.Form):
         _validate_password(password)
         return password
 
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("role") == User.Role.SALES_AGENT:
+            if cleaned.get("commission_type") in (None, ""):
+                self.add_error("commission_type", "Required for sales agents.")
+            if cleaned.get("commission_rate") is None:
+                self.add_error("commission_rate", "Required for sales agents.")
+        return cleaned
+
     def save(self):
         user = User.objects.create_user(
             username=self.cleaned_data["username"],
@@ -314,27 +362,33 @@ class AgentCreateForm(forms.Form):
             email=self.cleaned_data["email"],
             phone_number=self.cleaned_data["phone_number"],
             password=self.cleaned_data["password"],
-            role=User.Role.SALES_AGENT,
+            role=self.cleaned_data["role"],
         )
-        SalesAgentProfile.objects.create(
-            user=user,
-            commission_type=self.cleaned_data["commission_type"],
-            commission_rate=self.cleaned_data["commission_rate"],
-        )
+        if user.role == User.Role.SALES_AGENT:
+            SalesAgentProfile.objects.create(
+                user=user,
+                commission_type=self.cleaned_data["commission_type"],
+                commission_rate=self.cleaned_data["commission_rate"],
+            )
         return user
 
 
-class AgentEditForm(forms.Form):
+class StaffEditForm(forms.Form):
     first_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     last_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
     phone_number = forms.CharField(max_length=32, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     account_active = forms.BooleanField(required=False, label="Account active (can log in)")
+    new_password = forms.CharField(
+        required=False, widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES}),
+        help_text="Leave blank to keep their current password.",
+    )
+    # Only present/used when editing a sales agent — see __init__/save().
     commission_type = forms.ChoiceField(
-        choices=SalesAgentProfile.CommissionType.choices, widget=forms.Select(attrs={"class": INPUT_CLASSES})
+        choices=SalesAgentProfile.CommissionType.choices, required=False, widget=forms.Select(attrs={"class": INPUT_CLASSES})
     )
     commission_rate = forms.DecimalField(
-        max_digits=8, decimal_places=2, widget=forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"})
+        max_digits=8, decimal_places=2, required=False, widget=forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"})
     )
     profile_active = forms.BooleanField(required=False, label="Eligible for new commissions")
 
@@ -346,11 +400,29 @@ class AgentEditForm(forms.Form):
                 "first_name": user.first_name, "last_name": user.last_name,
                 "email": user.email, "phone_number": user.phone_number,
                 "account_active": user.is_active,
-                "commission_type": user.agent_profile.commission_type,
-                "commission_rate": user.agent_profile.commission_rate,
-                "profile_active": user.agent_profile.is_active,
             })
+            if user.role == User.Role.SALES_AGENT:
+                initial.update({
+                    "commission_type": user.agent_profile.commission_type,
+                    "commission_rate": user.agent_profile.commission_rate,
+                    "profile_active": user.agent_profile.is_active,
+                })
         super().__init__(*args, initial=initial, **kwargs)
+
+    def clean_new_password(self):
+        password = self.cleaned_data.get("new_password")
+        if password:
+            _validate_password(password)
+        return password
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.user and self.user.role == User.Role.SALES_AGENT:
+            if cleaned.get("commission_type") in (None, ""):
+                self.add_error("commission_type", "Required for sales agents.")
+            if cleaned.get("commission_rate") is None:
+                self.add_error("commission_rate", "Required for sales agents.")
+        return cleaned
 
     def save(self):
         user = self.user
@@ -359,11 +431,19 @@ class AgentEditForm(forms.Form):
         user.email = self.cleaned_data["email"]
         user.phone_number = self.cleaned_data["phone_number"]
         user.is_active = self.cleaned_data["account_active"]
-        user.save(update_fields=["first_name", "last_name", "email", "phone_number", "is_active"])
+        update_fields = ["first_name", "last_name", "email", "phone_number", "is_active"]
 
-        profile = user.agent_profile
-        profile.commission_type = self.cleaned_data["commission_type"]
-        profile.commission_rate = self.cleaned_data["commission_rate"]
-        profile.is_active = self.cleaned_data["profile_active"]
-        profile.save(update_fields=["commission_type", "commission_rate", "is_active"])
+        new_password = self.cleaned_data.get("new_password")
+        if new_password:
+            user.set_password(new_password)
+            update_fields.append("password")
+
+        user.save(update_fields=update_fields)
+
+        if user.role == User.Role.SALES_AGENT:
+            profile = user.agent_profile
+            profile.commission_type = self.cleaned_data["commission_type"]
+            profile.commission_rate = self.cleaned_data["commission_rate"]
+            profile.is_active = self.cleaned_data["profile_active"]
+            profile.save(update_fields=["commission_type", "commission_rate", "is_active"])
         return user

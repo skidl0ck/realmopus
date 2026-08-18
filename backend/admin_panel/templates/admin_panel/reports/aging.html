@@ -1,0 +1,50 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ title }} — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">{{ title }}</h1>
+<p class="eo-subtitle mb-6">{{ subtitle }}</p>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="eo-stat">
+    <p class="eo-stat-value">₱{{ buckets.0_30|floatformat:2 }}</p>
+    <p class="eo-stat-label">0–30 days</p>
+  </div>
+  <div class="eo-stat" style="border-top-color: var(--gold);">
+    <p class="eo-stat-value" style="color: var(--gold);">₱{{ buckets.31_60|floatformat:2 }}</p>
+    <p class="eo-stat-label">31–60 days</p>
+  </div>
+  <div class="eo-stat" style="border-top-color: var(--stamp);">
+    <p class="eo-stat-value" style="color: var(--stamp);">₱{{ buckets.61_90|floatformat:2 }}</p>
+    <p class="eo-stat-label">61–90 days</p>
+  </div>
+  <div class="eo-stat" style="border-top-color: var(--stamp);">
+    <p class="eo-stat-value" style="color: var(--stamp);">₱{{ buckets.90_plus|floatformat:2 }}</p>
+    <p class="eo-stat-label">90+ days</p>
+  </div>
+</div>
+
+<div class="flex gap-3 mb-6">
+  <a href="{{ csv_url }}" class="eo-btn-secondary">Export CSV</a>
+  <a href="{{ pdf_url }}" class="eo-btn-secondary">Export PDF</a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% empty %}
+      <tr><td colspan="{{ headers|length }}" class="text-center eo-subtitle py-6">No overdue installments.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if totals %}
+    <tfoot>
+      <tr style="border-top: 2px solid var(--hairline);">{% for cell in totals %}<td class="font-medium">{{ cell }}</td>{% endfor %}</tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

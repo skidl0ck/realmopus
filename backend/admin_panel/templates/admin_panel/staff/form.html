@@ -1,0 +1,104 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ title }} — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-6">{{ title }}</h1>
+<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+  {% csrf_token %}
+
+  {% if is_create %}
+  <div>
+    <label class="eo-eyebrow block mb-1">Role</label>
+    {{ form.role }}
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Username</label>
+    {{ form.username }}
+    {% if form.username.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.username.errors|join:", " }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="eo-eyebrow block mb-1">First name</label>
+      {{ form.first_name }}
+    </div>
+    <div>
+      <label class="eo-eyebrow block mb-1">Last name</label>
+      {{ form.last_name }}
+    </div>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Email</label>
+    {{ form.email }}
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Phone</label>
+    {{ form.phone_number }}
+  </div>
+
+  {% if is_create %}
+  <div>
+    <label class="eo-eyebrow block mb-1">Password</label>
+    {{ form.password }}
+    {% if form.password.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.password.errors|join:", " }}</p>{% endif %}
+  </div>
+  {% else %}
+  <div class="flex items-center gap-2">
+    {{ form.account_active }}
+    <label class="text-sm">{{ form.account_active.label }}</label>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Reset password</label>
+    {{ form.new_password }}
+    {% if form.new_password.help_text %}<p class="eo-subtitle text-xs mt-1">{{ form.new_password.help_text }}</p>{% endif %}
+    {% if form.new_password.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.new_password.errors|join:", " }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if is_create %}
+  <div id="commission-fields" style="display: none;">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="eo-eyebrow block mb-1">Commission type</label>
+        {{ form.commission_type }}
+        {% if form.commission_type.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.commission_type.errors|join:", " }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">Commission rate</label>
+        {{ form.commission_rate }}
+        {% if form.commission_rate.help_text %}<p class="eo-subtitle text-xs mt-1">{{ form.commission_rate.help_text }}</p>{% endif %}
+        {% if form.commission_rate.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.commission_rate.errors|join:", " }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var roleSelect = document.getElementById('id_role');
+      var commissionFields = document.getElementById('commission-fields');
+      function toggle() {
+        commissionFields.style.display = roleSelect.value === 'sales_agent' ? 'block' : 'none';
+      }
+      roleSelect.addEventListener('change', toggle);
+      toggle();
+    })();
+  </script>
+  {% elif staff_user.role == 'sales_agent' %}
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="eo-eyebrow block mb-1">Commission type</label>
+      {{ form.commission_type }}
+    </div>
+    <div>
+      <label class="eo-eyebrow block mb-1">Commission rate</label>
+      {{ form.commission_rate }}
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {{ form.profile_active }}
+    <label class="text-sm">{{ form.profile_active.label }}</label>
+  </div>
+  {% endif %}
+
+  <button type="submit" class="eo-btn-primary">Save</button>
+</form>
+{% endblock %}

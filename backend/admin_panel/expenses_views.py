@@ -39,16 +39,27 @@ def expense_create(request):
     else:
         form = ExpenseForm()
 
-    if request.method == "POST" and "new_category" in request.POST and request.POST["new_category"].strip():
-        cat_form = ExpenseCategoryForm({"name": request.POST["new_category"].strip()})
-        if cat_form.is_valid():
-            cat_form.save()
+    return render(request, "admin_panel/expenses/form.html", {"form": form, "title": "Record Expense"})
 
-    return render(request, "admin_panel/expenses/form.html", {
-        "form": form,
-        "category_form": ExpenseCategoryForm(),
-        "title": "Record Expense",
-    })
+
+@staff_required(roles=("admin", "accountant"))
+def expense_category_list(request):
+    categories = ExpenseCategory.objects.order_by("name")
+    return render(request, "admin_panel/expenses/categories.html", {"categories": categories})
+
+
+@staff_required(roles=("admin", "accountant"))
+@audit_action("created_expense_category", model_name="ExpenseCategory", get_object_id=lambda request: None)
+def expense_category_create(request):
+    if request.method == "POST":
+        form = ExpenseCategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save()
+            messages.success(request, f"Category '{category.name}' created.")
+            return redirect("admin_panel:expense_category_list")
+    else:
+        form = ExpenseCategoryForm()
+    return render(request, "admin_panel/expenses/category_form.html", {"form": form})
 
 
 @staff_required(roles=("admin", "accountant"))

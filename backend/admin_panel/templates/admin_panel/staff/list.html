@@ -1,0 +1,66 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Staff Users — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Staff Users</h1>
+    <p class="eo-subtitle">Admins, sales agents, and accountants with admin panel access.</p>
+  </div>
+  <a href="{% url 'admin_panel:staff_create' %}" class="eo-btn-primary">New Staff User</a>
+</div>
+
+<form method="get" class="mb-4">
+  <select name="role" onchange="this.form.submit()" class="eo-input" style="width: auto;">
+    <option value="">All roles</option>
+    {% for value, label in role_choices %}
+      <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Commission</th>
+        <th>Account</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in staff %}
+      <tr>
+        <td>{{ user.get_full_name|default:"—" }}</td>
+        <td class="eo-subtitle">{{ user.username }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if user.role == 'admin' %}eo-stamp--blue
+            {% elif user.role == 'sales_agent' %}eo-stamp--green
+            {% else %}eo-stamp--gold{% endif %}">
+            {{ user.get_role_display }}
+          </span>
+        </td>
+        <td class="eo-num">
+          {% if user.role == 'sales_agent' %}
+            {% if user.agent_profile.commission_type == 'percent' %}{{ user.agent_profile.commission_rate }}%
+            {% else %}₱{{ user.agent_profile.commission_rate|floatformat:2|intcomma }}{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <span class="eo-stamp {% if user.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if user.is_active %}Active{% else %}Disabled{% endif %}
+          </span>
+        </td>
+        <td class="text-right"><a href="{% url 'admin_panel:staff_edit' user.id %}" class="eo-link">Edit</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No staff users yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

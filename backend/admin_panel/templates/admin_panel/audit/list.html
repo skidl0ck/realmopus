@@ -1,0 +1,83 @@
+{% extends "admin_panel/base.html" %}
+{% load admin_panel_extras %}
+{% block title %}Audit Log — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Audit Log</h1>
+<p class="eo-subtitle mb-6">Every meaningful staff action taken through the admin panel.</p>
+
+<form method="get" class="flex flex-wrap items-end gap-3 mb-6">
+  <div>
+    <label class="eo-eyebrow block mb-1">Actor</label>
+    <select name="actor" class="eo-input" style="width: auto;">
+      <option value="">All staff</option>
+      {% for actor in actors %}
+        <option value="{{ actor.id }}" {% if selected_actor == actor.id|stringformat:"s" %}selected{% endif %}>
+          {{ actor.get_full_name|default:actor.username }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Action</label>
+    <select name="action" class="eo-input" style="width: auto;">
+      <option value="">All actions</option>
+      {% for choice in action_choices %}
+        <option value="{{ choice }}" {% if selected_action == choice %}selected{% endif %}>{{ choice|humanize_action }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">From</label>
+    <input type="date" name="start" value="{{ start }}" class="eo-input" style="width: auto;">
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">To</label>
+    <input type="date" name="end" value="{{ end }}" class="eo-input" style="width: auto;">
+  </div>
+  <button type="submit" class="eo-btn-primary">Filter</button>
+  {% if selected_actor or selected_action or start or end %}
+    <a href="{% url 'admin_panel:audit_log_list' %}" class="eo-btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Actor</th>
+        <th>Action</th>
+        <th>Model</th>
+        <th>Object</th>
+        <th>IP</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td class="eo-num eo-subtitle">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ log.actor.get_full_name|default:log.actor.username|default:"—" }}</td>
+        <td>{{ log.action|humanize_action }}</td>
+        <td class="eo-subtitle">{{ log.model_name|default:"—" }}</td>
+        <td class="eo-num eo-subtitle">{{ log.object_id|default:"—"|truncatechars:12 }}</td>
+        <td class="eo-subtitle eo-num">{{ log.ip_address|default:"—" }}</td>
+        <td>
+          {% if log.details %}
+          <details>
+            <summary class="eo-link text-sm" style="cursor: pointer;">Details</summary>
+            <pre class="eo-subtitle text-xs mt-1" style="white-space: pre-wrap;">{{ log.details }}</pre>
+          </details>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center eo-subtitle py-6">No matching audit log entries.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if logs|length >= 500 %}
+<p class="eo-subtitle text-xs mt-3">Showing the most recent 500 matching entries — narrow the filters above to see more precisely.</p>
+{% endif %}
+{% endblock %}
