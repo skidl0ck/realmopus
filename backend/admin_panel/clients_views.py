@@ -3,10 +3,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.models import User
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("clients", "view")
 def client_list(request):
     clients = (
         User.objects.filter(role=User.Role.CLIENT)
@@ -17,7 +17,7 @@ def client_list(request):
     return render(request, "admin_panel/clients/list.html", {"clients": clients})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("clients", "edit")
 @audit_action("toggled_client_active", model_name="User", get_object_id=lambda request, pk: pk)
 def client_toggle_active(request, pk):
     client = get_object_or_404(User, pk=pk, role=User.Role.CLIENT)

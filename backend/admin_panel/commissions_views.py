@@ -5,12 +5,12 @@ from django.utils import timezone
 from sales.models import Commission
 from expenses.models import Expense, ExpenseCategory
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 
 COMMISSION_EXPENSE_CATEGORY = "Agent Commissions"
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("commissions", "view")
 def commission_list(request):
     commissions = Commission.objects.select_related("agent", "contract", "contract__lot").order_by("-contract__created_at")
     status = request.GET.get("status")
@@ -23,7 +23,7 @@ def commission_list(request):
     })
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("commissions", "edit")
 @audit_action("released_commission", model_name="Commission", get_object_id=lambda request, pk: pk)
 def commission_release(request, pk):
     commission = get_object_or_404(Commission, pk=pk)

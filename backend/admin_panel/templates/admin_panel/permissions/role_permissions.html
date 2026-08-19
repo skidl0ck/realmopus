@@ -1,0 +1,37 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Role Permissions — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Role Permissions</h1>
+<p class="eo-subtitle mb-6">
+  Control which sections Sales Agents and Accountants can access. Admin always has full
+  access regardless of these settings — a misconfiguration here can never lock every admin out.
+  Staff Users, Document/Business Settings, and the Audit Log are permanently admin-only and
+  don't appear here.
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="space-y-4">
+    {% for row in matrix %}
+    <div class="eo-card eo-card-pad">
+      <h2 class="eo-display font-semibold text-base mb-3">{{ row.section_label }}</h2>
+      <table class="eo-table">
+        <thead>
+          <tr><th>Action</th><th>Sales Agent</th><th>Accountant</th></tr>
+        </thead>
+        <tbody>
+          {% for cell in row.cells %}
+          <tr>
+            <td>{{ cell.action_label }}</td>
+            <td><input type="checkbox" name="{{ cell.field_name_agent }}" {% if cell.sales_agent_checked %}checked{% endif %} class="eo-checkbox"></td>
+            <td><input type="checkbox" name="{{ cell.field_name_accountant }}" {% if cell.accountant_checked %}checked{% endif %} class="eo-checkbox"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="submit" class="eo-btn-primary mt-6">Save Permissions</button>
+</form>
+{% endblock %}

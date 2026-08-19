@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views
+from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views, permissions_views
 
 app_name = "admin_panel"
 
@@ -79,4 +79,6 @@ urlpatterns = [
 
     path('clients/', clients_views.client_list, name='client_list'),
     path('clients/<uuid:pk>/toggle-active/', clients_views.client_toggle_active, name='client_toggle_active'),
+
+    path('settings/role-permissions/', permissions_views.role_permissions, name='role_permissions'),
 ]

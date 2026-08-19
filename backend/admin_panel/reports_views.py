@@ -11,13 +11,12 @@ from sales.models import Contract, Installment, Commission
 from expenses.models import Expense
 from core.reports import csv_response, pdf_response
 
-from .decorators import staff_required
+from .decorators import dynamic_permission
 from .report_utils import parse_date_range
 
-REPORT_ROLES = ("admin", "accountant")
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def reports_index(request):
     reports = [
         {"title": "Collections Report", "description": "Payments received over a date range.", "url": reverse("admin_panel:collections_report")},
@@ -50,7 +49,7 @@ def _collections_data(request):
     return headers, rows, totals, start, end, range_param
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def collections_report(request):
     headers, rows, totals, start, end, range_param = _collections_data(request)
     return render(request, "admin_panel/reports/generic_list.html", {
@@ -62,13 +61,13 @@ def collections_report(request):
     })
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def collections_report_csv(request):
     headers, rows, totals, start, end, _ = _collections_data(request)
     return csv_response(f"collections_{start}_{end}.csv", headers, rows)
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def collections_report_pdf(request):
     headers, rows, totals, start, end, _ = _collections_data(request)
     return pdf_response(f"collections_{start}_{end}.pdf", "Collections Report", headers, rows,
@@ -114,7 +113,7 @@ def _aging_data():
     return headers, rows, totals, buckets, today
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def aging_report(request):
     headers, rows, totals, buckets, today = _aging_data()
     return render(request, "admin_panel/reports/aging.html", {
@@ -124,13 +123,13 @@ def aging_report(request):
     })
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def aging_report_csv(request):
     headers, rows, totals, buckets, today = _aging_data()
     return csv_response(f"aging_{today}.csv", headers, rows)
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def aging_report_pdf(request):
     headers, rows, totals, buckets, today = _aging_data()
     return pdf_response(f"aging_{today}.pdf", "Aging Report", headers, rows,
@@ -160,7 +159,7 @@ def _sales_data(request):
     return headers, rows, totals, start, end, range_param
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def sales_report(request):
     headers, rows, totals, start, end, range_param = _sales_data(request)
     return render(request, "admin_panel/reports/generic_list.html", {
@@ -172,13 +171,13 @@ def sales_report(request):
     })
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def sales_report_csv(request):
     headers, rows, totals, start, end, _ = _sales_data(request)
     return csv_response(f"sales_{start}_{end}.csv", headers, rows)
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def sales_report_pdf(request):
     headers, rows, totals, start, end, _ = _sales_data(request)
     return pdf_response(f"sales_{start}_{end}.pdf", "Sales Report", headers, rows,
@@ -206,7 +205,7 @@ def _expense_data(request):
     return headers, rows, totals, start, end, range_param
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def expense_report(request):
     headers, rows, totals, start, end, range_param = _expense_data(request)
     return render(request, "admin_panel/reports/generic_list.html", {
@@ -218,13 +217,13 @@ def expense_report(request):
     })
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def expense_report_csv(request):
     headers, rows, totals, start, end, _ = _expense_data(request)
     return csv_response(f"expenses_{start}_{end}.csv", headers, rows)
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def expense_report_pdf(request):
     headers, rows, totals, start, end, _ = _expense_data(request)
     return pdf_response(f"expenses_{start}_{end}.pdf", "Expense Report", headers, rows,
@@ -254,7 +253,7 @@ def _commission_data(request):
     return headers, rows, totals, start, end, range_param
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def commission_report(request):
     headers, rows, totals, start, end, range_param = _commission_data(request)
     return render(request, "admin_panel/reports/generic_list.html", {
@@ -266,13 +265,13 @@ def commission_report(request):
     })
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def commission_report_csv(request):
     headers, rows, totals, start, end, _ = _commission_data(request)
     return csv_response(f"commissions_{start}_{end}.csv", headers, rows)
 
 
-@staff_required(roles=REPORT_ROLES)
+@dynamic_permission("reports", "view")
 def commission_report_pdf(request):
     headers, rows, totals, start, end, _ = _commission_data(request)
     return pdf_response(f"commissions_{start}_{end}.pdf", "Commission Report", headers, rows,

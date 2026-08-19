@@ -41,13 +41,13 @@ def staff_create(request):
 def staff_edit(request, pk):
     user = get_object_or_404(User.objects.select_related("agent_profile"), pk=pk, role__in=STAFF_ROLES)
     if request.method == "POST":
-        form = StaffEditForm(request.POST, user=user)
+        form = StaffEditForm(request.POST, user=user, editor=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "Staff user updated.")
             return redirect("admin_panel:staff_list")
     else:
-        form = StaffEditForm(user=user)
+        form = StaffEditForm(user=user, editor=request.user)
     return render(request, "admin_panel/staff/form.html", {
         "form": form, "title": f"Edit {user.get_full_name() or user.username}", "is_create": False, "staff_user": user,
     })

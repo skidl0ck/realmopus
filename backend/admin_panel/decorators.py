@@ -51,6 +51,49 @@ def staff_required(view_func=None, roles=STAFF_ROLES):
     return decorator
 
 
+def dynamic_permission(section: str, action: str):
+    """
+    Section/action-level access control for sales_agent and accountant roles,
+    configurable via the Role Permissions settings page (admin-only). Admin
+    always has full access — hardcoded here, never looked up in the
+    RolePermission table, so a misconfiguration can never lock every admin out.
+
+    A handful of especially sensitive views deliberately do NOT use this
+    decorator and stay on the static @staff_required(roles=("admin",)) instead:
+    Staff Users management, Document/Business Settings, the Audit Log, and
+    Contract.set_commission specifically (see sales_views.py for why that one
+    action is carved out even though the rest of Contracts is configurable).
+
+    Usage: @dynamic_permission("lots", "edit")
+    """
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            login_url = reverse("admin_panel:login")
+            if not request.user.is_authenticated:
+                return redirect(f"{login_url}?{REDIRECT_FIELD_NAME}={request.path}")
+            if request.user.role not in STAFF_ROLES:
+                django_logout(request)
+                messages.error(request, "That account doesn't have permission for this area.")
+                return redirect(login_url)
+            if request.user.role == "admin":
+                return view_func(request, *args, **kwargs)
+
+            from .models import RolePermission
+            has_access = RolePermission.objects.filter(
+                role=request.user.role, section=section, action=action, can_access=True
+            ).exists()
+            if not has_access:
+                messages.error(request, "You don't have permission to access that page.")
+                return redirect("admin_panel:dashboard")
+            return view_func(request, *args, **kwargs)
+
+        return _wrapped
+
+    return decorator
+
+
 def audit_action(action: str, model_name: str = "", get_object_id=None):
     """
     Logs a StaffAuditLog entry after a view completes successfully (only for

@@ -70,3 +70,64 @@ class PlatformSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class RolePermission(models.Model):
+    """
+    Configurable section/action access for Sales Agent and Accountant roles.
+    Admin always has full access, hardcoded in the permission-checking decorator
+    — never through this table, so a misconfiguration can never lock every admin
+    out. A few especially sensitive areas (Staff Users, Document/Business
+    Settings, Audit Log, and Contract.set_commission specifically) are
+    deliberately excluded from this system entirely and stay permanently
+    admin-only, as a safety rail.
+    """
+
+    class Role(models.TextChoices):
+        SALES_AGENT = "sales_agent", "Sales Agent"
+        ACCOUNTANT = "accountant", "Accountant"
+
+    class Section(models.TextChoices):
+        PROJECTS = "projects", "Projects"
+        LOTS = "lots", "Lots"
+        RESERVATIONS = "reservations", "Reservations"
+        CONTRACTS = "contracts", "Contracts"
+        PAYMENTS = "payments", "Payments"
+        EXPENSES = "expenses", "Expenses"
+        CASH_FLOW = "cash_flow", "Cash Flow"
+        COMMISSIONS = "commissions", "Commissions"
+        REPORTS = "reports", "Reports"
+        CLIENTS = "clients", "Clients"
+
+    class Action(models.TextChoices):
+        VIEW = "view", "View"
+        CREATE = "create", "Create"
+        EDIT = "edit", "Edit"
+
+    role = models.CharField(max_length=20, choices=Role.choices)
+    section = models.CharField(max_length=20, choices=Section.choices)
+    action = models.CharField(max_length=10, choices=Action.choices)
+    can_access = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("role", "section", "action")
+        ordering = ["section", "action", "role"]
+
+    def __str__(self):
+        return f"{self.get_role_display()} / {self.get_section_display()} / {self.get_action_display()}: {self.can_access}"
+
+
+# Which actions are meaningful for each section — drives both the settings-page
+# matrix and what a missing RolePermission row should be treated as (no row = no access).
+SECTION_ACTIONS = {
+    RolePermission.Section.PROJECTS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
+    RolePermission.Section.LOTS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
+    RolePermission.Section.RESERVATIONS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
+    RolePermission.Section.CONTRACTS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
+    RolePermission.Section.PAYMENTS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE],
+    RolePermission.Section.EXPENSES: [RolePermission.Action.VIEW, RolePermission.Action.CREATE],
+    RolePermission.Section.CASH_FLOW: [RolePermission.Action.VIEW],
+    RolePermission.Section.COMMISSIONS: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
+    RolePermission.Section.REPORTS: [RolePermission.Action.VIEW],
+    RolePermission.Section.CLIENTS: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
+}

@@ -36,6 +36,20 @@
     .eo-nav-link:hover { color: var(--ink); border-left-color: var(--hairline); }
     .eo-nav-link.active { color: var(--ledger); border-left-color: var(--ledger); background: rgba(31,93,69,0.06); }
 
+    .eo-nav-group-toggle {
+      display: flex; width: 100%; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 500; color: var(--muted);
+      border-left: 2px solid transparent; background: none; border-top: none; border-right: none;
+      border-bottom: none; text-align: left; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.12s ease;
+    }
+    .eo-nav-group-toggle:hover { color: var(--ink); border-left-color: var(--hairline); }
+    .eo-nav-group-toggle.active { color: var(--ledger); border-left-color: var(--ledger); }
+    .eo-nav-chevron { font-size: 0.75rem; transition: transform 0.15s ease; display: inline-block; }
+    .eo-nav-chevron.open { transform: rotate(180deg); }
+    .eo-nav-subgroup { padding-left: 0.75rem; }
+    .eo-nav-subgroup .eo-nav-link { font-size: 0.8125rem; }
+
     .eo-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.5rem; color: var(--ink); letter-spacing: -0.01em; }
     .eo-subtitle { color: var(--muted); font-size: 0.875rem; }
 
@@ -101,34 +115,124 @@
       <p class="eo-wordmark text-lg px-3 mb-0.5">EstateOS</p>
       <p class="eo-eyebrow px-3 mb-6">{{ user.get_role_display }}</p>
       <nav class="space-y-0.5">
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 0;">Home</p>
+        <a href="{% url 'admin_panel:dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Overview</a>
         <a href="{% url 'admin_panel:notification_list' %}" class="eo-nav-link {% if 'notification' in request.resolver_match.url_name %}active{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
           <span>Notifications</span>
           {% if unread_notification_count %}
             <span class="eo-stamp eo-stamp--gold" style="padding: 0.0625rem 0.375rem; transform: none;">{{ unread_notification_count }}</span>
           {% endif %}
         </a>
-        <a href="{% url 'admin_panel:dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Overview</a>
+
+        {% if can_view.projects or can_view.lots or can_view.reservations or can_view.contracts %}
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">Sales</p>
+        {% if can_view.projects %}
         <a href="{% url 'admin_panel:project_list' %}" class="eo-nav-link {% if 'project' in request.resolver_match.url_name %}active{% endif %}">Projects</a>
-        <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if 'lot_list' == request.resolver_match.url_name or 'lot_create' == request.resolver_match.url_name or 'lot_edit' == request.resolver_match.url_name %}active{% endif %}">Lots</a>
-        <a href="{% url 'admin_panel:lot_bulk_upload' %}" class="eo-nav-link {% if 'bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Lots (CSV)</a>
+        {% endif %}
+
+        {% if can_view.lots %}
+        <div class="eo-nav-group">
+          <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'lots' %}active{% endif %}" data-group="lots">
+            <span>Lots</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'lots' %}open{% endif %}">⌄</span>
+          </button>
+          <div class="eo-nav-subgroup" data-group-panel="lots" style="display: {% if nav_open_group == 'lots' %}block{% else %}none{% endif %};">
+            <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'lot_list' or request.resolver_match.url_name == 'lot_create' or request.resolver_match.url_name == 'lot_edit' or request.resolver_match.url_name == 'lot_detail' %}active{% endif %}">Browse Lots</a>
+            <a href="{% url 'admin_panel:lot_bulk_upload' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'lot_bulk_upload' %}active{% endif %}">Upload Lots (CSV)</a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if can_view.reservations %}
         <a href="{% url 'admin_panel:reservation_list' %}" class="eo-nav-link {% if 'reservation' in request.resolver_match.url_name %}active{% endif %}">Reservations</a>
+        {% endif %}
+        {% if can_view.contracts %}
         <a href="{% url 'admin_panel:contract_list' %}" class="eo-nav-link {% if 'contract' in request.resolver_match.url_name %}active{% endif %}">Contracts</a>
-        {% if user.role == 'admin' or user.role == 'accountant' %}
+        {% endif %}
+        {% endif %}
+
+        {% if can_view.payments or can_view.expenses or can_view.cash_flow or can_view.commissions or can_view.reports %}
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">Finance</p>
+        {% if can_view.payments %}
         <a href="{% url 'admin_panel:payment_list' %}" class="eo-nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">Payments</a>
-        <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Expenses</a>
-        <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-nav-link {% if 'expense_bulk_upload' in request.resolver_match.url_name %}active{% endif %}">Upload Expenses (CSV)</a>
-        <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if 'cash_flow' in request.resolver_match.url_name %}active{% endif %}">Cash Flow</a>
+        {% endif %}
+
+        {% if can_view.expenses %}
+        <div class="eo-nav-group">
+          <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'expenses' %}active{% endif %}" data-group="expenses">
+            <span>Expenses</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'expenses' %}open{% endif %}">⌄</span>
+          </button>
+          <div class="eo-nav-subgroup" data-group-panel="expenses" style="display: {% if nav_open_group == 'expenses' %}block{% else %}none{% endif %};">
+            <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Browse Expenses</a>
+            <a href="{% url 'admin_panel:expense_category_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_category_list' or request.resolver_match.url_name == 'expense_category_create' %}active{% endif %}">Categories</a>
+            <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_bulk_upload' %}active{% endif %}">Upload Expenses (CSV)</a>
+            <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'cash_flow_dashboard' %}active{% endif %}">Cash Flow</a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if can_view.commissions %}
         <a href="{% url 'admin_panel:commission_list' %}" class="eo-nav-link {% if 'commission' in request.resolver_match.url_name %}active{% endif %}">Commissions</a>
+        {% endif %}
+        {% if can_view.reports %}
         <a href="{% url 'admin_panel:reports_index' %}" class="eo-nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">Reports</a>
+        {% endif %}
+        {% endif %}
+
+        {% if can_view.clients or user.role == 'admin' %}
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">People</p>
+        {% if can_view.clients %}
         <a href="{% url 'admin_panel:client_list' %}" class="eo-nav-link {% if 'client' in request.resolver_match.url_name %}active{% endif %}">Clients</a>
         {% endif %}
         {% if user.role == 'admin' %}
         <a href="{% url 'admin_panel:staff_list' %}" class="eo-nav-link {% if 'staff' in request.resolver_match.url_name %}active{% endif %}">Staff Users</a>
-        <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if 'document_settings' in request.resolver_match.url_name %}active{% endif %}">Document Settings</a>
-        <a href="{% url 'admin_panel:business_settings' %}" class="eo-nav-link {% if 'business_settings' in request.resolver_match.url_name %}active{% endif %}">Business Settings</a>
-        <a href="{% url 'admin_panel:audit_log_list' %}" class="eo-nav-link {% if 'audit_log' in request.resolver_match.url_name %}active{% endif %}">Audit Log</a>
+        {% endif %}
+        {% endif %}
+
+        {% if user.role == 'admin' %}
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">Administration</p>
+        <div class="eo-nav-group">
+          <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'settings' %}active{% endif %}" data-group="settings">
+            <span>Settings</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'settings' %}open{% endif %}">⌄</span>
+          </button>
+          <div class="eo-nav-subgroup" data-group-panel="settings" style="display: {% if nav_open_group == 'settings' %}block{% else %}none{% endif %};">
+            <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'document_settings' %}active{% endif %}">Document Settings</a>
+            <a href="{% url 'admin_panel:business_settings' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'business_settings' %}active{% endif %}">Business Settings</a>
+            <a href="{% url 'admin_panel:audit_log_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'audit_log_list' %}active{% endif %}">Audit Log</a>
+            <a href="{% url 'admin_panel:role_permissions' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'role_permissions' %}active{% endif %}">Role Permissions</a>
+          </div>
+        </div>
         {% endif %}
       </nav>
+      <script>
+        (function () {
+          document.querySelectorAll('.eo-nav-group-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var panel = document.querySelector('[data-group-panel="' + btn.dataset.group + '"]');
+              var chevron = btn.querySelector('.eo-nav-chevron');
+              var isOpen = panel.style.display !== 'none';
+
+              document.querySelectorAll('[data-group-panel]').forEach(function (otherPanel) {
+                if (otherPanel !== panel) {
+                  otherPanel.style.display = 'none';
+                }
+              });
+              document.querySelectorAll('.eo-nav-group-toggle').forEach(function (otherBtn) {
+                if (otherBtn !== btn) {
+                  otherBtn.classList.remove('active');
+                  otherBtn.querySelector('.eo-nav-chevron').classList.remove('open');
+                }
+              });
+
+              panel.style.display = isOpen ? 'none' : 'block';
+              chevron.classList.toggle('open', !isOpen);
+              btn.classList.toggle('active', !isOpen);
+            });
+          });
+        })();
+      </script>
       <div class="mt-8 px-3 space-y-2">
         <a href="{% url 'admin_panel:change_password' %}" class="block text-sm" style="color: var(--muted);">Change password</a>
         <form method="post" action="{% url 'admin_panel:logout' %}">

@@ -374,6 +374,7 @@ class StaffCreateForm(forms.Form):
 
 
 class StaffEditForm(forms.Form):
+    role = forms.ChoiceField(choices=STAFF_ROLE_CHOICES, widget=forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_role"}))
     first_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     last_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
     email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
@@ -383,7 +384,10 @@ class StaffEditForm(forms.Form):
         required=False, widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES}),
         help_text="Leave blank to keep their current password.",
     )
-    # Only present/used when editing a sales agent — see __init__/save().
+    # Only required when role == sales_agent (whether they already were one, or are
+    # being switched to one now) — see clean()/save(). Pre-filled from any existing
+    # agent profile even if their current role isn't sales_agent, so switching someone
+    # back to Agent later restores their previous commission settings.
     commission_type = forms.ChoiceField(
         choices=SalesAgentProfile.CommissionType.choices, required=False, widget=forms.Select(attrs={"class": INPUT_CLASSES})
     )
@@ -392,22 +396,35 @@ class StaffEditForm(forms.Form):
     )
     profile_active = forms.BooleanField(required=False, label="Eligible for new commissions")
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, editor=None, **kwargs):
         self.user = user
+        self.editor = editor
+        self.is_self_edit = bool(user and editor and user.pk == editor.pk)
         initial = kwargs.pop("initial", {})
         if user is not None:
             initial.update({
+                "role": user.role,
                 "first_name": user.first_name, "last_name": user.last_name,
                 "email": user.email, "phone_number": user.phone_number,
                 "account_active": user.is_active,
             })
-            if user.role == User.Role.SALES_AGENT:
+            agent_profile = getattr(user, "agent_profile", None)
+            if agent_profile:
                 initial.update({
-                    "commission_type": user.agent_profile.commission_type,
-                    "commission_rate": user.agent_profile.commission_rate,
-                    "profile_active": user.agent_profile.is_active,
+                    "commission_type": agent_profile.commission_type,
+                    "commission_rate": agent_profile.commission_rate,
+                    "profile_active": agent_profile.is_active,
                 })
+            else:
+                initial.setdefault("profile_active", True)
         super().__init__(*args, initial=initial, **kwargs)
+
+        if self.is_self_edit:
+            # Editing your own account: role stays fixed no matter what's submitted —
+            # Django's disabled=True ignores POST data for this field entirely, so this
+            # can't be bypassed by tampering with the form. Prevents an admin (especially
+            # the only one) from ever locking themselves out through this form.
+            self.fields["role"].disabled = True
 
     def clean_new_password(self):
         password = self.cleaned_data.get("new_password")
@@ -417,7 +434,7 @@ class StaffEditForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        if self.user and self.user.role == User.Role.SALES_AGENT:
+        if cleaned.get("role") == User.Role.SALES_AGENT:
             if cleaned.get("commission_type") in (None, ""):
                 self.add_error("commission_type", "Required for sales agents.")
             if cleaned.get("commission_rate") is None:
@@ -426,12 +443,13 @@ class StaffEditForm(forms.Form):
 
     def save(self):
         user = self.user
+        user.role = self.cleaned_data["role"]
         user.first_name = self.cleaned_data["first_name"]
         user.last_name = self.cleaned_data["last_name"]
         user.email = self.cleaned_data["email"]
         user.phone_number = self.cleaned_data["phone_number"]
         user.is_active = self.cleaned_data["account_active"]
-        update_fields = ["first_name", "last_name", "email", "phone_number", "is_active"]
+        update_fields = ["role", "first_name", "last_name", "email", "phone_number", "is_active"]
 
         new_password = self.cleaned_data.get("new_password")
         if new_password:
@@ -441,9 +459,27 @@ class StaffEditForm(forms.Form):
         user.save(update_fields=update_fields)
 
         if user.role == User.Role.SALES_AGENT:
-            profile = user.agent_profile
-            profile.commission_type = self.cleaned_data["commission_type"]
-            profile.commission_rate = self.cleaned_data["commission_rate"]
-            profile.is_active = self.cleaned_data["profile_active"]
-            profile.save(update_fields=["commission_type", "commission_rate", "is_active"])
+            # get_or_create rather than assuming user.agent_profile exists — a user
+            # being switched TO sales_agent for the first time (or returning to it
+            # after a prior downgrade left the profile untouched) both land here safely.
+            # defaults= is required here: commission_type/commission_rate are NOT NULL
+            # with no model-level default, so a bare get_or_create(user=user) would try
+            # to INSERT with only the user set and fail the NOT NULL constraint before
+            # ever reaching the field assignments below.
+            profile, created = SalesAgentProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "commission_type": self.cleaned_data["commission_type"],
+                    "commission_rate": self.cleaned_data["commission_rate"],
+                    "is_active": self.cleaned_data["profile_active"],
+                },
+            )
+            if not created:
+                profile.commission_type = self.cleaned_data["commission_type"]
+                profile.commission_rate = self.cleaned_data["commission_rate"]
+                profile.is_active = self.cleaned_data["profile_active"]
+                profile.save(update_fields=["commission_type", "commission_rate", "is_active"])
+        # If role != sales_agent: their agent_profile (if any) is deliberately left
+        # untouched — kept as historical record rather than deactivated, per design.
+
         return user
