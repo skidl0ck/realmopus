@@ -43,6 +43,11 @@
         <td class="text-right">
           {% if payment.receipt.pdf_file %}
           <a href="{{ payment.receipt.pdf_file.url }}" class="eo-link" target="_blank">Receipt</a>
+          {% elif payment.receipt %}
+          <form method="post" action="{% url 'admin_panel:payment_regenerate_receipt' payment.id %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="eo-link">Generate Receipt</button>
+          </form>
           {% endif %}
         </td>
       </tr>

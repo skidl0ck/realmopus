@@ -43,6 +43,10 @@
   {% if contract.soa_pdf %}
   <a href="{{ contract.soa_pdf.url }}" class="eo-btn-secondary" target="_blank">Download Statement of Account</a>
   {% endif %}
+  <form method="post" action="{% url 'admin_panel:contract_regenerate_documents' contract.id %}">
+    {% csrf_token %}
+    <button type="submit" class="eo-btn-secondary">{% if contract.contract_pdf and contract.soa_pdf %}Regenerate Documents{% else %}Generate Documents{% endif %}</button>
+  </form>
   {% if not contract.installments.all and contract.payment_plan_type == 'installment' %}
   <form method="post" action="{% url 'admin_panel:contract_generate_schedule' contract.id %}">
     {% csrf_token %}

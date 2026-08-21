@@ -28,12 +28,14 @@ urlpatterns = [
     path('contracts/', sales_views.contract_list, name='contract_list'),
     path('contracts/new/', sales_views.contract_create, name='contract_create'),
     path('contracts/<uuid:pk>/', sales_views.contract_detail, name='contract_detail'),
+    path('contracts/<uuid:pk>/regenerate-documents/', sales_views.contract_regenerate_documents, name='contract_regenerate_documents'),
     path('contracts/<uuid:pk>/add-fee/', sales_views.contract_add_fee, name='contract_add_fee'),
     path('contracts/<uuid:pk>/generate-schedule/', sales_views.contract_generate_schedule, name='contract_generate_schedule'),
     path('contracts/<uuid:pk>/set-commission/', sales_views.contract_set_commission, name='contract_set_commission'),
 
     path('payments/', payments_views.payment_list, name='payment_list'),
     path('payments/new/', payments_views.payment_create, name='payment_create'),
+    path('payments/<uuid:pk>/regenerate-receipt/', payments_views.payment_regenerate_receipt, name='payment_regenerate_receipt'),
 
     path('expenses/', expenses_views.expense_list, name='expense_list'),
     path('expenses/new/', expenses_views.expense_create, name='expense_create'),

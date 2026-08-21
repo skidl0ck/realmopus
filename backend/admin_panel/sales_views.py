@@ -8,11 +8,11 @@ from sales.services import generate_amortization_schedule
 from sales.pdf import regenerate_contract_documents
 from properties.models import Reservation
 
-from .decorators import staff_required, audit_action
+from .decorators import staff_required, dynamic_permission, audit_action
 from .forms import ContractForm, FeeForm
 
 
-@staff_required
+@dynamic_permission("contracts", "view")
 def contract_list(request):
     contracts = Contract.objects.select_related("lot", "client", "agent").order_by("-created_at")
     status = request.GET.get("status")
@@ -25,7 +25,7 @@ def contract_list(request):
     })
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("contracts", "create")
 @audit_action("created_contract", model_name="Contract", get_object_id=lambda request: None)
 def contract_create(request):
     reservation = None
@@ -76,7 +76,7 @@ def _generate_contract_number():
     return f"GV-{year}-{count:04d}"
 
 
-@staff_required
+@dynamic_permission("contracts", "view")
 def contract_detail(request, pk):
     contract = get_object_or_404(
         Contract.objects.select_related("lot", "client", "agent", "commission")
@@ -90,7 +90,24 @@ def contract_detail(request, pk):
     })
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("contracts", "edit")
+@audit_action("regenerated_contract_documents", model_name="Contract", get_object_id=lambda request, pk: pk)
+def contract_regenerate_documents(request, pk):
+    contract = get_object_or_404(Contract, pk=pk)
+    regenerate_contract_documents(contract, include_contract_pdf=True)
+    contract.refresh_from_db()
+    if contract.contract_pdf and contract.soa_pdf:
+        messages.success(request, "Documents regenerated.")
+    else:
+        messages.error(
+            request,
+            "Document generation failed — check the server console for a traceback "
+            "(often a missing or misnamed template folder).",
+        )
+    return redirect("admin_panel:contract_detail", pk=pk)
+
+
+@dynamic_permission("contracts", "edit")
 @audit_action("added_fee", model_name="Fee", get_object_id=lambda request, pk: pk)
 def contract_add_fee(request, pk):
     contract = get_object_or_404(Contract, pk=pk)
@@ -104,7 +121,7 @@ def contract_add_fee(request, pk):
     return redirect("admin_panel:contract_detail", pk=pk)
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("contracts", "edit")
 @audit_action("generated_schedule", model_name="Contract", get_object_id=lambda request, pk: pk)
 def contract_generate_schedule(request, pk):
     contract = get_object_or_404(Contract, pk=pk)
