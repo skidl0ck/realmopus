@@ -3,17 +3,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from properties.models import Project
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 from .forms import ProjectForm
 
 
-@staff_required
+@dynamic_permission("projects", "view")
 def project_list(request):
     projects = Project.objects.all().order_by("name")
     return render(request, "admin_panel/projects/list.html", {"projects": projects})
 
 
-@staff_required(roles=("admin",))
+@dynamic_permission("projects", "create")
 @audit_action("created_project", model_name="Project", get_object_id=lambda request: None)
 def project_create(request):
     if request.method == "POST":
@@ -27,7 +27,7 @@ def project_create(request):
     return render(request, "admin_panel/projects/form.html", {"form": form, "title": "New Project"})
 
 
-@staff_required(roles=("admin",))
+@dynamic_permission("projects", "edit")
 @audit_action("edited_project", model_name="Project", get_object_id=lambda request, pk: pk)
 def project_edit(request, pk):
     project = get_object_or_404(Project, pk=pk)

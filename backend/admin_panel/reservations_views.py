@@ -6,11 +6,11 @@ from properties.services import expire_stale_reservations
 from core.services import notify
 from core.models import Notification
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 from .forms import ReservationForm
 
 
-@staff_required
+@dynamic_permission("reservations", "view")
 def reservation_list(request):
     expire_stale_reservations()  # lazy cleanup — catches anything past its grace period
 
@@ -26,7 +26,7 @@ def reservation_list(request):
     })
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("reservations", "create")
 @audit_action("created_reservation", model_name="Reservation", get_object_id=lambda request: None)
 def reservation_create(request):
     if request.method == "POST":
@@ -49,7 +49,7 @@ def reservation_create(request):
     return render(request, "admin_panel/reservations/form.html", {"form": form, "title": "New Reservation"})
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("reservations", "edit")
 @audit_action("cancelled_reservation", model_name="Reservation", get_object_id=lambda request, pk: pk)
 def reservation_cancel(request, pk):
     reservation = get_object_or_404(Reservation, pk=pk)

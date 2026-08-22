@@ -7,14 +7,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from properties.models import Project, Lot, LotImage
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 from .forms import LotForm, LotCSVUploadForm
 
 LOT_CSV_REQUIRED_COLUMNS = {"project", "block_number", "lot_number", "area_sqm", "price_per_sqm"}
 LOT_CSV_OPTIONAL_COLUMNS = {"total_price", "status"}
 
 
-@staff_required
+@dynamic_permission("lots", "view")
 def lot_list(request):
     lots = Lot.objects.select_related("project").order_by("project__name", "block_number", "lot_number")
     project_id = request.GET.get("project")
@@ -54,7 +54,7 @@ def _save_uploaded_images(lot, files, request):
     return len(to_save), len(ignored)
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "create")
 @audit_action("created_lot", model_name="Lot", get_object_id=lambda request: None)
 def lot_create(request):
     if request.method == "POST":
@@ -72,7 +72,7 @@ def lot_create(request):
     return render(request, "admin_panel/lots/form.html", {"form": form, "title": "New Lot", "is_create": True})
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "edit")
 @audit_action("edited_lot", model_name="Lot", get_object_id=lambda request, pk: pk)
 def lot_edit(request, pk):
     lot = get_object_or_404(Lot, pk=pk)
@@ -105,7 +105,7 @@ def _resolve_project(project_ref: str):
     return project
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "edit")
 @audit_action("bulk_uploaded_lots", model_name="Lot", get_object_id=lambda request: None)
 def lot_bulk_upload(request):
     result = None
@@ -170,13 +170,13 @@ def lot_bulk_upload(request):
     return render(request, "admin_panel/lots/upload.html", {"form": form, "result": result})
 
 
-@staff_required
+@dynamic_permission("lots", "view")
 def lot_detail(request, pk):
     lot = get_object_or_404(Lot.objects.select_related("project").prefetch_related("images"), pk=pk)
     return render(request, "admin_panel/lots/detail.html", {"lot": lot})
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "edit")
 @audit_action("uploaded_lot_images", model_name="Lot", get_object_id=lambda request, pk: pk)
 def lot_image_upload(request, pk):
     lot = get_object_or_404(Lot, pk=pk)
@@ -191,7 +191,7 @@ def lot_image_upload(request, pk):
     return redirect("admin_panel:lot_edit", pk=pk)
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "edit")
 @audit_action("set_lot_thumbnail", model_name="LotImage", get_object_id=lambda request, pk, image_id: image_id)
 def lot_image_set_thumbnail(request, pk, image_id):
     image = get_object_or_404(LotImage, pk=image_id, lot_id=pk)
@@ -201,7 +201,7 @@ def lot_image_set_thumbnail(request, pk, image_id):
     return redirect("admin_panel:lot_edit", pk=pk)
 
 
-@staff_required(roles=("admin", "sales_agent"))
+@dynamic_permission("lots", "edit")
 @audit_action("deleted_lot_image", model_name="LotImage", get_object_id=lambda request, pk, image_id: image_id)
 def lot_image_delete(request, pk, image_id):
     image = get_object_or_404(LotImage, pk=image_id, lot_id=pk)
