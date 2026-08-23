@@ -30,7 +30,7 @@
       {% for payment in payments %}
       <tr>
         <td class="eo-num">{{ payment.contract.contract_number }}</td>
-        <td class="eo-num">₱{{ payment.amount|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ payment.amount|floatformat:2|intcomma }}</td>
         <td class="eo-subtitle">{{ payment.get_method_display }}</td>
         <td>
           <span class="eo-stamp

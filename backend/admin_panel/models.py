@@ -47,6 +47,10 @@ class PlatformSettings(models.Model):
     default_reservation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=10000)
     reservation_hold_days = models.PositiveIntegerField(default=3)
     company_name = models.CharField(max_length=200, default="EstateOS")
+    currency_symbol = models.CharField(
+        max_length=5, default="₱",
+        help_text="Displayed throughout the site and on all documents. Purely a display label — no conversion is ever applied.",
+    )
     company_address = models.CharField(max_length=255, blank=True)
     company_logo = models.ImageField(upload_to="settings/", blank=True, null=True)
     support_email = models.EmailField(blank=True)

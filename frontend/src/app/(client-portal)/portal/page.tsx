@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
+import { useCurrencySymbol } from "@/lib/currency";
 import type { Contract } from "@/types";
 
 async function fetchMyContracts(): Promise<Contract[]> {
@@ -19,6 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function PortalOverviewPage() {
+  const currency = useCurrencySymbol();
   const { data: contracts, isLoading, isError } = useQuery({
     queryKey: ["my-contracts"],
     queryFn: fetchMyContracts,
@@ -59,23 +61,23 @@ export default function PortalOverviewPage() {
               <div>
                 <p className="text-stone-400">Total price</p>
                 <p className="font-medium">
-                  ₱{Number(contract.total_contract_price).toLocaleString()}
+                  {currency}{Number(contract.total_contract_price).toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-stone-400">Down payment</p>
-                <p className="font-medium">₱{Number(contract.down_payment).toLocaleString()}</p>
+                <p className="font-medium">{currency}{Number(contract.down_payment).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-stone-400">Total paid</p>
                 <p className="font-medium">
-                  ₱{Number(contract.total_paid ?? 0).toLocaleString()}
+                  {currency}{Number(contract.total_paid ?? 0).toLocaleString()}
                 </p>
               </div>
               <div>
                 <p className="text-stone-400">Balance</p>
                 <p className="font-medium text-emerald-800">
-                  ₱{Number(contract.outstanding_balance ?? 0).toLocaleString()}
+                  {currency}{Number(contract.outstanding_balance ?? 0).toLocaleString()}
                 </p>
               </div>
             </div>

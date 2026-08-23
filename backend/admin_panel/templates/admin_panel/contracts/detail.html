@@ -19,19 +19,19 @@
 
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
   <div class="eo-stat">
-    <p class="eo-stat-value">₱{{ contract.total_contract_price|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-value">{{ currency_symbol }}{{ contract.total_contract_price|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Total price</p>
   </div>
   <div class="eo-stat">
-    <p class="eo-stat-value">₱{{ contract.down_payment|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-value">{{ currency_symbol }}{{ contract.down_payment|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Down payment</p>
   </div>
   <div class="eo-stat">
-    <p class="eo-stat-value">₱{{ contract.total_paid|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-value">{{ currency_symbol }}{{ contract.total_paid|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Total paid</p>
   </div>
   <div class="eo-stat" style="border-top-color: var(--gold);">
-    <p class="eo-stat-value" style="color: var(--gold);">₱{{ contract.outstanding_balance|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-value" style="color: var(--gold);">{{ currency_symbol }}{{ contract.outstanding_balance|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Balance</p>
   </div>
 </div>
@@ -47,10 +47,10 @@
     {% csrf_token %}
     <button type="submit" class="eo-btn-secondary">{% if contract.contract_pdf and contract.soa_pdf %}Regenerate Documents{% else %}Generate Documents{% endif %}</button>
   </form>
-  {% if not contract.installments.all and contract.payment_plan_type == 'installment' %}
+  {% if not contract.installments.all %}
   <form method="post" action="{% url 'admin_panel:contract_generate_schedule' contract.id %}">
     {% csrf_token %}
-    <button type="submit" class="eo-btn-primary">Generate Amortization Schedule</button>
+    <button type="submit" class="eo-btn-primary">Generate Payment Schedule</button>
   </form>
   {% endif %}
   {% if contract.agent and not contract.commission %}
@@ -68,7 +68,7 @@
       {% for fee in contract.fees.all %}
       <div class="flex justify-between">
         <span class="eo-subtitle">{{ fee.name }} <span style="opacity: 0.7;">({{ fee.get_fee_type_display }})</span></span>
-        <span class="eo-num font-medium">₱{{ fee.amount|floatformat:2|intcomma }}</span>
+        <span class="eo-num font-medium">{{ currency_symbol }}{{ fee.amount|floatformat:2|intcomma }}</span>
       </div>
       {% empty %}
       <p class="eo-subtitle">No fees added.</p>
@@ -91,7 +91,7 @@
     {% if contract.commission %}
       <div class="space-y-2 text-sm">
         <div class="flex justify-between"><span class="eo-subtitle">Agent</span><span class="font-medium">{{ contract.agent.get_full_name }}</span></div>
-        <div class="flex justify-between"><span class="eo-subtitle">Amount</span><span class="eo-num font-medium">₱{{ contract.commission.amount|floatformat:2|intcomma }}</span></div>
+        <div class="flex justify-between"><span class="eo-subtitle">Amount</span><span class="eo-num font-medium">{{ currency_symbol }}{{ contract.commission.amount|floatformat:2|intcomma }}</span></div>
         <div class="flex justify-between"><span class="eo-subtitle">Status</span><span class="font-medium">{{ contract.commission.get_status_display }}</span></div>
       </div>
     {% else %}
@@ -105,7 +105,7 @@
   <table class="eo-table">
     <thead>
       <tr>
-        <th>#</th>
+        <th>Item</th>
         <th>Due date</th>
         <th>Amount due</th>
         <th>Paid</th>
@@ -115,10 +115,14 @@
     <tbody>
       {% for inst in contract.installments.all %}
       <tr>
-        <td class="eo-num">{{ inst.installment_number }}</td>
+        <td class="eo-num">
+          {% if inst.kind == 'down_payment' %}Down Payment
+          {% elif inst.kind == 'full_payment' %}Full Payment
+          {% else %}Installment #{{ inst.installment_number }}{% endif %}
+        </td>
         <td class="eo-num">{{ inst.due_date }}</td>
-        <td class="eo-num">₱{{ inst.amount_due|floatformat:2|intcomma }}</td>
-        <td class="eo-num">₱{{ inst.amount_paid|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ inst.amount_due|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ inst.amount_paid|floatformat:2|intcomma }}</td>
         <td>
           <span class="eo-stamp
             {% if inst.status == 'paid' %}eo-stamp--green
@@ -130,9 +134,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" class="text-center eo-subtitle py-6">
-        {% if contract.payment_plan_type == 'installment' %}No schedule generated yet.{% else %}Full payment plan — no schedule.{% endif %}
-      </td></tr>
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">No schedule generated yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

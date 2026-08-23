@@ -15,6 +15,11 @@ from .decorators import dynamic_permission
 from .report_utils import parse_date_range
 
 
+def _currency() -> str:
+    from .models import PlatformSettings
+    return PlatformSettings.load().currency_symbol
+
+
 
 @dynamic_permission("reports", "view")
 def reports_index(request):
@@ -31,6 +36,7 @@ def reports_index(request):
 # --- Collections / Payments report ---------------------------------------------
 
 def _collections_data(request):
+    cur = _currency()
     start, end, range_param = parse_date_range(request)
     payments = (
         Payment.objects.filter(status=Payment.Status.COMPLETED, paid_at__date__gte=start, paid_at__date__lte=end)
@@ -39,13 +45,13 @@ def _collections_data(request):
     )
     rows = [
         [p.paid_at.date().isoformat(), p.contract.contract_number,
-         p.contract.client.get_full_name() if p.contract.client else p.contract.buyer_full_name,
-         f"{p.amount:,.2f}", p.get_method_display()]
+         (p.contract.client.get_full_name() or p.contract.client.username) if p.contract.client else p.contract.buyer_full_name,
+         f"{cur}{p.amount:,.2f}", p.get_method_display()]
         for p in payments
     ]
     total = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0")
     headers = ["Date", "Contract #", "Buyer", "Amount", "Method"]
-    totals = ["", "", "", f"{total:,.2f}", "Total"]
+    totals = ["", "", "", f"{cur}{total:,.2f}", "Total"]
     return headers, rows, totals, start, end, range_param
 
 
@@ -77,6 +83,7 @@ def collections_report_pdf(request):
 # --- Aging report (snapshot as of today, no date range) ------------------------
 
 def _aging_data():
+    cur = _currency()
     today = timezone.localdate()
     overdue = (
         Installment.objects.exclude(status=Installment.Status.PAID)
@@ -103,13 +110,13 @@ def _aging_data():
         buckets[bucket_key] += inst.balance
         rows.append([
             inst.contract.contract_number,
-            inst.contract.client.get_full_name() if inst.contract.client else inst.contract.buyer_full_name,
-            inst.installment_number, inst.due_date.isoformat(), days_overdue, f"{inst.balance:,.2f}", bucket,
+            (inst.contract.client.get_full_name() or inst.contract.client.username) if inst.contract.client else inst.contract.buyer_full_name,
+            inst.installment_number, inst.due_date.isoformat(), days_overdue, f"{cur}{inst.balance:,.2f}", bucket,
         ])
     rows.sort(key=lambda r: r[4], reverse=True)
     headers = ["Contract #", "Buyer", "Installment #", "Due Date", "Days Overdue", "Balance", "Bucket"]
     grand_total = sum(buckets.values())
-    totals = ["", "", "", "", "", f"{grand_total:,.2f}", "Total"]
+    totals = ["", "", "", "", "", f"{cur}{grand_total:,.2f}", "Total"]
     return headers, rows, totals, buckets, today
 
 
@@ -139,6 +146,7 @@ def aging_report_pdf(request):
 # --- Sales report -----------------------------------------------------------------
 
 def _sales_data(request):
+    cur = _currency()
     start, end, range_param = parse_date_range(request)
     contracts = (
         Contract.objects.filter(contract_date__gte=start, contract_date__lte=end)
@@ -147,15 +155,15 @@ def _sales_data(request):
     )
     rows = [
         [c.contract_number, c.contract_date.isoformat(),
-         c.client.get_full_name() if c.client else c.buyer_full_name,
+         (c.client.get_full_name() or c.client.username) if c.client else c.buyer_full_name,
          c.lot.project.name, f"Blk {c.lot.block_number} Lot {c.lot.lot_number}",
-         c.agent.get_full_name() if c.agent else "—", c.get_payment_plan_type_display(),
-         f"{c.total_contract_price:,.2f}", c.get_status_display()]
+         (c.agent.get_full_name() or c.agent.username) if c.agent else "—", c.get_payment_plan_type_display(),
+         f"{cur}{c.total_contract_price:,.2f}", c.get_status_display()]
         for c in contracts
     ]
     total = contracts.aggregate(total=Sum("total_contract_price"))["total"] or Decimal("0")
     headers = ["Contract #", "Date", "Buyer", "Project", "Lot", "Agent", "Plan", "Total Price", "Status"]
-    totals = ["", "", "", "", "", "", "", f"{total:,.2f}", "Total"]
+    totals = ["", "", "", "", "", "", "", f"{cur}{total:,.2f}", "Total"]
     return headers, rows, totals, start, end, range_param
 
 
@@ -187,6 +195,7 @@ def sales_report_pdf(request):
 # --- Expense report -----------------------------------------------------------------
 
 def _expense_data(request):
+    cur = _currency()
     start, end, range_param = parse_date_range(request)
     expenses = (
         Expense.objects.filter(incurred_on__gte=start, incurred_on__lte=end)
@@ -196,12 +205,12 @@ def _expense_data(request):
     rows = [
         [e.incurred_on.isoformat(), e.description, e.get_scope_display(),
          e.project.name if e.project else "—", e.category.name,
-         f"{e.amount:,.2f}", e.recorded_by.get_full_name() if e.recorded_by else "—"]
+         f"{cur}{e.amount:,.2f}", (e.recorded_by.get_full_name() or e.recorded_by.username) if e.recorded_by else "—"]
         for e in expenses
     ]
     total = expenses.aggregate(total=Sum("amount"))["total"] or Decimal("0")
     headers = ["Date", "Description", "Scope", "Project", "Category", "Amount", "Recorded By"]
-    totals = ["", "", "", "", "", f"{total:,.2f}", "Total"]
+    totals = ["", "", "", "", "", f"{cur}{total:,.2f}", "Total"]
     return headers, rows, totals, start, end, range_param
 
 
@@ -235,6 +244,7 @@ def expense_report_pdf(request):
 # creation timestamp — see sales.models.Commission).
 
 def _commission_data(request):
+    cur = _currency()
     start, end, range_param = parse_date_range(request)
     commissions = (
         Commission.objects.filter(contract__contract_date__gte=start, contract__contract_date__lte=end)
@@ -243,13 +253,13 @@ def _commission_data(request):
     )
     rows = [
         [c.agent.get_full_name() or c.agent.username, c.contract.contract_number,
-         c.contract.contract_date.isoformat(), f"{c.amount:,.2f}", c.get_status_display(),
+         c.contract.contract_date.isoformat(), f"{cur}{c.amount:,.2f}", c.get_status_display(),
          c.released_at.date().isoformat() if c.released_at else "—"]
         for c in commissions
     ]
     total = commissions.aggregate(total=Sum("amount"))["total"] or Decimal("0")
     headers = ["Agent", "Contract #", "Contract Date", "Amount", "Status", "Released"]
-    totals = ["", "", "", f"{total:,.2f}", "Total", ""]
+    totals = ["", "", "", f"{cur}{total:,.2f}", "Total", ""]
     return headers, rows, totals, start, end, range_param
 
 

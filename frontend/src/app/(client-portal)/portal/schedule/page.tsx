@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useCurrencySymbol } from "@/lib/currency";
 import type { Contract, Installment } from "@/types";
 
 async function fetchMyContract(): Promise<Contract | null> {
@@ -18,6 +19,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function SchedulePage() {
+  const currency = useCurrencySymbol();
   const { data: contract, isLoading } = useQuery({
     queryKey: ["my-contract-schedule"],
     queryFn: fetchMyContract,
@@ -50,8 +52,8 @@ export default function SchedulePage() {
                 <tr key={inst.id} className="border-t border-stone-100">
                   <td className="px-4 py-3">{inst.installment_number}</td>
                   <td className="px-4 py-3">{inst.due_date}</td>
-                  <td className="px-4 py-3">₱{Number(inst.amount_due).toLocaleString()}</td>
-                  <td className="px-4 py-3">₱{Number(inst.amount_paid).toLocaleString()}</td>
+                  <td className="px-4 py-3">{currency}{Number(inst.amount_due).toLocaleString()}</td>
+                  <td className="px-4 py-3">{currency}{Number(inst.amount_paid).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_STYLES[inst.status]}`}

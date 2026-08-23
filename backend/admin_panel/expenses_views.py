@@ -4,6 +4,7 @@ import io
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import render, redirect
@@ -12,20 +13,20 @@ from properties.models import Project
 from payments.models import Payment
 from expenses.models import Expense, ExpenseCategory
 
-from .decorators import staff_required, audit_action
+from .decorators import dynamic_permission, audit_action
 from .forms import ExpenseForm, ExpenseCategoryForm, ExpenseCSVUploadForm
 
 EXPENSE_CSV_REQUIRED_COLUMNS = {"scope", "category", "description", "amount", "incurred_on"}
 EXPENSE_CSV_OPTIONAL_COLUMNS = {"project"}
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("expenses", "view")
 def expense_list(request):
     expenses = Expense.objects.select_related("project", "category", "recorded_by").order_by("-incurred_on")
     return render(request, "admin_panel/expenses/list.html", {"expenses": expenses})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("expenses", "create")
 @audit_action("recorded_expense", model_name="Expense", get_object_id=lambda request: None)
 def expense_create(request):
     if request.method == "POST":
@@ -42,13 +43,13 @@ def expense_create(request):
     return render(request, "admin_panel/expenses/form.html", {"form": form, "title": "Record Expense"})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("expenses", "view")
 def expense_category_list(request):
     categories = ExpenseCategory.objects.order_by("name")
     return render(request, "admin_panel/expenses/categories.html", {"categories": categories})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("expenses", "create")
 @audit_action("created_expense_category", model_name="ExpenseCategory", get_object_id=lambda request: None)
 def expense_category_create(request):
     if request.method == "POST":
@@ -62,7 +63,7 @@ def expense_category_create(request):
     return render(request, "admin_panel/expenses/category_form.html", {"form": form})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("expenses", "create")
 @audit_action("bulk_uploaded_expenses", model_name="Expense", get_object_id=lambda request: None)
 def expense_bulk_upload(request):
     result = None
@@ -149,7 +150,7 @@ def expense_bulk_upload(request):
     return render(request, "admin_panel/expenses/upload.html", {"form": form, "result": result})
 
 
-@staff_required(roles=("admin", "accountant"))
+@dynamic_permission("cash_flow", "view")
 def cash_flow_dashboard(request):
     payments_qs = Payment.objects.filter(status=Payment.Status.COMPLETED)
     expenses_qs = Expense.objects.all()

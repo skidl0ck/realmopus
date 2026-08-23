@@ -2,44 +2,44 @@
 {% load humanize %}
 {% block title %}Cash Flow — EstateOS Staff{% endblock %}
 {% block content %}
-<h1 class="font-serif text-2xl mb-1">Cash Flow</h1>
-<p class="text-stone-500 text-sm mb-8">Collections vs. expenses, overall and by month.</p>
+<h1 class="eo-title mb-1">Cash Flow</h1>
+<p class="eo-subtitle mb-8">Collections vs. expenses, overall and by month.</p>
 
 <div class="grid grid-cols-3 gap-4 mb-8">
-  <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-    <p class="text-2xl font-serif text-emerald-800">₱{{ total_collections|floatformat:2|intcomma }}</p>
-    <p class="text-sm text-emerald-700">Total collections</p>
+  <div class="eo-stat">
+    <p class="eo-stat-value" style="color: var(--ledger);">{{ currency_symbol }}{{ total_collections|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Total collections</p>
   </div>
-  <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-4">
-    <p class="text-2xl font-serif text-red-700">₱{{ total_expenses|floatformat:2|intcomma }}</p>
-    <p class="text-sm text-red-600">Total expenses</p>
+  <div class="eo-stat" style="border-top-color: var(--stamp);">
+    <p class="eo-stat-value" style="color: var(--stamp);">{{ currency_symbol }}{{ total_expenses|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Total expenses</p>
   </div>
-  <div class="rounded-xl border border-stone-200 bg-white px-4 py-4">
-    <p class="text-2xl font-serif">₱{{ net_cash_flow|floatformat:2|intcomma }}</p>
-    <p class="text-sm text-stone-500">Net</p>
+  <div class="eo-stat" style="border-top-color: var(--blue);">
+    <p class="eo-stat-value">{{ currency_symbol }}{{ net_cash_flow|floatformat:2|intcomma }}</p>
+    <p class="eo-stat-label">Net</p>
   </div>
 </div>
 
-<div class="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-sm">
-  <table class="w-full text-sm">
-    <thead class="bg-stone-50 text-stone-500 text-left">
+<div class="eo-card overflow-hidden">
+  <table class="eo-table">
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Month</th>
-        <th class="px-4 py-3 font-medium">Collections</th>
-        <th class="px-4 py-3 font-medium">Expenses</th>
-        <th class="px-4 py-3 font-medium">Net</th>
+        <th>Month</th>
+        <th>Collections</th>
+        <th>Expenses</th>
+        <th>Net</th>
       </tr>
     </thead>
     <tbody>
       {% for row in monthly %}
-      <tr class="border-t border-stone-100">
-        <td class="px-4 py-3">{{ row.month }}</td>
-        <td class="px-4 py-3 text-emerald-700">₱{{ row.collections|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 text-red-600">₱{{ row.expenses|floatformat:2|intcomma }}</td>
-        <td class="px-4 py-3 font-medium">₱{{ row.net|floatformat:2|intcomma }}</td>
+      <tr>
+        <td class="eo-num">{{ row.month }}</td>
+        <td class="eo-num" style="color: var(--ledger);">{{ currency_symbol }}{{ row.collections|floatformat:2|intcomma }}</td>
+        <td class="eo-num" style="color: var(--stamp);">{{ currency_symbol }}{{ row.expenses|floatformat:2|intcomma }}</td>
+        <td class="eo-num font-medium">{{ currency_symbol }}{{ row.net|floatformat:2|intcomma }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="4" class="px-4 py-6 text-center text-stone-400">No activity yet.</td></tr>
+      <tr><td colspan="4" class="text-center eo-subtitle py-6">No activity yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

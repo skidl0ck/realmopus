@@ -2,7 +2,16 @@
 {% load humanize %}
 <head>
 <style>
-  body { font-family: Helvetica, sans-serif; font-size: 10px; color: #14231D; }
+  @font-face {
+    font-family: 'DejaVu Sans';
+    src: url('{{ font_regular }}');
+  }
+  @font-face {
+    font-family: 'DejaVu Sans';
+    font-weight: bold;
+    src: url('{{ font_bold }}');
+  }
+    body { font-family: 'DejaVu Sans', Helvetica, sans-serif; font-size: 10px; color: #14231D; }
   h2 { font-size: 14px; margin: 16px 0 8px 0; }
   table.info { width: 100%; margin-bottom: 12px; }
   table.info td { padding: 3px 0; }
@@ -31,13 +40,13 @@
   <tr><td class="label">Project</td><td>{{ contract.lot.project.name }}</td></tr>
   <tr><td class="label">Lot</td><td>Block {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td></tr>
   <tr><td class="label">Area</td><td>{{ contract.lot.area_sqm }} sqm</td></tr>
-  <tr><td class="label">Total Contract Price</td><td>₱{{ contract.total_contract_price|floatformat:2|intcomma }}</td></tr>
+  <tr><td class="label">Total Contract Price</td><td>{{ settings.currency_symbol }}{{ contract.total_contract_price|floatformat:2|intcomma }}</td></tr>
 </table>
 
 <h2>Payment Plan</h2>
 <table class="info">
   <tr><td class="label">Plan Type</td><td>{{ contract.get_payment_plan_type_display }}</td></tr>
-  <tr><td class="label">Down Payment</td><td>₱{{ contract.down_payment|floatformat:2|intcomma }}</td></tr>
+  <tr><td class="label">Down Payment</td><td>{{ settings.currency_symbol }}{{ contract.down_payment|floatformat:2|intcomma }}</td></tr>
   {% if contract.payment_plan_type == "installment" %}
   <tr><td class="label">Term</td><td>{{ contract.term_months }} months</td></tr>
   <tr><td class="label">Interest Rate</td><td>{{ contract.interest_rate }}% per annum</td></tr>
@@ -50,7 +59,7 @@
 <table class="fees">
   <tr><th>Name</th><th>Type</th><th>Amount</th></tr>
   {% for fee in contract.fees.all %}
-  <tr><td>{{ fee.name }}</td><td>{{ fee.get_fee_type_display }}</td><td>₱{{ fee.amount|floatformat:2|intcomma }}</td></tr>
+  <tr><td>{{ fee.name }}</td><td>{{ fee.get_fee_type_display }}</td><td>{{ settings.currency_symbol }}{{ fee.amount|floatformat:2|intcomma }}</td></tr>
   {% endfor %}
 </table>
 {% endif %}

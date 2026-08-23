@@ -58,3 +58,10 @@ def nav_state(request):
             open_group = group
             break
     return {"nav_open_group": open_group}
+
+
+def currency(request):
+    """Exposes the site-wide currency symbol to every admin_panel template,
+    so it doesn't need to be passed explicitly from every view."""
+    from .models import PlatformSettings
+    return {"currency_symbol": PlatformSettings.load().currency_symbol}

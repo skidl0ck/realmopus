@@ -63,6 +63,7 @@ TEMPLATES = [
                 'admin_panel.context_processors.notifications',
                 'admin_panel.context_processors.role_permissions',
                 'admin_panel.context_processors.nav_state',
+                'admin_panel.context_processors.currency',
             ],
         },
     },

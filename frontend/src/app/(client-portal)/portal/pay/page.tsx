@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useCurrencySymbol } from "@/lib/currency";
 import type { Contract, Installment } from "@/types";
 
 async function fetchMyContract(): Promise<Contract | null> {
@@ -13,6 +14,7 @@ async function fetchMyContract(): Promise<Contract | null> {
 
 export default function PayPage() {
   const { data: contract } = useQuery({ queryKey: ["my-contract-pay"], queryFn: fetchMyContract });
+  const currency = useCurrencySymbol();
   const [selectedInstallment, setSelectedInstallment] = useState<string>("");
   const [method, setMethod] = useState<"paypal" | "paymongo">("paypal");
   const [status, setStatus] = useState<{ type: "info" | "error"; message: string } | null>(null);
@@ -37,10 +39,12 @@ export default function PayPage() {
       await apiClient.post(endpoint, { amount: installment.amount_due });
       setStatus({ type: "info", message: "Redirecting to checkout…" });
     } catch (err: unknown) {
-      const detail =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        "This payment method isn't fully configured yet.";
-      setStatus({ type: "error", message: detail });
+      // Deliberately not surfacing err.response.data.detail here — that's an internal
+      // config message ("PAYPAL_CLIENT_ID is not set...") meant for developers, not buyers.
+      setStatus({
+        type: "error",
+        message: "This payment method isn't available right now. Please contact us or try again later.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -63,7 +67,7 @@ export default function PayPage() {
           <option value="">Select an installment…</option>
           {unpaidInstallments.map((inst: Installment) => (
             <option key={inst.id} value={inst.id}>
-              #{inst.installment_number} — due {inst.due_date} — ₱
+              #{inst.installment_number} — due {inst.due_date} — {currency}
               {Number(inst.amount_due).toLocaleString()}
             </option>
           ))}

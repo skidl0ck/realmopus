@@ -13,6 +13,7 @@ interface RegisterResponse {
 }
 
 export class TransactionRequiredError extends Error {}
+export class AccountDeactivatedError extends Error {}
 
 function storeSession(user: User, access: string, refresh: string) {
   localStorage.setItem("access_token", access);
@@ -32,6 +33,9 @@ export async function login(username: string, password: string): Promise<User> {
     const response = (err as { response?: { status?: number; data?: { code?: string } } })?.response;
     if (response?.status === 403 && response?.data?.code === "transaction_required") {
       throw new TransactionRequiredError();
+    }
+    if (response?.status === 403 && response?.data?.code === "account_deactivated") {
+      throw new AccountDeactivatedError();
     }
     throw err;
   }

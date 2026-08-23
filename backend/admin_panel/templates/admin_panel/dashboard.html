@@ -40,7 +40,7 @@
       <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
         <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
           <span class="eo-subtitle">— {{ inst.contract.contract_number }}</span></span>
-        <span class="eo-num font-medium">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+        <span class="eo-num font-medium">{{ currency_symbol }}{{ inst.balance|floatformat:2|intcomma }}</span>
       </div>
       {% empty %}
       <p class="eo-subtitle text-sm py-2">No installments due today.</p>
@@ -53,7 +53,7 @@
       <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
         <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
           <span class="eo-subtitle">— {{ inst.contract.contract_number }} · due {{ inst.due_date }}</span></span>
-        <span class="eo-num font-medium" style="color: var(--stamp);">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+        <span class="eo-num font-medium" style="color: var(--stamp);">{{ currency_symbol }}{{ inst.balance|floatformat:2|intcomma }}</span>
       </div>
       {% empty %}
       <p class="eo-subtitle text-sm py-2">No overdue installments.</p>
@@ -67,7 +67,7 @@
     <div class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline);">
       <span>{{ inst.contract.client.get_full_name|default:inst.contract.buyer_full_name }}
         <span class="eo-subtitle">— {{ inst.contract.contract_number }} · due {{ inst.due_date }}</span></span>
-      <span class="eo-num font-medium" style="color: var(--gold);">₱{{ inst.balance|floatformat:2|intcomma }}</span>
+      <span class="eo-num font-medium" style="color: var(--gold);">{{ currency_symbol }}{{ inst.balance|floatformat:2|intcomma }}</span>
     </div>
     {% empty %}
     <p class="eo-subtitle text-sm py-2">Nothing due in the next 3 days.</p>
@@ -108,9 +108,9 @@
   <div class="eo-card eo-card-pad">
     <h2 class="eo-display font-semibold text-base mb-4">Cash flow</h2>
     <div class="space-y-3 text-sm">
-      <div class="flex justify-between"><span class="eo-subtitle">Total collections</span><span class="eo-num font-medium" style="color: var(--ledger);">₱{{ total_collections|floatformat:2|intcomma }}</span></div>
-      <div class="flex justify-between"><span class="eo-subtitle">Total expenses</span><span class="eo-num font-medium" style="color: var(--stamp);">₱{{ total_expenses|floatformat:2|intcomma }}</span></div>
-      <div class="flex justify-between pt-3" style="border-top: 1px solid var(--hairline);"><span class="font-medium">Net</span><span class="eo-num eo-display font-semibold text-base">₱{{ net_cash_flow|floatformat:2|intcomma }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">Total collections</span><span class="eo-num font-medium" style="color: var(--ledger);">{{ currency_symbol }}{{ total_collections|floatformat:2|intcomma }}</span></div>
+      <div class="flex justify-between"><span class="eo-subtitle">Total expenses</span><span class="eo-num font-medium" style="color: var(--stamp);">{{ currency_symbol }}{{ total_expenses|floatformat:2|intcomma }}</span></div>
+      <div class="flex justify-between pt-3" style="border-top: 1px solid var(--hairline);"><span class="font-medium">Net</span><span class="eo-num eo-display font-semibold text-base">{{ currency_symbol }}{{ net_cash_flow|floatformat:2|intcomma }}</span></div>
     </div>
   </div>
 </div>

@@ -126,11 +126,11 @@ def contract_add_fee(request, pk):
 def contract_generate_schedule(request, pk):
     contract = get_object_or_404(Contract, pk=pk)
     if contract.installments.exists():
-        messages.error(request, "This contract already has an installment schedule.")
+        messages.error(request, "This contract already has a payment schedule.")
     else:
         try:
             installments = generate_amortization_schedule(contract)
-            messages.success(request, f"Generated {len(installments)} installments.")
+            messages.success(request, f"Generated {len(installments)} schedule row(s).")
             regenerate_contract_documents(contract)
         except ValueError as exc:
             messages.error(request, str(exc))

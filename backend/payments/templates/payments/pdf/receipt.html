@@ -2,7 +2,16 @@
 {% load humanize %}
 <head>
 <style>
-  body { font-family: Helvetica, sans-serif; font-size: 10px; color: #14231D; }
+  @font-face {
+    font-family: 'DejaVu Sans';
+    src: url('{{ font_regular }}');
+  }
+  @font-face {
+    font-family: 'DejaVu Sans';
+    font-weight: bold;
+    src: url('{{ font_bold }}');
+  }
+    body { font-family: 'DejaVu Sans', Helvetica, sans-serif; font-size: 10px; color: #14231D; }
   h2 { font-size: 14px; margin: 16px 0 8px 0; }
   table.info { width: 100%; margin-bottom: 12px; }
   table.info td { padding: 4px 0; }
@@ -16,7 +25,7 @@
 <h2>Official Receipt — {{ receipt.receipt_number }}</h2>
 <p style="font-size: 9px; color: #6B675C;">Issued {{ receipt.issued_at|date:"Y-m-d H:i" }}</p>
 
-<div class="amount">₱{{ payment.amount|floatformat:2|intcomma }}</div>
+<div class="amount">{{ settings.currency_symbol }}{{ payment.amount|floatformat:2|intcomma }}</div>
 
 <table class="info">
   <tr><td class="label">Received From</td><td>{{ payment.contract.client.get_full_name|default:payment.contract.buyer_full_name }}</td></tr>

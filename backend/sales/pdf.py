@@ -8,10 +8,13 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from xhtml2pdf import pisa
 
+from core.fonts import DEJAVU_SANS_REGULAR, DEJAVU_SANS_BOLD
+
 logger = logging.getLogger(__name__)
 
 
 def _render_pdf(template_name: str, context: dict) -> bytes:
+    context = {**context, "font_regular": DEJAVU_SANS_REGULAR, "font_bold": DEJAVU_SANS_BOLD}
     html = render_to_string(template_name, context)
     buffer = io.BytesIO()
     pisa.CreatePDF(html, dest=buffer)

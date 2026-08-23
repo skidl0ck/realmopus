@@ -6,19 +6,19 @@
 
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
   <div class="eo-stat">
-    <p class="eo-stat-value">₱{{ buckets.0_30|floatformat:2 }}</p>
+    <p class="eo-stat-value">{{ currency_symbol }}{{ buckets.0_30|floatformat:2 }}</p>
     <p class="eo-stat-label">0–30 days</p>
   </div>
   <div class="eo-stat" style="border-top-color: var(--gold);">
-    <p class="eo-stat-value" style="color: var(--gold);">₱{{ buckets.31_60|floatformat:2 }}</p>
+    <p class="eo-stat-value" style="color: var(--gold);">{{ currency_symbol }}{{ buckets.31_60|floatformat:2 }}</p>
     <p class="eo-stat-label">31–60 days</p>
   </div>
   <div class="eo-stat" style="border-top-color: var(--stamp);">
-    <p class="eo-stat-value" style="color: var(--stamp);">₱{{ buckets.61_90|floatformat:2 }}</p>
+    <p class="eo-stat-value" style="color: var(--stamp);">{{ currency_symbol }}{{ buckets.61_90|floatformat:2 }}</p>
     <p class="eo-stat-label">61–90 days</p>
   </div>
   <div class="eo-stat" style="border-top-color: var(--stamp);">
-    <p class="eo-stat-value" style="color: var(--stamp);">₱{{ buckets.90_plus|floatformat:2 }}</p>
+    <p class="eo-stat-value" style="color: var(--stamp);">{{ currency_symbol }}{{ buckets.90_plus|floatformat:2 }}</p>
     <p class="eo-stat-label">90+ days</p>
   </div>
 </div>

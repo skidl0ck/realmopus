@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { Lot } from "@/types";
+import { useCurrencySymbol } from "@/lib/currency";
 
 const STATUS_STYLES: Record<string, string> = {
   available: "bg-emerald-100 text-emerald-800",
@@ -17,6 +18,7 @@ async function fetchLots(): Promise<Lot[]> {
 }
 
 export default function LotsPage() {
+  const currency = useCurrencySymbol();
   const { data: lots, isLoading, isError } = useQuery({
     queryKey: ["lots"],
     queryFn: fetchLots,
@@ -55,7 +57,7 @@ export default function LotsPage() {
             </div>
             <p className="text-stone-500 text-sm mb-1">{lot.area_sqm} sqm</p>
             <p className="text-emerald-800 font-medium text-lg">
-              ₱{Number(lot.total_price).toLocaleString()}
+              {currency}{Number(lot.total_price).toLocaleString()}
             </p>
           </div>
         ))}

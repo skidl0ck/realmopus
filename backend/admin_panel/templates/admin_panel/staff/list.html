@@ -47,7 +47,7 @@
         <td class="eo-num">
           {% if user.role == 'sales_agent' %}
             {% if user.agent_profile.commission_type == 'percent' %}{{ user.agent_profile.commission_rate }}%
-            {% else %}₱{{ user.agent_profile.commission_rate|floatformat:2|intcomma }}{% endif %}
+            {% else %}{{ currency_symbol }}{{ user.agent_profile.commission_rate|floatformat:2|intcomma }}{% endif %}
           {% else %}—{% endif %}
         </td>
         <td>

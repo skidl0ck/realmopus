@@ -9,6 +9,7 @@
   </div>
   <div class="flex gap-3">
     <a href="{% url 'admin_panel:cash_flow_dashboard' %}" class="eo-btn-secondary">Cash Flow</a>
+    <a href="{% url 'admin_panel:expense_category_list' %}" class="eo-btn-secondary">Categories</a>
     <a href="{% url 'admin_panel:expense_bulk_upload' %}" class="eo-btn-secondary">Upload CSV</a>
     <a href="{% url 'admin_panel:expense_create' %}" class="eo-btn-primary">Record Expense</a>
   </div>
@@ -33,7 +34,7 @@
           {% if expense.scope == 'project' %}{{ expense.project.name }}{% else %}Company-wide{% endif %}
         </td>
         <td class="eo-subtitle">{{ expense.category.name }}</td>
-        <td class="eo-num" style="color: var(--stamp);">₱{{ expense.amount|floatformat:2|intcomma }}</td>
+        <td class="eo-num" style="color: var(--stamp);">{{ currency_symbol }}{{ expense.amount|floatformat:2|intcomma }}</td>
         <td class="eo-subtitle eo-num">{{ expense.incurred_on }}</td>
       </tr>
       {% empty %}

@@ -49,7 +49,7 @@
         <td>{{ lot.project.name }}</td>
         <td>Blk {{ lot.block_number }}, Lot {{ lot.lot_number }}</td>
         <td class="eo-num">{{ lot.area_sqm }}</td>
-        <td class="eo-num">₱{{ lot.total_price|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ lot.total_price|floatformat:2|intcomma }}</td>
         <td>
           <span class="eo-stamp
             {% if lot.status == 'available' %}eo-stamp--green

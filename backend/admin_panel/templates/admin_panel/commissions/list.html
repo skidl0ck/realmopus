@@ -31,7 +31,7 @@
       <tr>
         <td>{{ c.agent.get_full_name|default:c.agent.username }}</td>
         <td class="eo-num">{{ c.contract.contract_number }}</td>
-        <td class="eo-num">₱{{ c.amount|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ c.amount|floatformat:2|intcomma }}</td>
         <td>
           <span class="eo-stamp
             {% if c.status == 'released' %}eo-stamp--green

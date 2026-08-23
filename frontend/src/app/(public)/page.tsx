@@ -8,6 +8,7 @@ import type { Lot } from "@/types";
 import { Reveal } from "@/components/reveal";
 import { LotGridAnimation } from "@/components/lot-grid-animation";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
+import { useCurrencySymbol } from "@/lib/currency";
 
 async function fetchFeaturedLots(): Promise<Lot[]> {
   const { data } = await apiClient.get("/properties/lots/?status=available");
@@ -53,6 +54,7 @@ const STEPS = [
 export default function HomePage() {
   const { data: featuredLots } = useQuery({ queryKey: ["featured-lots"], queryFn: fetchFeaturedLots });
   const openAuthModal = useAuthModalStore((s) => s.open);
+  const currency = useCurrencySymbol();
 
   return (
     <>
@@ -186,7 +188,7 @@ export default function HomePage() {
                     </p>
                     <p className="text-stone-500 text-sm mb-3">{lot.area_sqm} sqm</p>
                     <p className="text-emerald-800 font-medium text-lg">
-                      ₱{Number(lot.total_price).toLocaleString()}
+                      {currency}{Number(lot.total_price).toLocaleString()}
                     </p>
                   </div>
                 </div>

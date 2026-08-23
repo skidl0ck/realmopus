@@ -288,16 +288,19 @@ class BusinessSettingsForm(forms.ModelForm):
     class Meta:
         model = PlatformSettings
         fields = [
+            "currency_symbol",
             "default_penalty_rate_percent", "default_interest_rate_percent",
             "default_reservation_fee", "reservation_hold_days",
         ]
         widgets = {
+            "currency_symbol": forms.TextInput(attrs={"class": INPUT_CLASSES, "maxlength": 5, "style": "max-width: 6rem;"}),
             "default_penalty_rate_percent": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "default_interest_rate_percent": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "default_reservation_fee": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "reservation_hold_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
         }
         help_texts = {
+            "currency_symbol": "Shown everywhere money is displayed — site-wide, and on all PDFs. Display only; amounts are never converted.",
             "default_penalty_rate_percent": "Suggested late-payment penalty rate for new installment contracts (staff can still override per contract).",
             "default_interest_rate_percent": "Suggested annual interest rate for new installment contracts (staff can still override per contract).",
             "default_reservation_fee": "Used by the public 'Reserve this lot' flow when no fee is specified.",

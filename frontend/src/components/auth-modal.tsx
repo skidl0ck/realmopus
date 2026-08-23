@@ -8,6 +8,7 @@ import {
   reactivateWithTransaction,
   dashboardPathForRole,
   TransactionRequiredError,
+  AccountDeactivatedError,
 } from "@/lib/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
@@ -57,6 +58,8 @@ export function AuthModal() {
     } catch (err) {
       if (err instanceof TransactionRequiredError) {
         setPanel("reactivate");
+      } else if (err instanceof AccountDeactivatedError) {
+        setError("This account has been deactivated. Please contact support.");
       } else {
         setError("Invalid username or password.");
       }

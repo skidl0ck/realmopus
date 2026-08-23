@@ -40,7 +40,7 @@
         <td class="eo-num">{{ contract.contract_number }}</td>
         <td>{{ contract.client.get_full_name|default:contract.buyer_full_name }}</td>
         <td class="eo-subtitle">Blk {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td>
-        <td class="eo-num">₱{{ contract.total_contract_price|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ contract.total_contract_price|floatformat:2|intcomma }}</td>
         <td>
           <span class="eo-stamp
             {% if contract.status == 'active' %}eo-stamp--green

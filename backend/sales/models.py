@@ -82,8 +82,22 @@ class Contract(models.Model):
         )["total"] or Decimal("0")
 
     @property
+    def total_amount_due(self):
+        """
+        The true total the buyer owes over the life of the contract, from
+        the generated schedule — which includes the down payment / full-
+        payment lump sum as its own row, plus (for installment plans) every
+        financed installment with its interest, fees, and any accrued late
+        penalties baked in. Falls back to the base sale price only if no
+        schedule has been generated yet.
+        """
+        if self.installments.exists():
+            return self.installments.aggregate(total=models.Sum("amount_due"))["total"] or Decimal("0")
+        return self.total_contract_price
+
+    @property
     def outstanding_balance(self):
-        return self.total_contract_price - self.total_paid
+        return self.total_amount_due - self.total_paid
 
 
 class Fee(models.Model):
@@ -104,7 +118,9 @@ class Fee(models.Model):
 
 
 class Installment(models.Model):
-    """A single scheduled amortization line item for a Contract."""
+    """A single scheduled payment obligation for a Contract — this includes
+    down payment and full-payment lump sums, not just financed installments,
+    so every contract has a complete, unified payment schedule."""
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -112,9 +128,15 @@ class Installment(models.Model):
         PARTIALLY_PAID = "partially_paid", "Partially Paid"
         OVERDUE = "overdue", "Overdue"
 
+    class Kind(models.TextChoices):
+        DOWN_PAYMENT = "down_payment", "Down Payment"
+        INSTALLMENT = "installment", "Installment"
+        FULL_PAYMENT = "full_payment", "Full Payment"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name="installments")
-    installment_number = models.PositiveIntegerField()
+    installment_number = models.PositiveIntegerField(help_text="0 for the down payment row, if any.")
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.INSTALLMENT)
     due_date = models.DateField()
     principal_amount = models.DecimalField(max_digits=12, decimal_places=2)
     fees_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
@@ -128,6 +150,10 @@ class Installment(models.Model):
         unique_together = ("contract", "installment_number")
 
     def __str__(self):
+        if self.kind == self.Kind.DOWN_PAYMENT:
+            return f"{self.contract.contract_number} - Down Payment"
+        if self.kind == self.Kind.FULL_PAYMENT:
+            return f"{self.contract.contract_number} - Full Payment"
         return f"{self.contract.contract_number} - Installment #{self.installment_number}"
 
     @property
