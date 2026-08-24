@@ -56,6 +56,11 @@
               {% csrf_token %}
               <button type="submit" style="color: var(--stamp); margin-left: 0.75rem;">Cancel</button>
             </form>
+          {% elif res.status == 'cancelled' or res.status == 'expired' %}
+            <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Permanently delete this reservation record? This cannot be undone.');">
+              {% csrf_token %}
+              <button type="submit" style="color: var(--stamp);">Delete</button>
+            </form>
           {% endif %}
         </td>
       </tr>

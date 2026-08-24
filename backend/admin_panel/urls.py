@@ -24,6 +24,7 @@ urlpatterns = [
     path('reservations/', reservations_views.reservation_list, name='reservation_list'),
     path('reservations/new/', reservations_views.reservation_create, name='reservation_create'),
     path('reservations/<uuid:pk>/cancel/', reservations_views.reservation_cancel, name='reservation_cancel'),
+    path('reservations/<uuid:pk>/delete/', reservations_views.reservation_delete, name='reservation_delete'),
 
     path('contracts/', sales_views.contract_list, name='contract_list'),
     path('contracts/new/', sales_views.contract_create, name='contract_create'),
@@ -35,12 +36,14 @@ urlpatterns = [
 
     path('payments/', payments_views.payment_list, name='payment_list'),
     path('payments/new/', payments_views.payment_create, name='payment_create'),
+    path('payments/installments-for-contract/<uuid:pk>/', payments_views.installments_for_contract, name='installments_for_contract'),
     path('payments/<uuid:pk>/regenerate-receipt/', payments_views.payment_regenerate_receipt, name='payment_regenerate_receipt'),
 
     path('expenses/', expenses_views.expense_list, name='expense_list'),
     path('expenses/new/', expenses_views.expense_create, name='expense_create'),
     path('expenses/categories/', expenses_views.expense_category_list, name='expense_category_list'),
     path('expenses/categories/new/', expenses_views.expense_category_create, name='expense_category_create'),
+    path('expenses/categories/quick-create/', expenses_views.expense_category_quick_create, name='expense_category_quick_create'),
     path('expenses/upload/', expenses_views.expense_bulk_upload, name='expense_bulk_upload'),
     path('expenses/cash-flow/', expenses_views.cash_flow_dashboard, name='cash_flow_dashboard'),
 

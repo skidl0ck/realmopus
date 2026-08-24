@@ -95,4 +95,13 @@
 
   <button type="submit" class="eo-btn-primary">Save</button>
 </form>
+
+{% include "admin_panel/_partials/password_field_scripts.html" %}
+<script>
+  {% if is_create %}
+  eoEnhancePasswordField('id_password', { generate: true });
+  {% else %}
+  eoEnhancePasswordField('id_new_password', { generate: true });
+  {% endif %}
+</script>
 {% endblock %}

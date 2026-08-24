@@ -71,8 +71,10 @@ def notify_payment_failed(payment, reason: str = ""):
     """
     client = payment.contract.client
     if client:
+        from admin_panel.models import PlatformSettings
+        cur = PlatformSettings.load().currency_symbol
         notify(
             client, Notification.NotificationType.PAYMENT_FAILED,
-            "Payment failed", f"Your payment of ₱{payment.amount:,.2f} could not be processed. {reason}".strip(),
+            "Payment failed", f"Your payment of {cur}{payment.amount:,.2f} could not be processed. {reason}".strip(),
             related_object_id=payment.id,
         )

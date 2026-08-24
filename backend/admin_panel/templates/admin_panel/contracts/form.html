@@ -11,19 +11,62 @@
 </div>
 {% endif %}
 
-<form method="post" class="max-w-2xl eo-card eo-card-pad space-y-4">
+<form method="post" id="contract-form" class="max-w-2xl eo-card eo-card-pad space-y-4">
   {% csrf_token %}
   {% if reservation %}<input type="hidden" name="reservation_id" value="{{ reservation.id }}">{% endif %}
   {% for field in form %}
-    <div>
-      <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
-      {{ field }}
-      {% if field.help_text %}<p class="eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
-      {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
-    </div>
+    {% if field.name == "down_payment" or field.name == "term_months" or field.name == "interest_rate" or field.name == "penalty_rate_percent" %}
+      {% if field.name == "down_payment" %}<div id="installment-only-fields">{% endif %}
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+      {% if field.name == "penalty_rate_percent" %}</div>{% endif %}
+    {% else %}
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+    {% endif %}
   {% endfor %}
-  <button type="submit" class="eo-btn-primary">
+  <button type="submit" id="contract-submit" class="eo-btn-primary">
     Save
   </button>
 </form>
+
+<script>
+  (function () {
+    var lotSelect = document.getElementById('id_lot');
+    var priceField = document.getElementById('id_total_contract_price');
+    var planTypeSelect = document.getElementById('id_payment_plan_type');
+    var installmentFields = document.getElementById('installment-only-fields');
+    var form = document.getElementById('contract-form');
+    var submitBtn = document.getElementById('contract-submit');
+
+    function prefillPrice() {
+      var selected = lotSelect.options[lotSelect.selectedIndex];
+      if (selected && selected.dataset.price && !priceField.value) {
+        priceField.value = selected.dataset.price;
+      }
+    }
+
+    function toggleInstallmentFields() {
+      if (!installmentFields) return;
+      installmentFields.style.display = planTypeSelect.value === 'installment' ? 'block' : 'none';
+    }
+
+    if (lotSelect) lotSelect.addEventListener('change', prefillPrice);
+    if (planTypeSelect) { planTypeSelect.addEventListener('change', toggleInstallmentFields); toggleInstallmentFields(); }
+    if (form) {
+      form.addEventListener('submit', function () {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving…';
+      });
+    }
+  })();
+</script>
 {% endblock %}

@@ -69,7 +69,7 @@ class Contract(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Contract {self.contract_number} - {self.client}"
+        return f"Contract {self.contract_number} - {self.buyer_full_name}"
 
     @property
     def financed_amount(self):

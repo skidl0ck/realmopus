@@ -131,7 +131,7 @@ SECTION_ACTIONS = {
     RolePermission.Section.PAYMENTS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE],
     RolePermission.Section.EXPENSES: [RolePermission.Action.VIEW, RolePermission.Action.CREATE],
     RolePermission.Section.CASH_FLOW: [RolePermission.Action.VIEW],
-    RolePermission.Section.COMMISSIONS: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
+    RolePermission.Section.COMMISSIONS: [RolePermission.Action.VIEW],
     RolePermission.Section.REPORTS: [RolePermission.Action.VIEW],
     RolePermission.Section.CLIENTS: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
 }

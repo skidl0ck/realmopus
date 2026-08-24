@@ -2,18 +2,102 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
-<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+<form method="post" id="expense-form" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
   {% for field in form %}
     <div>
-      <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+      <div class="flex items-center justify-between mb-1">
+        <label class="eo-eyebrow">{{ field.label }}</label>
+        {% if field.name == "category" %}
+        <button type="button" id="open-category-modal" class="eo-link text-xs">+ New Category</button>
+        {% endif %}
+      </div>
       {{ field }}
       {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
     </div>
   {% endfor %}
-  <p class="eo-subtitle">Need a new category? Add one from the Django admin or ask us to wire in a quick-add here.</p>
   <button type="submit" class="eo-btn-primary">
     Record Expense
   </button>
 </form>
+
+<!-- Quick-add category modal -->
+<div id="category-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(20,35,29,0.4); z-index: 50; align-items: center; justify-content: center;">
+  <div class="eo-card eo-card-pad" style="width: 100%; max-width: 24rem;">
+    <h2 class="eo-display font-semibold text-base mb-3">New Expense Category</h2>
+    <label class="eo-eyebrow block mb-1">Name</label>
+    <input type="text" id="category-modal-name" class="eo-input" style="width: 100%;">
+    <p id="category-modal-error" class="text-sm mt-1" style="color: var(--stamp); display: none;"></p>
+    <div class="flex gap-3 mt-4">
+      <button type="button" id="category-modal-save" class="eo-btn-primary">Save</button>
+      <button type="button" id="category-modal-cancel" class="eo-btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var openBtn = document.getElementById('open-category-modal');
+    var overlay = document.getElementById('category-modal-overlay');
+    var nameInput = document.getElementById('category-modal-name');
+    var errorEl = document.getElementById('category-modal-error');
+    var saveBtn = document.getElementById('category-modal-save');
+    var cancelBtn = document.getElementById('category-modal-cancel');
+    var categorySelect = document.getElementById('id_category');
+    var csrfToken = document.querySelector('#expense-form [name=csrfmiddlewaretoken]').value;
+
+    function openModal() {
+      nameInput.value = '';
+      errorEl.style.display = 'none';
+      overlay.style.display = 'flex';
+      nameInput.focus();
+    }
+    function closeModal() {
+      overlay.style.display = 'none';
+    }
+
+    if (openBtn) openBtn.addEventListener('click', openModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (overlay) overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function () {
+        var name = nameInput.value.trim();
+        if (!name) {
+          errorEl.textContent = 'Name is required.';
+          errorEl.style.display = 'block';
+          return;
+        }
+        saveBtn.disabled = true;
+        fetch('/admin-panel/expenses/categories/quick-create/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'name=' + encodeURIComponent(name),
+        })
+          .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+          .then(function (result) {
+            saveBtn.disabled = false;
+            if (!result.ok) {
+              var errors = result.data.errors;
+              var msg = errors && errors.name ? errors.name[0] : 'Could not create category.';
+              errorEl.textContent = msg;
+              errorEl.style.display = 'block';
+              return;
+            }
+            var opt = document.createElement('option');
+            opt.value = result.data.id;
+            opt.textContent = result.data.name;
+            opt.selected = true;
+            categorySelect.appendChild(opt);
+            closeModal();
+          })
+          .catch(function () {
+            saveBtn.disabled = false;
+            errorEl.textContent = 'Something went wrong — please try again.';
+            errorEl.style.display = 'block';
+          });
+      });
+    }
+  })();
+</script>
 {% endblock %}

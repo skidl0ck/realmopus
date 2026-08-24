@@ -57,6 +57,23 @@ class LotCSVUploadForm(forms.Form):
 from sales.models import Contract, Fee
 
 
+class LotSelectWithPrice(forms.Select):
+    """A lot <select> whose options carry the lot's total_price as a data
+    attribute, so the contract form's JS can pre-fill total_contract_price
+    without a separate fetch."""
+
+    def __init__(self, *args, lot_prices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lot_prices = lot_prices or {}
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        price = self.lot_prices.get(str(value))
+        if price is not None:
+            option["attrs"]["data-price"] = str(price)
+        return option
+
+
 class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract
@@ -71,8 +88,8 @@ class ContractForm(forms.ModelForm):
             "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
             "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES}),
             "agent": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "payment_plan_type": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "total_contract_price": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
+            "payment_plan_type": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_payment_plan_type"}),
+            "total_contract_price": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01", "id": "id_total_contract_price"}),
             "down_payment": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "term_months": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
             "interest_rate": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
@@ -85,7 +102,15 @@ class ContractForm(forms.ModelForm):
         from properties.models import Lot
         from accounts.models import User
         # Only lots not already tied to a contract can be sold
-        self.fields["lot"].queryset = Lot.objects.filter(contract__isnull=True).order_by("project__name", "block_number")
+        lot_qs = Lot.objects.filter(contract__isnull=True).order_by("project__name", "block_number")
+        lot_prices = {str(lot.pk): lot.total_price for lot in lot_qs}
+        # Widget must be assigned BEFORE queryset — ModelChoiceField.queryset's
+        # setter has a side effect (self.widget.choices = self.choices) that only
+        # applies to whatever widget is currently attached; setting queryset first
+        # would populate choices on the old widget right before it gets discarded,
+        # leaving the new one with no options at all.
+        self.fields["lot"].widget = LotSelectWithPrice(attrs={"class": INPUT_CLASSES, "id": "id_lot"}, lot_prices=lot_prices)
+        self.fields["lot"].queryset = lot_qs
         self.fields["agent"].queryset = User.objects.filter(role=User.Role.SALES_AGENT)
         self.fields["agent"].required = False
 
@@ -138,12 +163,15 @@ from payments.models import Payment
 class ManualPaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
-        fields = ["contract", "installment", "amount", "method"]
+        fields = ["contract", "installment", "amount", "method", "bank_name", "reference_number", "cheque_number"]
         widgets = {
-            "contract": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "installment": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "amount": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
-            "method": forms.Select(attrs={"class": INPUT_CLASSES}),
+            "contract": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_contract"}),
+            "installment": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_installment"}),
+            "amount": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01", "id": "id_amount"}),
+            "method": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_method"}),
+            "bank_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "reference_number": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "cheque_number": forms.TextInput(attrs={"class": INPUT_CLASSES}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -156,6 +184,9 @@ class ManualPaymentForm(forms.ModelForm):
         ]
         self.fields["installment"].queryset = Installment.objects.exclude(status="paid").select_related("contract")
         self.fields["installment"].required = False
+        self.fields["bank_name"].required = False
+        self.fields["reference_number"].required = False
+        self.fields["cheque_number"].required = False
 
     def clean_amount(self):
         amount = self.cleaned_data["amount"]
@@ -165,6 +196,12 @@ class ManualPaymentForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        method = cleaned.get("method")
+        if method == Payment.Method.BANK_DEPOSIT and not cleaned.get("reference_number"):
+            self.add_error("reference_number", "Required for bank deposit payments.")
+        if method == Payment.Method.CHEQUE and not cleaned.get("cheque_number"):
+            self.add_error("cheque_number", "Required for cheque payments.")
+
         installment = cleaned.get("installment")
         contract = cleaned.get("contract")
         if installment and contract and installment.contract_id != contract.id:

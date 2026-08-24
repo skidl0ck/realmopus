@@ -161,5 +161,7 @@ def contract_set_commission(request, pk):
     Commission.objects.update_or_create(
         contract=contract, defaults={"agent": contract.agent, "amount": amount},
     )
-    messages.success(request, f"Commission set to ₱{amount:,.2f}.")
+    from admin_panel.models import PlatformSettings
+    cur = PlatformSettings.load().currency_symbol
+    messages.success(request, f"Commission set to {cur}{amount:,.2f}.")
     return redirect("admin_panel:contract_detail", pk=pk)

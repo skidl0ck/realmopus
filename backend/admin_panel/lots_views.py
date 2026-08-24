@@ -1,8 +1,10 @@
 import csv
 import io
+from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.contrib import messages
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 
 from properties.models import Project, Lot, LotImage
@@ -20,10 +22,42 @@ def lot_list(request):
     project_id = request.GET.get("project")
     if project_id:
         lots = lots.filter(project_id=project_id)
+
+    search = request.GET.get("q", "").strip()
+    if search:
+        lots = lots.filter(
+            Q(project__name__icontains=search)
+            | Q(block_number__icontains=search)
+            | Q(lot_number__icontains=search)
+        )
+
+    status = request.GET.get("status")
+    if status:
+        lots = lots.filter(status=status)
+
+    price_min = request.GET.get("price_min")
+    if price_min:
+        try:
+            lots = lots.filter(total_price__gte=Decimal(price_min))
+        except InvalidOperation:
+            pass
+
+    price_max = request.GET.get("price_max")
+    if price_max:
+        try:
+            lots = lots.filter(total_price__lte=Decimal(price_max))
+        except InvalidOperation:
+            pass
+
     return render(request, "admin_panel/lots/list.html", {
         "lots": lots,
         "projects": Project.objects.order_by("name"),
         "selected_project": project_id or "",
+        "statuses": Lot.Status.choices,
+        "selected_status": status or "",
+        "search": search,
+        "price_min": price_min or "",
+        "price_max": price_max or "",
     })
 
 

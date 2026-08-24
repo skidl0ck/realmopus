@@ -19,16 +19,43 @@
   </div>
 </div>
 
-<form method="get" class="mb-4">
-  <select name="project" onchange="this.form.submit()"
-    class="eo-input">
-    <option value="">All projects</option>
-    {% for project in projects %}
-      <option value="{{ project.id }}" {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>
-        {{ project.name }}
-      </option>
-    {% endfor %}
-  </select>
+<form method="get" class="mb-4 flex flex-wrap items-end gap-3">
+  <div>
+    <label class="eo-eyebrow block mb-1">Search</label>
+    <input type="text" name="q" value="{{ search }}" placeholder="Project, block, or lot #" class="eo-input" style="width: auto;">
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Project</label>
+    <select name="project" class="eo-input" style="width: auto;">
+      <option value="">All projects</option>
+      {% for project in projects %}
+        <option value="{{ project.id }}" {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>
+          {{ project.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Status</label>
+    <select name="status" class="eo-input" style="width: auto;">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Min price</label>
+    <input type="number" step="0.01" name="price_min" value="{{ price_min }}" class="eo-input" style="width: 8rem;">
+  </div>
+  <div>
+    <label class="eo-eyebrow block mb-1">Max price</label>
+    <input type="number" step="0.01" name="price_max" value="{{ price_max }}" class="eo-input" style="width: 8rem;">
+  </div>
+  <button type="submit" class="eo-btn-primary">Filter</button>
+  {% if search or selected_project or selected_status or price_min or price_max %}
+    <a href="{% url 'admin_panel:lot_list' %}" class="eo-btn-secondary">Clear</a>
+  {% endif %}
 </form>
 
 <div class="eo-card overflow-hidden">

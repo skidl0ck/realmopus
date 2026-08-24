@@ -53,7 +53,7 @@
     <button type="submit" class="eo-btn-primary">Generate Payment Schedule</button>
   </form>
   {% endif %}
-  {% if contract.agent and not contract.commission %}
+  {% if contract.agent and not contract.commission and user.role == 'admin' %}
   <form method="post" action="{% url 'admin_panel:contract_set_commission' contract.id %}">
     {% csrf_token %}
     <button type="submit" class="eo-btn-secondary">Set Agent Commission</button>

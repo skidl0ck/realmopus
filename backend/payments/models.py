@@ -27,6 +27,9 @@ class Payment(models.Model):
     method = models.CharField(max_length=20, choices=Method.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     gateway_reference = models.CharField(max_length=128, blank=True, help_text="PayPal/gateway transaction ID")
+    bank_name = models.CharField(max_length=128, blank=True, help_text="Bank Deposit or Cheque payments")
+    reference_number = models.CharField(max_length=128, blank=True, help_text="Bank Deposit transaction/reference number")
+    cheque_number = models.CharField(max_length=64, blank=True, help_text="Cheque payments only")
     recorded_by = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, related_name="payments_recorded"
     )

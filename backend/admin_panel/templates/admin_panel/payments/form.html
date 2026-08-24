@@ -2,17 +2,129 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
-<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+<form method="post" id="payment-form" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
-  {% for field in form %}
-    <div>
-      <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+
+  <div>
+    <label class="eo-eyebrow block mb-1">{{ form.contract.label }}</label>
+    {{ form.contract }}
+    {% if form.contract.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.contract.errors|join:", " }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="eo-eyebrow block mb-1">{{ form.installment.label }}</label>
+    {{ form.installment }}
+    <p class="eo-subtitle text-xs mt-1">Optional — pick a contract first to see its own schedule.</p>
+    {% if form.installment.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.installment.errors|join:", " }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="eo-eyebrow block mb-1">{{ form.amount.label }}</label>
+    {{ form.amount }}
+    <p class="eo-subtitle text-xs mt-1">
+      If this exceeds what's owed on the selected schedule row, the extra is automatically applied to the next unpaid row(s).
+    </p>
+    {% if form.amount.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.amount.errors|join:", " }}</p>{% endif %}
+  </div>
+
+  <div>
+    <label class="eo-eyebrow block mb-1">{{ form.method.label }}</label>
+    {{ form.method }}
+    {% if form.method.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.method.errors|join:", " }}</p>{% endif %}
+  </div>
+
+  <div id="method-fields-bank_deposit" style="display: none;">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ form.bank_name.label }}</label>
+        {{ form.bank_name }}
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ form.reference_number.label }}</label>
+        {{ form.reference_number }}
+        {% if form.reference_number.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.reference_number.errors|join:", " }}</p>{% endif %}
+      </div>
     </div>
-  {% endfor %}
-  <button type="submit" class="eo-btn-primary">
+  </div>
+
+  <div id="method-fields-cheque" style="display: none;">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ form.cheque_number.label }}</label>
+        {{ form.cheque_number }}
+        {% if form.cheque_number.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.cheque_number.errors|join:", " }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">Bank Name</label>
+        {{ form.bank_name }}
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" id="payment-submit" class="eo-btn-primary">
     Record Payment
   </button>
 </form>
+
+<script>
+  (function () {
+    var contractSelect = document.getElementById('id_contract');
+    var installmentSelect = document.getElementById('id_installment');
+    var amountField = document.getElementById('id_amount');
+    var methodSelect = document.getElementById('id_method');
+    var bankFields = document.getElementById('method-fields-bank_deposit');
+    var chequeFields = document.getElementById('method-fields-cheque');
+    var form = document.getElementById('payment-form');
+    var submitBtn = document.getElementById('payment-submit');
+
+    function loadInstallments() {
+      var contractId = contractSelect.value;
+      installmentSelect.innerHTML = '<option value="">— Loading —</option>';
+      if (!contractId) {
+        installmentSelect.innerHTML = '<option value="">— None —</option>';
+        return;
+      }
+      fetch('/admin_panel/payments/installments-for-contract/' + contractId + '/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          installmentSelect.innerHTML = '<option value="">— None —</option>';
+          data.installments.forEach(function (inst) {
+            var opt = document.createElement('option');
+            opt.value = inst.id;
+            opt.textContent = inst.label;
+            opt.dataset.balance = inst.balance;
+            installmentSelect.appendChild(opt);
+          });
+        });
+    }
+
+    function prefillAmount() {
+      var selected = installmentSelect.options[installmentSelect.selectedIndex];
+      if (selected && selected.dataset.balance) {
+        amountField.value = selected.dataset.balance;
+      }
+    }
+
+    function toggleMethodFields() {
+      bankFields.style.display = methodSelect.value === 'bank_deposit' ? 'block' : 'none';
+      chequeFields.style.display = methodSelect.value === 'cheque' ? 'block' : 'none';
+    }
+
+    if (contractSelect) contractSelect.addEventListener('change', loadInstallments);
+    if (installmentSelect) installmentSelect.addEventListener('change', prefillAmount);
+    if (methodSelect) { methodSelect.addEventListener('change', toggleMethodFields); toggleMethodFields(); }
+    if (form) {
+      form.addEventListener('submit', function () {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Recording…';
+      });
+    }
+
+    // On first load, nothing is scoped yet — don't show every contract's
+    // installments until one is actually picked.
+    if (contractSelect && !contractSelect.value) {
+      installmentSelect.innerHTML = '<option value="">— None —</option>';
+    }
+  })();
+</script>
 {% endblock %}

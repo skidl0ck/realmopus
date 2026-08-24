@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
+from django.http import JsonResponse
 from django.db.models.functions import TruncMonth
 from django.shortcuts import render, redirect
 
@@ -64,8 +65,25 @@ def expense_category_create(request):
 
 
 @dynamic_permission("expenses", "create")
+@audit_action("created_expense_category", model_name="ExpenseCategory", get_object_id=lambda request: None)
+def expense_category_quick_create(request):
+    """JSON endpoint backing the '+ New Category' modal on the Record Expense
+    form — lets staff add a category without losing whatever else they've
+    already filled in on that form."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    form = ExpenseCategoryForm(request.POST)
+    if form.is_valid():
+        category = form.save()
+        return JsonResponse({"id": str(category.id), "name": category.name})
+    return JsonResponse({"errors": form.errors}, status=400)
+
+
+@dynamic_permission("expenses", "create")
 @audit_action("bulk_uploaded_expenses", model_name="Expense", get_object_id=lambda request: None)
 def expense_bulk_upload(request):
+    from admin_panel.models import PlatformSettings
+    cur = PlatformSettings.load().currency_symbol
     result = None
     form = ExpenseCSVUploadForm(request.POST or None, request.FILES or None)
 
@@ -134,7 +152,7 @@ def expense_bulk_upload(request):
                         incurred_on=row.get("incurred_on"),
                         recorded_by=request.user,
                     )
-                    created.append({"row": line_number, "expense": f"{expense.description} — ₱{expense.amount:,.2f}"})
+                    created.append({"row": line_number, "expense": f"{expense.description} — {cur}{expense.amount:,.2f}"})
                 except (ValueError, KeyError) as exc:
                     errors.append({"row": line_number, "errors": str(exc)})
                 except Exception as exc:  # noqa: BLE001 — surface bad dates/etc. as a row error, not a 500

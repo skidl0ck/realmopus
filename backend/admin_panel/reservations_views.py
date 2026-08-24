@@ -63,3 +63,16 @@ def reservation_cancel(request, pk):
     else:
         messages.error(request, "Only active reservations can be cancelled.")
     return redirect("admin_panel:reservation_list")
+
+
+@dynamic_permission("reservations", "edit")
+@audit_action("deleted_reservation", model_name="Reservation", get_object_id=lambda request, pk: pk)
+def reservation_delete(request, pk):
+    reservation = get_object_or_404(Reservation, pk=pk)
+    if reservation.status not in (Reservation.Status.CANCELLED, Reservation.Status.EXPIRED):
+        messages.error(request, "Only cancelled or expired reservations can be deleted.")
+        return redirect("admin_panel:reservation_list")
+    buyer_name = reservation.buyer_full_name
+    reservation.delete()
+    messages.success(request, f"Reservation for {buyer_name} deleted.")
+    return redirect("admin_panel:reservation_list")

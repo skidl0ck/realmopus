@@ -1,10 +1,12 @@
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
 from payments.models import Payment
 from payments.services import apply_payment
 from payments.pdf import generate_receipt_pdf
+from sales.models import Installment
 
 from .decorators import dynamic_permission, audit_action
 from .forms import ManualPaymentForm
@@ -14,6 +16,30 @@ from .forms import ManualPaymentForm
 def payment_list(request):
     payments = Payment.objects.select_related("contract", "installment", "recorded_by", "receipt").order_by("-created_at")
     return render(request, "admin_panel/payments/list.html", {"payments": payments})
+
+
+@dynamic_permission("payments", "create")
+def installments_for_contract(request, pk):
+    """JSON endpoint backing the payment form's cascading contract → installment
+    dropdown — returns only that contract's own unpaid/partial schedule rows."""
+    installments = (
+        Installment.objects.filter(contract_id=pk)
+        .exclude(status="paid")
+        .order_by("installment_number")
+    )
+    data = [
+        {
+            "id": str(inst.id),
+            "label": (
+                "Down Payment" if inst.kind == "down_payment"
+                else "Full Payment" if inst.kind == "full_payment"
+                else f"Installment #{inst.installment_number}"
+            ) + f" — due {inst.due_date} — {inst.get_status_display()}",
+            "balance": str(inst.amount_due - inst.amount_paid),
+        }
+        for inst in installments
+    ]
+    return JsonResponse({"installments": data})
 
 
 @dynamic_permission("payments", "create")
@@ -27,7 +53,9 @@ def payment_create(request):
             payment.paid_at = timezone.now()
             payment.save()
             apply_payment(payment)
-            messages.success(request, f"Payment of ₱{payment.amount:,.2f} recorded.")
+            from admin_panel.models import PlatformSettings
+            cur = PlatformSettings.load().currency_symbol
+            messages.success(request, f"Payment of {cur}{payment.amount:,.2f} recorded.")
             return redirect("admin_panel:payment_list")
     else:
         form = ManualPaymentForm()

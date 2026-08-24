@@ -19,6 +19,23 @@ def _next_receipt_number() -> str:
     return f"OR-{year}-{count:05d}"
 
 
+def _apply_to_installment(installment, amount: Decimal) -> Decimal:
+    """
+    Applies `amount` to `installment`, capped at what's actually still owed
+    on it. Returns whatever didn't fit (0 if fully absorbed) so the caller
+    can cascade it forward.
+    """
+    remaining = installment.amount_due - installment.amount_paid
+    applied = min(amount, remaining)
+    installment.amount_paid = installment.amount_paid + applied
+    if installment.amount_paid >= installment.amount_due:
+        installment.status = Installment.Status.PAID
+    elif installment.amount_paid > 0:
+        installment.status = Installment.Status.PARTIALLY_PAID
+    installment.save(update_fields=["amount_paid", "status"])
+    return amount - applied
+
+
 @transaction.atomic
 def apply_payment(payment: Payment) -> Payment:
     """
@@ -26,6 +43,10 @@ def apply_payment(payment: Payment) -> Payment:
     (updating amount_paid/status), issues a Receipt, and rolls the Contract
     to 'completed' once fully paid. Idempotent: re-applying an already
     completed payment is a no-op.
+
+    Overpayment: if the payment amount exceeds what's owed on the selected
+    installment, the excess cascades forward to the next unpaid installment(s)
+    on the same contract, in order, until it's exhausted or none remain.
     """
     if payment.status == Payment.Status.COMPLETED:
         return payment
@@ -33,14 +54,18 @@ def apply_payment(payment: Payment) -> Payment:
     payment.status = Payment.Status.COMPLETED
     payment.save(update_fields=["status", "paid_at"] if payment.paid_at else ["status"])
 
-    installment = payment.installment
-    if installment is not None:
-        installment.amount_paid = installment.amount_paid + payment.amount
-        if installment.amount_paid >= installment.amount_due:
-            installment.status = Installment.Status.PAID
-        elif installment.amount_paid > 0:
-            installment.status = Installment.Status.PARTIALLY_PAID
-        installment.save(update_fields=["amount_paid", "status"])
+    if payment.installment is not None:
+        leftover = _apply_to_installment(payment.installment, payment.amount)
+        if leftover > 0:
+            next_installments = (
+                Installment.objects.filter(contract=payment.contract, status__in=["pending", "partially_paid"])
+                .exclude(pk=payment.installment.pk)
+                .order_by("installment_number")
+            )
+            for inst in next_installments:
+                if leftover <= 0:
+                    break
+                leftover = _apply_to_installment(inst, leftover)
 
     if not hasattr(payment, "receipt"):
         receipt = Receipt.objects.create(payment=payment, receipt_number=_next_receipt_number())
@@ -64,10 +89,12 @@ def apply_payment(payment: Payment) -> Payment:
             )
 
     for recipient in _contract_client_and_agent(payment.contract):
+        from admin_panel.models import PlatformSettings
+        cur = PlatformSettings.load().currency_symbol
         notify(
             recipient, Notification.NotificationType.PAYMENT_RECEIVED,
             "Payment received",
-            f"A payment of ₱{payment.amount:,.2f} was received for contract {contract.contract_number}.",
+            f"A payment of {cur}{payment.amount:,.2f} was received for contract {contract.contract_number}.",
             related_object_id=payment.id,
         )
 
