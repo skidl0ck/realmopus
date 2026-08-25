@@ -29,3 +29,70 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.notification_type} -> {self.recipient}"
+
+
+class Conversation(models.Model):
+    """A single chatbot session. The public site is anonymous, so sessions
+    are identified by a client-generated ID (stored in the visitor's
+    browser) rather than a User — client is set only once we build the
+    authenticated client-portal version of the chatbot."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session_id = models.CharField(max_length=64, unique=True, db_index=True)
+    client = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="chat_conversations",
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    last_message_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_message_at"]
+
+    def __str__(self):
+        return f"Conversation {str(self.id)[:8]} ({self.session_id[:8]})"
+
+
+class ChatMessage(models.Model):
+    class Role(models.TextChoices):
+        USER = "user", "User"
+        ASSISTANT = "assistant", "Assistant"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="chat_messages")
+    role = models.CharField(max_length=10, choices=Role.choices)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.role}: {self.content[:50]}"
+
+
+class KnowledgeBaseEntry(models.Model):
+    """Staff-managed FAQ entries — every active entry is included in the
+    chatbot's system prompt alongside the live listings data, so the bot can
+    answer questions beyond just 'what lots do you have'."""
+
+    class Category(models.TextChoices):
+        RESERVATION = "reservation", "Reservation & Buying Process"
+        PAYMENT = "payment", "Payment Plans & Pricing"
+        PORTAL = "portal", "Client Portal"
+        LEGAL = "legal", "Legal & Ownership"
+        GENERAL = "general", "Company / General"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    category = models.CharField(max_length=20, choices=Category.choices, default=Category.GENERAL)
+    question = models.CharField(max_length=300)
+    answer = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category", "question"]
+        verbose_name_plural = "Knowledge base entries"
+
+    def __str__(self):
+        return self.question

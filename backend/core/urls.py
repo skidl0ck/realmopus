@@ -7,5 +7,7 @@ router.register("notifications", views.NotificationViewSet, basename="notificati
 
 urlpatterns = [
     path('site-config/', views.site_config, name='site_config'),
+    path('chat/', views.chat, name='chat'),
+    path('chat/history/', views.chat_history, name='chat_history'),
     path('', include(router.urls)),
 ]

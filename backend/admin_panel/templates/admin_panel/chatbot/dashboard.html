@@ -1,0 +1,41 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Chatbot Dashboard — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">AI Chatbot</h1>
+<p class="eo-subtitle mb-6">Public-site Q&A assistant — usage overview.</p>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ total_conversations }}</p>
+    <p class="eo-stat-label">Total conversations</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ messages_today }}</p>
+    <p class="eo-stat-label">Messages today</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ messages_this_week }}</p>
+    <p class="eo-stat-label">Messages this week</p>
+  </div>
+  <div class="eo-stat">
+    <p class="eo-stat-value">{{ avg_messages }}</p>
+    <p class="eo-stat-label">Avg messages / conversation</p>
+  </div>
+</div>
+
+<div class="eo-card eo-card-pad">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="eo-display font-semibold text-base">Recent Conversations</h2>
+    <a href="{% url 'admin_panel:conversation_list' %}" class="eo-link text-sm">View all</a>
+  </div>
+  {% for c in recent_conversations %}
+  <a href="{% url 'admin_panel:conversation_detail' c.id %}" class="flex justify-between text-sm py-2" style="border-top: 1px solid var(--hairline); display: flex;">
+    <span class="eo-subtitle">Session {{ c.session_id|truncatechars:12 }}</span>
+    <span>{{ c.message_count }} message{{ c.message_count|pluralize }}</span>
+    <span class="eo-subtitle eo-num">{{ c.last_message_at|timesince }} ago</span>
+  </a>
+  {% empty %}
+  <p class="eo-subtitle text-sm py-4">No conversations yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Conversation — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Conversation</h1>
+<p class="eo-subtitle mb-6">
+  Session {{ conversation.session_id }} · started {{ conversation.started_at|date:"Y-m-d H:i" }}
+</p>
+
+<div class="eo-card eo-card-pad space-y-3" style="max-width: 40rem;">
+  {% for m in conversation.chat_messages.all %}
+  <div class="flex {% if m.role == 'user' %}justify-end{% else %}justify-start{% endif %}">
+    <div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm
+      {% if m.role == 'user' %}text-white{% else %}border{% endif %}"
+      style="{% if m.role == 'user' %}background: var(--ledger);{% else %}background: #F5F3EE; border-color: var(--hairline);{% endif %}">
+      {{ m.content }}
+      <p class="text-xs mt-1 {% if m.role == 'user' %}text-emerald-100{% else %}eo-subtitle{% endif %}">{{ m.created_at|date:"H:i" }}</p>
+    </div>
+  </div>
+  {% empty %}
+  <p class="eo-subtitle text-sm">No messages in this conversation.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ import { getStoredUser, logout } from "@/lib/auth";
 import { useAuthStore, NAV_ITEMS_BY_ROLE } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { apiClient } from "@/lib/api-client";
+import { ChatWidget } from "@/components/chat-widget";
 
 async function fetchUnreadCount(): Promise<number> {
   const { data } = await apiClient.get("/notifications/unread_count/");
@@ -82,6 +83,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
         </button>
       </aside>
       <div className="flex-1 px-6 sm:px-10 py-10 max-w-4xl">{children}</div>
+      <ChatWidget />
     </div>
   );
 }

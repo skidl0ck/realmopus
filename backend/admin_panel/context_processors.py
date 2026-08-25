@@ -11,6 +11,10 @@ NAV_GROUP_URL_NAMES = {
         "expense_bulk_upload", "cash_flow_dashboard",
     },
     "settings": {"document_settings", "business_settings", "audit_log_list", "role_permissions"},
+    "chatbot": {
+        "chatbot_dashboard", "conversation_list", "conversation_detail", "chatbot_analytics",
+        "kb_list", "kb_create", "kb_edit",
+    },
 }
 
 
@@ -25,9 +29,10 @@ def notifications(request):
 def role_permissions(request):
     """
     Exposes which configurable sections the current staff user can currently
-    VIEW, so the sidebar nav stays consistent with what @dynamic_permission
-    actually enforces on each page — admin always sees everything; other
-    staff see only what's been granted in the Role Permissions matrix.
+    VIEW and EDIT, so the sidebar nav stays consistent with what
+    @dynamic_permission actually enforces on each page — admin always sees
+    everything; other staff see only what's been granted in the Role
+    Permissions matrix.
     """
     user = request.user
     if not user.is_authenticated or user.role not in ("admin", "sales_agent", "accountant"):
@@ -35,14 +40,20 @@ def role_permissions(request):
 
     if user.role == "admin":
         can_view = {section: True for section in SECTION_ACTIONS}
+        can_edit = {section: True for section in SECTION_ACTIONS}
     else:
-        granted = set(
+        granted_view = set(
             RolePermission.objects.filter(role=user.role, action="view", can_access=True)
             .values_list("section", flat=True)
         )
-        can_view = {section: (section in granted) for section in SECTION_ACTIONS}
+        granted_edit = set(
+            RolePermission.objects.filter(role=user.role, action="edit", can_access=True)
+            .values_list("section", flat=True)
+        )
+        can_view = {section: (section in granted_view) for section in SECTION_ACTIONS}
+        can_edit = {section: (section in granted_edit) for section in SECTION_ACTIONS}
 
-    return {"can_view": can_view}
+    return {"can_view": can_view, "can_edit": can_edit}
 
 
 def nav_state(request):

@@ -45,8 +45,8 @@
     }
     .eo-nav-group-toggle:hover { color: var(--ink); border-left-color: var(--hairline); }
     .eo-nav-group-toggle.active { color: var(--ledger); border-left-color: var(--ledger); }
-    .eo-nav-chevron { font-size: 0.75rem; transition: transform 0.15s ease; display: inline-block; }
-    .eo-nav-chevron.open { transform: rotate(180deg); }
+    .eo-nav-chevron { font-size: 0.625rem; transition: transform 0.15s ease; display: inline-block; }
+    .eo-nav-chevron.open { transform: rotate(90deg); }
     .eo-nav-subgroup { padding-left: 0.75rem; }
     .eo-nav-subgroup .eo-nav-link { font-size: 0.8125rem; }
 
@@ -134,7 +134,7 @@
         <div class="eo-nav-group">
           <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'lots' %}active{% endif %}" data-group="lots">
             <span>Lots</span>
-            <span class="eo-nav-chevron {% if nav_open_group == 'lots' %}open{% endif %}">⌄</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'lots' %}open{% endif %}">▸</span>
           </button>
           <div class="eo-nav-subgroup" data-group-panel="lots" style="display: {% if nav_open_group == 'lots' %}block{% else %}none{% endif %};">
             <a href="{% url 'admin_panel:lot_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'lot_list' or request.resolver_match.url_name == 'lot_create' or request.resolver_match.url_name == 'lot_edit' or request.resolver_match.url_name == 'lot_detail' %}active{% endif %}">Browse Lots</a>
@@ -161,7 +161,7 @@
         <div class="eo-nav-group">
           <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'expenses' %}active{% endif %}" data-group="expenses">
             <span>Expenses</span>
-            <span class="eo-nav-chevron {% if nav_open_group == 'expenses' %}open{% endif %}">⌄</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'expenses' %}open{% endif %}">▸</span>
           </button>
           <div class="eo-nav-subgroup" data-group-panel="expenses" style="display: {% if nav_open_group == 'expenses' %}block{% else %}none{% endif %};">
             <a href="{% url 'admin_panel:expense_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'expense_list' or request.resolver_match.url_name == 'expense_create' %}active{% endif %}">Browse Expenses</a>
@@ -180,6 +180,25 @@
         {% endif %}
         {% endif %}
 
+        {% if can_view.chatbot %}
+        <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">AI Chatbot</p>
+        <a href="{% url 'admin_panel:chatbot_dashboard' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'chatbot_dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="{% url 'admin_panel:conversation_list' %}" class="eo-nav-link {% if 'conversation' in request.resolver_match.url_name %}active{% endif %}">Conversations</a>
+        <a href="{% url 'admin_panel:chatbot_analytics' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'chatbot_analytics' %}active{% endif %}">Analytics</a>
+        <div class="eo-nav-group">
+          <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'chatbot' %}active{% endif %}" data-group="chatbot">
+            <span>Knowledge Base</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'chatbot' %}open{% endif %}">▸</span>
+          </button>
+          <div class="eo-nav-subgroup" data-group-panel="chatbot" style="display: {% if nav_open_group == 'chatbot' %}block{% else %}none{% endif %};">
+            <a href="{% url 'admin_panel:kb_list' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'kb_list' %}active{% endif %}">All FAQ Entries</a>
+            {% if can_edit.chatbot %}
+            <a href="{% url 'admin_panel:kb_create' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'kb_create' %}active{% endif %}">Add New Entry</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
         {% if can_view.clients or user.role == 'admin' %}
         <p class="eo-eyebrow px-3 mb-1" style="margin-top: 1.25rem;">People</p>
         {% if can_view.clients %}
@@ -195,7 +214,7 @@
         <div class="eo-nav-group">
           <button type="button" class="eo-nav-group-toggle {% if nav_open_group == 'settings' %}active{% endif %}" data-group="settings">
             <span>Settings</span>
-            <span class="eo-nav-chevron {% if nav_open_group == 'settings' %}open{% endif %}">⌄</span>
+            <span class="eo-nav-chevron {% if nav_open_group == 'settings' %}open{% endif %}">▸</span>
           </button>
           <div class="eo-nav-subgroup" data-group-panel="settings" style="display: {% if nav_open_group == 'settings' %}block{% else %}none{% endif %};">
             <a href="{% url 'admin_panel:document_settings' %}" class="eo-nav-link {% if request.resolver_match.url_name == 'document_settings' %}active{% endif %}">Document Settings</a>
@@ -213,22 +232,8 @@
               var panel = document.querySelector('[data-group-panel="' + btn.dataset.group + '"]');
               var chevron = btn.querySelector('.eo-nav-chevron');
               var isOpen = panel.style.display !== 'none';
-
-              document.querySelectorAll('[data-group-panel]').forEach(function (otherPanel) {
-                if (otherPanel !== panel) {
-                  otherPanel.style.display = 'none';
-                }
-              });
-              document.querySelectorAll('.eo-nav-group-toggle').forEach(function (otherBtn) {
-                if (otherBtn !== btn) {
-                  otherBtn.classList.remove('active');
-                  otherBtn.querySelector('.eo-nav-chevron').classList.remove('open');
-                }
-              });
-
               panel.style.display = isOpen ? 'none' : 'block';
               chevron.classList.toggle('open', !isOpen);
-              btn.classList.toggle('active', !isOpen);
             });
           });
         })();

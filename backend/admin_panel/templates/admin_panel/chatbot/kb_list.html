@@ -1,0 +1,52 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Knowledge Base — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Knowledge Base</h1>
+    <p class="eo-subtitle">FAQ entries the chatbot draws on, alongside live listings data.</p>
+  </div>
+  {% if can_edit.chatbot %}
+  <a href="{% url 'admin_panel:kb_create' %}" class="eo-btn-primary">New Entry</a>
+  {% endif %}
+</div>
+
+<form method="get" class="mb-4">
+  <select name="category" onchange="this.form.submit()" class="eo-input" style="width: auto;">
+    <option value="">All categories</option>
+    {% for value, label in categories %}
+      <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="space-y-3">
+  {% for entry in entries %}
+  <div class="eo-card eo-card-pad">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <p class="font-medium eo-display">{{ entry.question }}</p>
+          <span class="eo-stamp eo-stamp--gray">{{ entry.get_category_display }}</span>
+          <span class="eo-stamp {% if entry.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if entry.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </div>
+        <p class="eo-subtitle text-sm">{{ entry.answer }}</p>
+      </div>
+      {% if can_edit.chatbot %}
+      <div class="flex gap-3 shrink-0 text-sm">
+        <a href="{% url 'admin_panel:kb_edit' entry.id %}" class="eo-link">Edit</a>
+        <form method="post" action="{% url 'admin_panel:kb_delete' entry.id %}" onsubmit="return confirm('Delete this FAQ entry?');">
+          {% csrf_token %}
+          <button type="submit" style="color: var(--stamp);">Delete</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <p class="eo-subtitle text-sm py-6 text-center">No FAQ entries yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -9,5 +9,6 @@ Pillow>=10.0
 celery>=5.4
 redis>=5.0
 xhtml2pdf>=0.2.16
+google-genai>=1.0
 gunicorn>=22.0
 whitenoise>=6.7

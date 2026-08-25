@@ -523,3 +523,18 @@ class StaffEditForm(forms.Form):
         # untouched — kept as historical record rather than deactivated, per design.
 
         return user
+
+
+# --- AI Chatbot: Knowledge Base --------------------------------------------------
+from core.models import KnowledgeBaseEntry
+
+
+class KnowledgeBaseEntryForm(forms.ModelForm):
+    class Meta:
+        model = KnowledgeBaseEntry
+        fields = ["category", "question", "answer", "is_active"]
+        widgets = {
+            "category": forms.Select(attrs={"class": INPUT_CLASSES}),
+            "question": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "answer": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 4}),
+        }

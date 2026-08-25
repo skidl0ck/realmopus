@@ -1,0 +1,93 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Chatbot Analytics — EstateOS Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-1 flex-wrap gap-3">
+  <h1 class="eo-title">Chatbot Analytics</h1>
+  <div class="flex items-center gap-2">
+    <a href="?range=7d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '7d' %}background: var(--ledger); color: white;{% endif %}">7 days</a>
+    <a href="?range=30d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '30d' %}background: var(--ledger); color: white;{% endif %}">30 days</a>
+    <a href="?range=90d" class="eo-btn-secondary" style="padding: 0.25rem 0.875rem; font-size: 0.75rem; {% if range_param == '90d' %}background: var(--ledger); color: white;{% endif %}">90 days</a>
+  </div>
+</div>
+<p class="eo-subtitle mb-6">{{ total_messages_in_range }} messages in this period.</p>
+
+<div class="eo-card eo-card-pad mb-6">
+  <h2 class="eo-display font-semibold text-base mb-4">Messages per day</h2>
+  <canvas id="usageTrendChart" height="80"></canvas>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-6">
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">Busiest times <span class="eo-subtitle text-sm">— by hour of day</span></h2>
+    <canvas id="busyHoursChart" height="120"></canvas>
+  </div>
+
+  <div class="eo-card eo-card-pad">
+    <h2 class="eo-display font-semibold text-base mb-4">
+      Popular topics <span class="eo-subtitle text-sm">— most-used words in questions</span>
+    </h2>
+    {% if top_keywords %}
+    <table class="eo-table">
+      <thead><tr><th>Word</th><th>Mentions</th></tr></thead>
+      <tbody>
+        {% for word, count in top_keywords %}
+        <tr><td>{{ word }}</td><td class="eo-num">{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="eo-subtitle text-xs mt-3">A simple keyword frequency count, not full topic analysis.</p>
+    {% else %}
+    <p class="eo-subtitle text-sm">No questions recorded in this period yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_counts|json_script:"chart-counts" }}
+{{ hour_labels|json_script:"hour-labels" }}
+{{ hour_data|json_script:"hour-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+  const counts = JSON.parse(document.getElementById('chart-counts').textContent);
+  new Chart(document.getElementById('usageTrendChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Messages',
+        data: counts,
+        borderColor: '#1F5D45',
+        backgroundColor: 'rgba(31,93,69,0.08)',
+        fill: true,
+        tension: 0.25,
+        pointRadius: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    },
+  });
+
+  const hourLabels = JSON.parse(document.getElementById('hour-labels').textContent);
+  const hourData = JSON.parse(document.getElementById('hour-data').textContent);
+  new Chart(document.getElementById('busyHoursChart'), {
+    type: 'bar',
+    data: {
+      labels: hourLabels,
+      datasets: [{
+        label: 'Messages',
+        data: hourData,
+        backgroundColor: '#B98B2E',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    },
+  });
+</script>
+{% endblock %}
