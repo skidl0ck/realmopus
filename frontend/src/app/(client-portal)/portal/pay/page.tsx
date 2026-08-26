@@ -52,17 +52,17 @@ export default function PayPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-1">Make a Payment</h1>
-      <p className="text-stone-500 text-sm mb-8">
+      <h1 className="font-display text-2xl mb-1 text-cream">Make a Payment</h1>
+      <p className="text-sand text-sm mb-8">
         Pay an upcoming installment via PayPal or a local e-wallet.
       </p>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm max-w-md">
-        <label className="block text-sm font-medium text-stone-700 mb-1">Installment</label>
+      <div className="rounded-2xl border border-clay bg-clay p-6 max-w-md">
+        <label className="block text-sm font-medium text-sand mb-1">Installment</label>
         <select
           value={selectedInstallment}
           onChange={(e) => setSelectedInstallment(e.target.value)}
-          className="w-full mb-4 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm"
         >
           <option value="">Select an installment…</option>
           {unpaidInstallments.map((inst: Installment) => (
@@ -73,15 +73,15 @@ export default function PayPage() {
           ))}
         </select>
 
-        <label className="block text-sm font-medium text-stone-700 mb-1">Payment method</label>
+        <label className="block text-sm font-medium text-sand mb-1">Payment method</label>
         <div className="flex gap-3 mb-6">
           <button
             type="button"
             onClick={() => setMethod("paypal")}
             className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
               method === "paypal"
-                ? "border-emerald-700 bg-emerald-50 text-emerald-800"
-                : "border-stone-300 text-stone-600"
+                ? "border-marigold bg-marigold/10 text-marigold"
+                : "border-clay text-sand"
             }`}
           >
             PayPal
@@ -91,8 +91,8 @@ export default function PayPage() {
             onClick={() => setMethod("paymongo")}
             className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
               method === "paymongo"
-                ? "border-emerald-700 bg-emerald-50 text-emerald-800"
-                : "border-stone-300 text-stone-600"
+                ? "border-marigold bg-marigold/10 text-marigold"
+                : "border-clay text-sand"
             }`}
           >
             GCash / Maya
@@ -103,8 +103,8 @@ export default function PayPage() {
           <p
             className={`mb-4 text-sm rounded-lg px-3 py-2 ${
               status.type === "error"
-                ? "bg-red-50 text-red-600 border border-red-200"
-                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                ? "bg-rust/10 text-rust border border-rust/30"
+                : "bg-sage/10 text-sage border border-sage/30"
             }`}
           >
             {status.message}
@@ -114,7 +114,7 @@ export default function PayPage() {
         <button
           onClick={handlePay}
           disabled={submitting}
-          className="w-full rounded-full bg-emerald-800 text-white py-2.5 font-medium hover:bg-emerald-900 transition disabled:opacity-50"
+          className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
           {submitting ? "Processing…" : "Continue to payment"}
         </button>

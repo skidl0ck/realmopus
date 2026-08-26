@@ -59,7 +59,62 @@
     <button type="submit" class="eo-btn-secondary">Set Agent Commission</button>
   </form>
   {% endif %}
+  {% if total_overdue > 0 %}
+  <form method="post" action="{% url 'admin_panel:contract_send_reminder' contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ total_overdue|floatformat:2|intcomma }} overdue balance?');">
+    {% csrf_token %}
+    <button type="submit" class="eo-btn-secondary">Send Reminder</button>
+  </form>
+  {% endif %}
 </div>
+
+{% if total_overdue > 0 %}
+<div class="eo-card eo-card-pad mb-6" style="border-color: var(--stamp);">
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="eo-eyebrow mb-1">Accounts Receivable</p>
+      <p class="font-medium">
+        {{ currency_symbol }}{{ total_overdue|floatformat:2|intcomma }} overdue
+        <span class="eo-subtitle">— oldest balance {{ oldest_days_overdue }} day{{ oldest_days_overdue|pluralize }} past due</span>
+      </p>
+    </div>
+    <p class="eo-subtitle text-sm">
+      {% if last_reminder %}
+        Last reminder: {{ last_reminder.get_stage_display }}, {{ last_reminder.sent_at|timesince }} ago
+      {% else %}
+        No reminder sent yet
+      {% endif %}
+    </p>
+  </div>
+</div>
+{% endif %}
+
+{% if reminder_history %}
+<div class="eo-card mb-6">
+  <h2 class="eo-display font-semibold text-base px-6 pt-6 pb-4">Reminder History</h2>
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>Sent</th>
+        <th>Sent By</th>
+        <th>Overdue Amount</th>
+        <th>Days Overdue</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for reminder in reminder_history %}
+      <tr>
+        <td>{{ reminder.get_stage_display }}</td>
+        <td class="eo-num">{{ reminder.sent_at|date:"Y-m-d H:i" }} ({{ reminder.sent_at|timesince }} ago)</td>
+        <td>{% if reminder.sent_by %}{{ reminder.sent_by.get_full_name|default:reminder.sent_by.username }}{% else %}Automated{% endif %}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ reminder.overdue_amount_snapshot|floatformat:2|intcomma }}</td>
+        <td class="eo-num">{{ reminder.oldest_days_overdue_snapshot }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
 <div class="grid sm:grid-cols-2 gap-6 mb-8">
   <div class="eo-card eo-card-pad">

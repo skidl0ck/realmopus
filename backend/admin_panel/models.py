@@ -58,6 +58,15 @@ class PlatformSettings(models.Model):
         blank=True,
         help_text="Appears at the bottom of every generated Statement of Account and receipt.",
     )
+    reminder_stage1_days = models.PositiveIntegerField(
+        default=7, help_text="Days overdue before a gentle payment reminder is sent.",
+    )
+    reminder_stage2_days = models.PositiveIntegerField(
+        default=15, help_text="Days overdue before a firmer payment reminder is sent.",
+    )
+    reminder_stage3_days = models.PositiveIntegerField(
+        default=30, help_text="Days overdue before a formal payment demand is sent.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

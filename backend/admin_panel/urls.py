@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views, permissions_views, chatbot_views
+from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views, permissions_views, chatbot_views, collections_views
 
 app_name = "admin_panel"
 
@@ -30,6 +30,7 @@ urlpatterns = [
     path('contracts/new/', sales_views.contract_create, name='contract_create'),
     path('contracts/<uuid:pk>/', sales_views.contract_detail, name='contract_detail'),
     path('contracts/<uuid:pk>/regenerate-documents/', sales_views.contract_regenerate_documents, name='contract_regenerate_documents'),
+    path('contracts/<uuid:pk>/send-reminder/', sales_views.contract_send_reminder, name='contract_send_reminder'),
     path('contracts/<uuid:pk>/add-fee/', sales_views.contract_add_fee, name='contract_add_fee'),
     path('contracts/<uuid:pk>/generate-schedule/', sales_views.contract_generate_schedule, name='contract_generate_schedule'),
     path('contracts/<uuid:pk>/set-commission/', sales_views.contract_set_commission, name='contract_set_commission'),
@@ -64,6 +65,7 @@ urlpatterns = [
     path('audit-log/', audit_views.audit_log_list, name='audit_log_list'),
 
     path('reports/', reports_views.reports_index, name='reports_index'),
+    path('accounts-receivable/', collections_views.accounts_receivable_list, name='accounts_receivable_list'),
     path('reports/collections/', reports_views.collections_report, name='collections_report'),
     path('reports/collections/export.csv', reports_views.collections_report_csv, name='collections_report_csv'),
     path('reports/collections/export.pdf', reports_views.collections_report_pdf, name='collections_report_pdf'),

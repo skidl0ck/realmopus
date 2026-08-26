@@ -3,8 +3,9 @@ from decimal import Decimal
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
-from sales.models import Contract, Fee, Commission
+from sales.models import Contract, Fee, Commission, PaymentReminder
 from sales.services import generate_amortization_schedule
+from sales.ar_reminders import get_overdue_summary, send_payment_reminder
 from sales.pdf import regenerate_contract_documents
 from properties.models import Reservation
 
@@ -80,14 +81,32 @@ def _generate_contract_number():
 def contract_detail(request, pk):
     contract = get_object_or_404(
         Contract.objects.select_related("lot", "client", "agent", "commission")
-        .prefetch_related("fees", "installments", "payments"),
+        .prefetch_related("fees", "installments", "payments", "payment_reminders"),
         pk=pk,
     )
     fee_form = FeeForm()
+    total_overdue, oldest_days_overdue, _ = get_overdue_summary(contract)
+    last_reminder = contract.payment_reminders.first()  # Meta.ordering = ["-sent_at"]
     return render(request, "admin_panel/contracts/detail.html", {
         "contract": contract,
         "fee_form": fee_form,
+        "total_overdue": total_overdue,
+        "oldest_days_overdue": oldest_days_overdue,
+        "last_reminder": last_reminder,
+        "reminder_history": contract.payment_reminders.select_related("sent_by").all(),
     })
+
+
+@dynamic_permission("contracts", "edit")
+@audit_action("sent_payment_reminder", model_name="Contract", get_object_id=lambda request, pk: pk)
+def contract_send_reminder(request, pk):
+    contract = get_object_or_404(Contract, pk=pk)
+    try:
+        send_payment_reminder(contract, PaymentReminder.Stage.MANUAL, sent_by=request.user)
+        messages.success(request, "Payment reminder sent.")
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    return redirect("admin_panel:contract_detail", pk=pk)
 
 
 @dynamic_permission("contracts", "edit")

@@ -1,0 +1,62 @@
+{% extends "admin_panel/base.html" %}
+{% load humanize %}
+{% block title %}Accounts Receivable — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Accounts Receivable</h1>
+<p class="eo-subtitle mb-6">Active contracts with an overdue balance, as of {{ today }}.</p>
+
+<div class="eo-card mb-6">
+  <table class="eo-table">
+    <thead>
+      <tr>
+        <th>Contract #</th>
+        <th>Buyer</th>
+        <th>Overdue Balance</th>
+        <th>Oldest Days Overdue</th>
+        <th>Last Reminder</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><a href="{% url 'admin_panel:contract_detail' row.contract.id %}" class="eo-link">{{ row.contract.contract_number }}</a></td>
+        <td>{{ row.buyer_name }}</td>
+        <td class="eo-num">{{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }}</td>
+        <td class="eo-num">
+          <span class="eo-stamp {% if row.oldest_days_overdue >= 30 %}eo-stamp--red{% elif row.oldest_days_overdue >= 15 %}eo-stamp--gold{% else %}eo-stamp--gray{% endif %}">
+            {{ row.oldest_days_overdue }} day{{ row.oldest_days_overdue|pluralize }}
+          </span>
+        </td>
+        <td class="eo-subtitle text-sm">
+          {% if row.last_reminder %}
+            {{ row.last_reminder.get_stage_display }}, {{ row.last_reminder.sent_at|timesince }} ago
+          {% else %}
+            Never sent
+          {% endif %}
+        </td>
+        <td class="text-right">
+          {% if can_edit.contracts %}
+          <form method="post" action="{% url 'admin_panel:contract_send_reminder' row.contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }} overdue balance?');">
+            {% csrf_token %}
+            <button type="submit" class="eo-link">Send Reminder</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No overdue accounts right now.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if rows %}
+    <tfoot>
+      <tr>
+        <td colspan="2"><strong>Total</strong></td>
+        <td class="eo-num"><strong>{{ currency_symbol }}{{ grand_total|floatformat:2|intcomma }}</strong></td>
+        <td colspan="3"></td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

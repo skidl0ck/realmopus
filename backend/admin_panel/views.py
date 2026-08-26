@@ -10,6 +10,8 @@ from django.utils import timezone
 from properties.models import Project, Lot, Reservation
 from properties.services import expire_stale_reservations
 from sales.models import Contract, Installment
+from sales.services import apply_late_penalties
+from sales.ar_reminders import check_and_send_automated_reminders
 from payments.models import Payment
 from expenses.models import Expense
 from core.services import notify_once
@@ -54,6 +56,8 @@ def logout_view(request):
 def dashboard(request):
     today = timezone.localdate()
     expire_stale_reservations()  # lazy cleanup — releases any lot whose grace period fully lapsed
+    apply_late_penalties()  # lazy — marks overdue installments and adds penalty amounts (was defined but never wired up before now)
+    check_and_send_automated_reminders()  # lazy — escalates payment reminders for overdue contracts
 
     lots = Lot.objects.all()
     lot_counts = {

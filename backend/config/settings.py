@@ -140,6 +140,14 @@ PAYMONGO_SECRET_KEY = config('PAYMONGO_SECRET_KEY', default='')
 # https://aistudio.google.com/apikey
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 GEMINI_CHAT_MODEL = config('GEMINI_CHAT_MODEL', default='gemini-3.6-flash')
+
+# Celery — background/periodic jobs (payment reminder escalation, late
+# penalties, stale reservation cleanup). Requires Redis running, plus
+# separate `celery worker` and `celery beat` processes — see .env.example.
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Asia/Manila')
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
 PAYMONGO_PUBLIC_KEY = config('PAYMONGO_PUBLIC_KEY', default='')
 
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')

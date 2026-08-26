@@ -328,6 +328,7 @@ class BusinessSettingsForm(forms.ModelForm):
             "currency_symbol",
             "default_penalty_rate_percent", "default_interest_rate_percent",
             "default_reservation_fee", "reservation_hold_days",
+            "reminder_stage1_days", "reminder_stage2_days", "reminder_stage3_days",
         ]
         widgets = {
             "currency_symbol": forms.TextInput(attrs={"class": INPUT_CLASSES, "maxlength": 5, "style": "max-width: 6rem;"}),
@@ -335,6 +336,9 @@ class BusinessSettingsForm(forms.ModelForm):
             "default_interest_rate_percent": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "default_reservation_fee": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "reservation_hold_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_stage1_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_stage2_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_stage3_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
         }
         help_texts = {
             "currency_symbol": "Shown everywhere money is displayed — site-wide, and on all PDFs. Display only; amounts are never converted.",
@@ -342,7 +346,18 @@ class BusinessSettingsForm(forms.ModelForm):
             "default_interest_rate_percent": "Suggested annual interest rate for new installment contracts (staff can still override per contract).",
             "default_reservation_fee": "Used by the public 'Reserve this lot' flow when no fee is specified.",
             "reservation_hold_days": "How many days a public reservation holds a lot before its deadline, when auto-created.",
+            "reminder_stage1_days": "Days overdue before a gentle payment reminder is automatically sent.",
+            "reminder_stage2_days": "Days overdue before a firmer payment reminder is automatically sent.",
+            "reminder_stage3_days": "Days overdue before a formal payment demand is automatically sent.",
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        s1, s2, s3 = cleaned.get("reminder_stage1_days"), cleaned.get("reminder_stage2_days"), cleaned.get("reminder_stage3_days")
+        if s1 is not None and s2 is not None and s3 is not None:
+            if not (s1 < s2 < s3):
+                self.add_error("reminder_stage3_days", "Reminder stages must be in increasing order (gentle < firm < formal).")
+        return cleaned
 
 
 # --- Staff Users (Admin / Sales Agent / Accountant) & Commissions -----------------

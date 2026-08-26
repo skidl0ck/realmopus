@@ -33,28 +33,28 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-1">Settings</h1>
-      <p className="text-stone-500 text-sm mb-8">Manage how we contact you.</p>
+      <h1 className="font-display text-2xl mb-1 text-cream">Settings</h1>
+      <p className="text-sand text-sm mb-8">Manage how we contact you.</p>
 
-      {isLoading && <p className="text-stone-500">Loading…</p>}
+      {isLoading && <p className="text-sand">Loading…</p>}
 
       {user && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm max-w-lg">
-          <h2 className="font-serif text-lg mb-4">Email Notifications</h2>
+        <div className="rounded-2xl border border-clay bg-clay p-6 max-w-lg">
+          <h2 className="font-display text-lg mb-4 text-cream">Email Notifications</h2>
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={user.email_notifications_enabled}
               onChange={(e) => toggleEmailNotifications(e.target.checked)}
               disabled={saving}
-              className="mt-1 rounded border-stone-300 text-emerald-700 focus:ring-emerald-600"
+              className="mt-1 rounded border-clay text-marigold focus:ring-marigold"
             />
-            <span className="text-sm text-stone-700">
+            <span className="text-sm text-sand">
               Email me about my account and payments — payment confirmations, overdue
               reminders, and contract updates.
             </span>
           </label>
-          {saved && <p className="text-emerald-700 text-sm mt-3">Saved.</p>}
+          {saved && <p className="text-sage text-sm mt-3">Saved.</p>}
         </div>
       )}
     </div>

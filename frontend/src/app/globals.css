@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  /* EstateOS "Sun-Baked" palette — see docs/design.md */
+  --color-ink: #262220;
+  --color-clay: #4a4038;
+  --color-marigold: #d68a3e;
+  --color-sand: #a69a82;
+  --color-cream: #f5efe4;
+  --color-sage: #7a8b6f;
+  --color-rust: #9b4a3a;
+
+  --font-display: var(--font-fraunces), serif;
+  --font-body: var(--font-worksans), sans-serif;
+  --font-data: var(--font-plexmono), monospace;
+}
+
 @keyframes lot-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

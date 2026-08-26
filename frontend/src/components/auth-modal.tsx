@@ -105,64 +105,64 @@ export function AuthModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" onClick={close} />
+      <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" onClick={close} />
 
       {/* Modal card */}
-      <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-8">
+      <div className="relative w-full max-w-sm rounded-2xl bg-clay shadow-xl p-8 border border-clay">
         <button
           onClick={close}
           aria-label="Close"
-          className="absolute top-4 right-4 text-stone-400 hover:text-stone-600"
+          className="absolute top-4 right-4 text-sand/70 hover:text-cream"
         >
           ✕
         </button>
 
         {panel === "login" && (
           <form onSubmit={handleLogin}>
-            <h1 className="font-serif text-2xl mb-1">Sign in</h1>
-            <p className="text-stone-500 text-sm mb-6">
+            <h1 className="font-display text-2xl mb-1 text-cream">Sign in</h1>
+            <p className="text-sand text-sm mb-6">
               Access your contract, payment schedule, and receipts.
             </p>
 
             {error && (
-              <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Username</label>
+            <label className="block text-sm font-medium text-sand mb-1">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
-              className="w-full mb-4 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-sand mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full mb-6 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-emerald-800 text-white py-2.5 font-medium hover:bg-emerald-900 transition disabled:opacity-50"
+              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
 
-            <p className="mt-5 text-center text-sm text-stone-500">
+            <p className="mt-5 text-center text-sm text-sand">
               New buyer?{" "}
               <button
                 type="button"
                 onClick={() => { setPanel("register"); setError(null); }}
-                className="text-emerald-800 font-medium hover:underline"
+                className="text-marigold font-medium hover:underline"
               >
                 Register with your transaction number
               </button>
@@ -172,18 +172,18 @@ export function AuthModal() {
 
         {panel === "register" && (
           <form onSubmit={handleRegister}>
-            <h1 className="font-serif text-2xl mb-1">Create your account</h1>
-            <p className="text-stone-500 text-sm mb-6">
+            <h1 className="font-display text-2xl mb-1 text-cream">Create your account</h1>
+            <p className="text-sand text-sm mb-6">
               Enter the transaction number from your contract to set up online payments.
             </p>
 
             {error && (
-              <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Transaction number</label>
+            <label className="block text-sm font-medium text-sand mb-1">Transaction number</label>
             <input
               type="text"
               value={transactionNumber}
@@ -191,49 +191,49 @@ export function AuthModal() {
               placeholder="e.g. GV-2026-0001"
               required
               autoFocus
-              className="w-full mb-4 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Username</label>
+            <label className="block text-sm font-medium text-sand mb-1">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full mb-4 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Email (optional)</label>
+            <label className="block text-sm font-medium text-sand mb-1">Email (optional)</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mb-4 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-sand mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full mb-6 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-emerald-800 text-white py-2.5 font-medium hover:bg-emerald-900 transition disabled:opacity-50"
+              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
             >
               {loading ? "Creating account…" : "Create account"}
             </button>
 
-            <p className="mt-5 text-center text-sm text-stone-500">
+            <p className="mt-5 text-center text-sm text-sand">
               Already registered?{" "}
               <button
                 type="button"
                 onClick={() => { setPanel("login"); setError(null); }}
-                className="text-emerald-800 font-medium hover:underline"
+                className="text-marigold font-medium hover:underline"
               >
                 Sign in
               </button>
@@ -243,19 +243,19 @@ export function AuthModal() {
 
         {panel === "reactivate" && (
           <form onSubmit={handleReactivate}>
-            <h1 className="font-serif text-2xl mb-1">Transaction completed</h1>
-            <p className="text-stone-600 text-sm mb-6">
+            <h1 className="font-display text-2xl mb-1 text-cream">Transaction completed</h1>
+            <p className="text-sand text-sm mb-6">
               Your last transaction has been fully paid. Enter a new active
               transaction number to log in again.
             </p>
 
             {error && (
-              <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
 
-            <label className="block text-sm font-medium text-stone-700 mb-1">New transaction number</label>
+            <label className="block text-sm font-medium text-sand mb-1">New transaction number</label>
             <input
               type="text"
               value={transactionNumber}
@@ -263,13 +263,13 @@ export function AuthModal() {
               placeholder="e.g. GV-2026-0002"
               required
               autoFocus
-              className="w-full mb-6 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-emerald-800 text-white py-2.5 font-medium hover:bg-emerald-900 transition disabled:opacity-50"
+              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
             >
               {loading ? "Verifying…" : "Reactivate and sign in"}
             </button>
@@ -277,7 +277,7 @@ export function AuthModal() {
             <button
               type="button"
               onClick={() => { setPanel("login"); setError(null); }}
-              className="mt-4 w-full text-center text-sm text-stone-500 hover:text-stone-700"
+              className="mt-4 w-full text-center text-sm text-sand hover:text-cream"
             >
               ← Back to sign in
             </button>

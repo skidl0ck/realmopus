@@ -56,7 +56,7 @@ export function ChatWidget() {
       <button
         onClick={toggle}
         aria-label={isOpen ? "Close chat" : "Open chat"}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-800 text-white shadow-lg hover:bg-emerald-900 transition flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-marigold text-ink shadow-lg hover:opacity-90 transition flex items-center justify-center"
       >
         {isOpen ? (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -75,27 +75,27 @@ export function ChatWidget() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-[calc(100vw-3rem)] max-w-sm h-[32rem] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden">
-          <div className="bg-emerald-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="fixed bottom-24 right-6 z-40 w-[calc(100vw-3rem)] max-w-sm h-[32rem] max-h-[70vh] bg-clay rounded-2xl shadow-2xl border border-clay flex flex-col overflow-hidden">
+          <div className="bg-ink text-cream px-4 py-3 flex items-center justify-between shrink-0">
             <div>
-              <p className="font-serif text-base leading-tight">Chat with us</p>
-              <p className="text-xs text-emerald-100">Usually replies in seconds</p>
+              <p className="font-display text-base leading-tight">Chat with us</p>
+              <p className="text-xs text-sand">Usually replies in seconds</p>
             </div>
-            <button onClick={close} aria-label="Close chat" className="text-emerald-100 hover:text-white">
+            <button onClick={close} aria-label="Close chat" className="text-sand hover:text-cream">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" />
               </svg>
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-stone-50">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-ink">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
                     m.role === "user"
-                      ? "bg-emerald-800 text-white rounded-br-sm"
-                      : "bg-white border border-stone-200 text-stone-700 rounded-bl-sm"
+                      ? "bg-marigold text-ink rounded-br-sm"
+                      : "bg-clay border border-clay text-cream rounded-bl-sm"
                   }`}
                 >
                   {m.content}
@@ -104,14 +104,14 @@ export function ChatWidget() {
             ))}
             {isSending && (
               <div className="flex justify-start">
-                <div className="bg-white border border-stone-200 rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-stone-400">
+                <div className="bg-clay border border-clay rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-sand">
                   Typing…
                 </div>
               </div>
             )}
           </div>
 
-          <form onSubmit={sendMessage} className="border-t border-stone-200 p-3 flex flex-col gap-2 shrink-0">
+          <form onSubmit={sendMessage} className="border-t border-clay p-3 flex flex-col gap-2 shrink-0">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -119,20 +119,20 @@ export function ChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask a question…"
                 disabled={isSending}
-                className="flex-1 rounded-full border border-stone-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                className="flex-1 rounded-full border border-clay bg-ink text-cream px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
               />
               <button
                 type="submit"
                 disabled={isSending || !input.trim()}
                 aria-label="Send"
-                className="w-9 h-9 shrink-0 rounded-full bg-emerald-800 text-white flex items-center justify-center disabled:opacity-40 hover:bg-emerald-900 transition"
+                className="w-9 h-9 shrink-0 rounded-full bg-marigold text-ink flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
-            <p className="text-[11px] text-stone-400 text-center leading-tight">
+            <p className="text-[11px] text-sand/70 text-center leading-tight">
               Portfolio demo — please don&apos;t share real personal or financial information. Responses are AI-generated.
             </p>
           </form>

@@ -41,15 +41,15 @@ export default function ClientPortalLayout({ children }: { children: React.React
   });
 
   if (!ready || !user) {
-    return <div className="flex-1 flex items-center justify-center text-stone-400">Loading…</div>;
+    return <div className="flex-1 flex items-center justify-center bg-ink text-sand">Loading…</div>;
   }
 
   const navItems = NAV_ITEMS_BY_ROLE.client;
 
   return (
-    <div className="flex-1 flex">
-      <aside className="w-64 shrink-0 border-r border-stone-200 bg-white px-4 py-8 hidden sm:block">
-        <p className="text-xs uppercase tracking-wide text-stone-400 px-3 mb-4">
+    <div className="flex-1 flex bg-ink">
+      <aside className="w-64 shrink-0 border-r border-clay bg-clay px-4 py-8 hidden sm:block">
+        <p className="text-xs uppercase tracking-wide text-sand/70 px-3 mb-4">
           Client Portal
         </p>
         <nav className="space-y-1">
@@ -59,13 +59,13 @@ export default function ClientPortalLayout({ children }: { children: React.React
               href={item.href}
               className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition ${
                 pathname === item.href
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "text-stone-600 hover:bg-stone-50"
+                  ? "bg-marigold/20 text-marigold"
+                  : "text-sand hover:bg-ink"
               }`}
             >
               <span>{item.label}</span>
               {item.href === "/portal/notifications" && !!unreadCount && (
-                <span className="rounded-full bg-emerald-600 text-white text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                <span className="rounded-full bg-marigold text-ink text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center">
                   {unreadCount}
                 </span>
               )}
@@ -77,7 +77,7 @@ export default function ClientPortalLayout({ children }: { children: React.React
             logout();
             router.push("/");
           }}
-          className="mt-8 px-3 text-sm text-stone-400 hover:text-stone-600"
+          className="mt-8 px-3 text-sm text-sand/70 hover:text-cream"
         >
           Sign out
         </button>

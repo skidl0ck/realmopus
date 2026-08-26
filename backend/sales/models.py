@@ -182,3 +182,44 @@ class Commission(models.Model):
 
     def __str__(self):
         return f"Commission for {self.agent} on {self.contract.contract_number}"
+
+class PaymentReminder(models.Model):
+    """A single collections reminder sent for a Contract — one consolidated
+    reminder per send, covering every overdue installment on that contract
+    at the time, not one reminder per installment. Every send (automated or
+    staff-triggered) creates a row here, which powers the reminder history
+    and the "last sent" display on the contract."""
+
+    class Stage(models.TextChoices):
+        GENTLE = "gentle", "Gentle"
+        FIRM = "firm", "Firm"
+        FORMAL = "formal", "Formal"
+        MANUAL = "manual", "Manual"
+
+    class Channel(models.TextChoices):
+        EMAIL = "email", "Email"
+        # SMS = "sms", "SMS"  # not implemented yet — Channel already models it
+        # for when it is, so callers can branch on it without a schema change.
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name="payment_reminders")
+    stage = models.CharField(max_length=10, choices=Stage.choices)
+    channel = models.CharField(max_length=10, choices=Channel.choices, default=Channel.EMAIL)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    sent_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="sent_payment_reminders",
+        help_text="Null means this was sent automatically, not by a staff member.",
+    )
+    overdue_amount_snapshot = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        help_text="Total overdue balance across all unpaid installments at the moment this was sent.",
+    )
+    oldest_days_overdue_snapshot = models.PositiveIntegerField(
+        help_text="Days overdue on the single oldest unpaid installment at the moment this was sent.",
+    )
+
+    class Meta:
+        ordering = ["-sent_at"]
+
+    def __str__(self):
+        return f"{self.get_stage_display()} reminder for {self.contract.contract_number} on {self.sent_at:%Y-%m-%d}"

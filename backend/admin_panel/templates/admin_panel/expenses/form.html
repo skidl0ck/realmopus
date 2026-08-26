@@ -69,7 +69,7 @@
           return;
         }
         saveBtn.disabled = true;
-        fetch('/admin-panel/expenses/categories/quick-create/', {
+        fetch('/admin_panel/expenses/categories/quick-create/', {
           method: 'POST',
           headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
           body: 'name=' + encodeURIComponent(name),

@@ -17,33 +17,33 @@ export default function ReceiptsPage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-1">Receipts</h1>
-      <p className="text-stone-500 text-sm mb-8">Official receipts for each completed payment.</p>
+      <h1 className="font-display text-2xl mb-1 text-cream">Receipts</h1>
+      <p className="text-sand text-sm mb-8">Official receipts for each completed payment.</p>
 
-      {isLoading && <p className="text-stone-500">Loading…</p>}
-      {receipts?.length === 0 && <p className="text-stone-500">No receipts yet.</p>}
+      {isLoading && <p className="text-sand">Loading…</p>}
+      {receipts?.length === 0 && <p className="text-sand">No receipts yet.</p>}
 
       <div className="space-y-3">
         {receipts?.map((receipt) => (
           <div
             key={receipt.id}
-            className="rounded-xl border border-stone-200 bg-white px-5 py-4 flex items-center justify-between shadow-sm"
+            className="rounded-xl border border-clay bg-clay px-5 py-4 flex items-center justify-between"
           >
             <div>
-              <p className="font-medium">{receipt.receipt_number}</p>
-              <p className="text-stone-400 text-sm">
+              <p className="font-medium text-cream">{receipt.receipt_number}</p>
+              <p className="text-sand/70 text-sm">
                 Issued {new Date(receipt.issued_at).toLocaleDateString()}
               </p>
             </div>
             {receipt.pdf_file ? (
               <a
                 href={receipt.pdf_file}
-                className="text-sm text-emerald-800 font-medium hover:underline"
+                className="text-sm text-marigold font-medium hover:underline"
               >
                 Download PDF
               </a>
             ) : (
-              <span className="text-sm text-stone-400">PDF pending</span>
+              <span className="text-sm text-sand/70">PDF pending</span>
             )}
           </div>
         ))}

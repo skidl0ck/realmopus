@@ -33,43 +33,43 @@ export default function NotificationsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-serif text-2xl">Notifications</h1>
+        <h1 className="font-display text-2xl text-cream">Notifications</h1>
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="rounded-full border border-stone-300 px-4 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="rounded-full border border-clay px-4 py-1.5 text-sm font-medium text-sand hover:bg-clay"
           >
             Mark all read
           </button>
         )}
       </div>
-      <p className="text-stone-500 text-sm mb-8">Updates about your contract and payments.</p>
+      <p className="text-sand text-sm mb-8">Updates about your contract and payments.</p>
 
-      {isLoading && <p className="text-stone-500">Loading…</p>}
-      {notifications?.length === 0 && <p className="text-stone-500">No notifications yet.</p>}
+      {isLoading && <p className="text-sand">Loading…</p>}
+      {notifications?.length === 0 && <p className="text-sand">No notifications yet.</p>}
 
       <div className="space-y-2">
         {notifications?.map((n) => (
           <div
             key={n.id}
-            className={`rounded-xl border bg-white p-5 shadow-sm ${
-              n.is_read ? "border-stone-200" : "border-emerald-300"
+            className={`rounded-xl border bg-clay p-5 ${
+              n.is_read ? "border-clay" : "border-marigold"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className={`text-sm ${n.is_read ? "font-medium text-stone-700" : "font-semibold text-stone-900"}`}>
+                <p className={`text-sm ${n.is_read ? "font-medium text-sand" : "font-semibold text-cream"}`}>
                   {n.title}
                 </p>
-                <p className="text-stone-500 text-sm mt-1">{n.message}</p>
-                <p className="text-stone-400 text-xs mt-2">
+                <p className="text-sand text-sm mt-1">{n.message}</p>
+                <p className="text-sand/70 text-xs mt-2">
                   {new Date(n.created_at).toLocaleString()}
                 </p>
               </div>
               {!n.is_read && (
                 <button
                   onClick={() => markRead(n.id)}
-                  className="text-emerald-800 text-sm font-medium hover:underline shrink-0"
+                  className="text-marigold text-sm font-medium hover:underline shrink-0"
                 >
                   Mark read
                 </button>

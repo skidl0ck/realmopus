@@ -35,9 +35,9 @@ function nextStatus(current: Status): Status {
 }
 
 const STATUS_STYLES: Record<Status, string> = {
-  available: "bg-emerald-400",
-  reserved: "bg-amber-400",
-  sold: "bg-white/25",
+  available: "bg-sage",
+  reserved: "bg-marigold/70",
+  sold: "bg-cream/20",
 };
 
 export function LotGridAnimation() {
@@ -91,15 +91,15 @@ export function LotGridAnimation() {
         ))}
       </div>
 
-      <div className="flex items-center gap-4 mt-5 text-xs text-emerald-100">
+      <div className="flex items-center gap-4 mt-5 text-xs text-sand">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-emerald-400 inline-block" /> Available
+          <span className="w-2 h-2 rounded-sm bg-sage inline-block" /> Available
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-amber-400 inline-block" /> Reserved
+          <span className="w-2 h-2 rounded-sm bg-marigold/70 inline-block" /> Reserved
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-white/25 inline-block" /> Sold
+          <span className="w-2 h-2 rounded-sm bg-cream/20 inline-block" /> Sold
         </span>
       </div>
     </div>

@@ -38,9 +38,14 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 @permission_classes([permissions.AllowAny])
 def site_config(request):
     """Public, unauthenticated — the public site and client portal both need
-    the current currency symbol before a user is ever logged in."""
+    the current currency symbol and company name before a user is ever
+    logged in."""
     from admin_panel.models import PlatformSettings
-    return Response({"currency_symbol": PlatformSettings.load().currency_symbol})
+    settings_row = PlatformSettings.load()
+    return Response({
+        "currency_symbol": settings_row.currency_symbol,
+        "company_name": settings_row.company_name,
+    })
 
 
 CHAT_RATE_LIMIT = 15       # messages

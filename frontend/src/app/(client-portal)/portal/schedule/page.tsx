@@ -12,10 +12,10 @@ async function fetchMyContract(): Promise<Contract | null> {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-stone-100 text-stone-600",
-  partially_paid: "bg-amber-100 text-amber-800",
-  paid: "bg-emerald-100 text-emerald-800",
-  overdue: "bg-red-100 text-red-700",
+  pending: "bg-sand/20 text-sand",
+  partially_paid: "bg-marigold/20 text-marigold",
+  paid: "bg-sage/20 text-sage",
+  overdue: "bg-rust/20 text-rust",
 };
 
 export default function SchedulePage() {
@@ -27,18 +27,18 @@ export default function SchedulePage() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl mb-1">Payment Schedule</h1>
-      <p className="text-stone-500 text-sm mb-8">
+      <h1 className="font-display text-2xl mb-1 text-cream">Payment Schedule</h1>
+      <p className="text-sand text-sm mb-8">
         Your full amortization schedule, including fees and any penalties.
       </p>
 
-      {isLoading && <p className="text-stone-500">Loading…</p>}
-      {!isLoading && !contract && <p className="text-stone-500">No contract found.</p>}
+      {isLoading && <p className="text-sand">Loading…</p>}
+      {!isLoading && !contract && <p className="text-sand">No contract found.</p>}
 
       {contract && (
-        <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-sm">
+        <div className="rounded-2xl border border-clay bg-clay overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-stone-500 text-left">
+            <thead className="bg-ink text-sand text-left">
               <tr>
                 <th className="px-4 py-3 font-medium">#</th>
                 <th className="px-4 py-3 font-medium">Due date</th>
@@ -49,7 +49,7 @@ export default function SchedulePage() {
             </thead>
             <tbody>
               {(contract.installments ?? []).map((inst: Installment) => (
-                <tr key={inst.id} className="border-t border-stone-100">
+                <tr key={inst.id} className="border-t border-ink text-cream">
                   <td className="px-4 py-3">{inst.installment_number}</td>
                   <td className="px-4 py-3">{inst.due_date}</td>
                   <td className="px-4 py-3">{currency}{Number(inst.amount_due).toLocaleString()}</td>
