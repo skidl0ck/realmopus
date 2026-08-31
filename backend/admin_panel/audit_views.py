@@ -3,6 +3,7 @@ from django.shortcuts import render
 from accounts.models import User
 
 from .decorators import staff_required
+from .pagination import paginate
 from .models import StaffAuditLog
 
 
@@ -28,8 +29,10 @@ def audit_log_list(request):
     actors = User.objects.filter(role__in=[User.Role.ADMIN, User.Role.SALES_AGENT, User.Role.ACCOUNTANT]).order_by("username")
     action_choices = StaffAuditLog.objects.order_by().values_list("action", flat=True).distinct()
 
+    page_obj, per_page = paginate(request, logs)
     return render(request, "admin_panel/audit/list.html", {
-        "logs": logs[:500],  # a hard cap keeps this page fast without needing full pagination yet
+        "logs": page_obj,
+        "per_page": per_page,
         "actors": actors,
         "action_choices": action_choices,
         "selected_actor": actor_id or "",

@@ -20,22 +20,23 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Username</th>
+        <th class="hidden sm:table-cell">Username</th>
         <th>Role</th>
-        <th>Commission</th>
-        <th>Account</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Commission</th>
+        <th class="hidden sm:table-cell">Account</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Account</th>
       </tr>
     </thead>
     <tbody>
       {% for user in staff %}
       <tr>
         <td>{{ user.get_full_name|default:"—" }}</td>
-        <td class="eo-subtitle">{{ user.username }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ user.username }}</td>
         <td>
           <span class="eo-stamp
             {% if user.role == 'admin' %}eo-stamp--blue
@@ -44,23 +45,36 @@
             {{ user.get_role_display }}
           </span>
         </td>
-        <td class="eo-num">
+        <td class="hidden sm:table-cell eo-num">
           {% if user.role == 'sales_agent' %}
             {% if user.agent_profile.commission_type == 'percent' %}{{ user.agent_profile.commission_rate }}%
             {% else %}{{ currency_symbol }}{{ user.agent_profile.commission_rate|floatformat:2|intcomma }}{% endif %}
           {% else %}—{% endif %}
         </td>
-        <td>
+
+        {# Desktop: Account status and Edit are separate columns #}
+        <td class="hidden sm:table-cell">
           <span class="eo-stamp {% if user.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
             {% if user.is_active %}Active{% else %}Disabled{% endif %}
           </span>
         </td>
-        <td class="text-right"><a href="{% url 'admin_panel:staff_edit' user.id %}" class="eo-link">Edit</a></td>
+        <td class="hidden sm:table-cell text-right"><a href="{% url 'admin_panel:staff_edit' user.id %}" class="eo-link">Edit</a></td>
+
+        {# Mobile: Account status and Edit merged into one cell #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp {% if user.is_active %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+              {% if user.is_active %}Active{% else %}Disabled{% endif %}
+            </span>
+            <a href="{% url 'admin_panel:staff_edit' user.id %}" class="eo-link">Edit</a>
+          </div>
+        </td>
       </tr>
       {% empty %}
       <tr><td colspan="6" class="text-center eo-subtitle py-6">No staff users yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=staff per_page=per_page %}
 {% endblock %}

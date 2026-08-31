@@ -35,4 +35,5 @@
   <p class="eo-subtitle text-center py-8">No notifications yet.</p>
   {% endfor %}
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=notifications per_page=per_page %}
 {% endblock %}

@@ -4,12 +4,14 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.contrib import messages
+from django import forms as django_forms
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 
 from properties.models import Project, Lot, LotImage
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 from .forms import LotForm, LotCSVUploadForm
 
 LOT_CSV_REQUIRED_COLUMNS = {"project", "block_number", "lot_number", "area_sqm", "price_per_sqm"}
@@ -49,8 +51,10 @@ def lot_list(request):
         except InvalidOperation:
             pass
 
+    page_obj, per_page = paginate(request, lots)
     return render(request, "admin_panel/lots/list.html", {
-        "lots": lots,
+        "lots": page_obj,
+        "per_page": per_page,
         "projects": Project.objects.order_by("name"),
         "selected_project": project_id or "",
         "statuses": Lot.Status.choices,
@@ -66,14 +70,38 @@ def _save_uploaded_images(lot, files, request):
     Saves up to LotImage.MAX_IMAGES_PER_LOT images for a lot, respecting any
     already-uploaded count. Returns (created_count, ignored_count) and adds
     a message to the request if any files had to be dropped for exceeding the cap.
+
+    Validates actual file content, not just the filename/extension — the
+    model's ImageField alone doesn't catch this when saved via .objects.create()
+    directly (that only runs on form/model full_clean(), which this bypasses),
+    so a file named "photo.jpg" containing arbitrary non-image bytes would
+    otherwise be accepted and stored without complaint.
     """
     if not files:
         return 0, 0
 
+    image_validator = django_forms.ImageField()
+    valid_files = []
+    rejected_names = []
+    for f in files:
+        try:
+            image_validator.clean(f)
+            f.seek(0)  # .clean() reads the file to verify it; reset before it's actually saved
+            valid_files.append(f)
+        except ValidationError:
+            rejected_names.append(f.name)
+
+    if rejected_names:
+        messages.error(
+            request,
+            f"{len(rejected_names)} file(s) were rejected — not a valid image: "
+            f"{', '.join(rejected_names)}.",
+        )
+
     existing_count = lot.images.count()
     remaining_slots = max(LotImage.MAX_IMAGES_PER_LOT - existing_count, 0)
-    to_save = files[:remaining_slots]
-    ignored = files[remaining_slots:]
+    to_save = valid_files[:remaining_slots]
+    ignored = valid_files[remaining_slots:]
 
     for f in to_save:
         LotImage.objects.create(lot=lot, image=f)
@@ -81,7 +109,7 @@ def _save_uploaded_images(lot, files, request):
     if ignored:
         messages.warning(
             request,
-            f"Only {len(to_save)} of {len(files)} image(s) were saved — a lot can have at most "
+            f"Only {len(to_save)} of {len(valid_files)} image(s) were saved — a lot can have at most "
             f"{LotImage.MAX_IMAGES_PER_LOT} photos. {len(ignored)} file(s) were not uploaded.",
         )
 

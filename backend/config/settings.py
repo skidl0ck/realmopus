@@ -13,7 +13,12 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin' deliberately excluded — it gives raw, unrestricted
+    # CRUD access to every registered model (User, Contract, Payment, ...),
+    # completely bypassing the RBAC checks and audit logging admin_panel
+    # carefully implements throughout. The app-level admin.py files (e.g.
+    # sales/admin.py) are now inert without this — kept as-is rather than
+    # deleted, since removing this one line already fully disables them.
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

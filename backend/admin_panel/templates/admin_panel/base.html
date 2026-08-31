@@ -21,6 +21,7 @@
       --hairline: #DCD6C9;
       --muted: #6B675C;
     }
+    html, body { overflow-x: hidden; max-width: 100%; }
     body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; }
     .eo-display { font-family: 'Space Grotesk', sans-serif; }
     .eo-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
@@ -103,7 +104,15 @@
        (for rounded-corner clipping), which would silently defeat a fix placed
        on .eo-card instead. Making the <table> itself the scroll container
        sidesteps that conflict without touching any individual template. */
-    .eo-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* A table's own width:100% + display:block forces it to compress to its
+       container instead of actually overflowing — there's nothing left to
+       scroll to, so content just gets silently clipped by the page-level
+       overflow-x:hidden below. A real wrapping scroll container (.eo-table-scroll,
+       added around each table) fixes this: the table keeps its natural
+       display:table sizing (grows to fit its content, however wide that is),
+       and the wrapper is what actually provides the scrollbar. */
+    .eo-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .eo-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
     .eo-table thead { background: rgba(20,35,29,0.03); }
     .eo-table th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
     .eo-table td { padding: 0.75rem 1rem; border-top: 1px solid var(--hairline); }
@@ -364,7 +373,7 @@
     </aside>
     {% endif %}
 
-    <main class="flex-1 px-6 sm:px-10 py-10 max-w-5xl">
+    <main class="flex-1 min-w-0 px-6 sm:px-10 py-10 max-w-5xl">
       {% if messages %}
         <div class="mb-6 space-y-2">
           {% for message in messages %}

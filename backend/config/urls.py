@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
@@ -6,7 +5,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from accounts.auth import ClientAwareTokenObtainPairView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Django's default admin (path('admin/', admin.site.urls)) is deliberately
+    # not registered — see the INSTALLED_APPS comment in settings.py.
     path('api/auth/login/', ClientAwareTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/accounts/', include('accounts.urls')),

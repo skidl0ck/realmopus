@@ -5,12 +5,14 @@ from properties.models import Project
 
 from .decorators import dynamic_permission, audit_action
 from .forms import ProjectForm
+from .pagination import paginate
 
 
 @dynamic_permission("projects", "view")
 def project_list(request):
     projects = Project.objects.all().order_by("name")
-    return render(request, "admin_panel/projects/list.html", {"projects": projects})
+    page_obj, per_page = paginate(request, projects)
+    return render(request, "admin_panel/projects/list.html", {"projects": page_obj, "per_page": per_page})
 
 
 @dynamic_permission("projects", "create")

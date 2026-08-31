@@ -15,6 +15,7 @@ from payments.models import Payment
 from expenses.models import Expense, ExpenseCategory
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 from .forms import ExpenseForm, ExpenseCategoryForm, ExpenseCSVUploadForm
 
 EXPENSE_CSV_REQUIRED_COLUMNS = {"scope", "category", "description", "amount", "incurred_on"}
@@ -24,7 +25,8 @@ EXPENSE_CSV_OPTIONAL_COLUMNS = {"project"}
 @dynamic_permission("expenses", "view")
 def expense_list(request):
     expenses = Expense.objects.select_related("project", "category", "recorded_by").order_by("-incurred_on")
-    return render(request, "admin_panel/expenses/list.html", {"expenses": expenses})
+    page_obj, per_page = paginate(request, expenses)
+    return render(request, "admin_panel/expenses/list.html", {"expenses": page_obj, "per_page": per_page})
 
 
 @dynamic_permission("expenses", "create")
@@ -47,7 +49,8 @@ def expense_create(request):
 @dynamic_permission("expenses", "view")
 def expense_category_list(request):
     categories = ExpenseCategory.objects.order_by("name")
-    return render(request, "admin_panel/expenses/categories.html", {"categories": categories})
+    page_obj, per_page = paginate(request, categories)
+    return render(request, "admin_panel/expenses/categories.html", {"categories": page_obj, "per_page": per_page})
 
 
 @dynamic_permission("expenses", "create")

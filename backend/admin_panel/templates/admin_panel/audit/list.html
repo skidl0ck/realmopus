@@ -41,15 +41,15 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>When</th>
         <th>Actor</th>
         <th>Action</th>
-        <th>Model</th>
-        <th>Object</th>
-        <th>IP</th>
+        <th class="hidden sm:table-cell">Model</th>
+        <th class="hidden sm:table-cell">Object</th>
+        <th class="hidden sm:table-cell">IP</th>
         <th></th>
       </tr>
     </thead>
@@ -59,9 +59,9 @@
         <td class="eo-num eo-subtitle">{{ log.created_at|date:"Y-m-d H:i" }}</td>
         <td>{{ log.actor.get_full_name|default:log.actor.username|default:"—" }}</td>
         <td>{{ log.action|humanize_action }}</td>
-        <td class="eo-subtitle">{{ log.model_name|default:"—" }}</td>
-        <td class="eo-num eo-subtitle">{{ log.object_id|default:"—"|truncatechars:12 }}</td>
-        <td class="eo-subtitle eo-num">{{ log.ip_address|default:"—" }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ log.model_name|default:"—" }}</td>
+        <td class="hidden sm:table-cell eo-num eo-subtitle">{{ log.object_id|default:"—"|truncatechars:12 }}</td>
+        <td class="hidden sm:table-cell eo-subtitle eo-num">{{ log.ip_address|default:"—" }}</td>
         <td>
           {% if log.details %}
           <details>
@@ -75,9 +75,7 @@
       <tr><td colspan="7" class="text-center eo-subtitle py-6">No matching audit log entries.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
-{% if logs|length >= 500 %}
-<p class="eo-subtitle text-xs mt-3">Showing the most recent 500 matching entries — narrow the filters above to see more precisely.</p>
-{% endif %}
+{% include "admin_panel/_pagination.html" with page_obj=logs per_page=per_page %}
 {% endblock %}

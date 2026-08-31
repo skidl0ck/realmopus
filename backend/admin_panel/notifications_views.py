@@ -4,12 +4,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from core.models import Notification
 
 from .decorators import staff_required
+from .pagination import paginate
 
 
 @staff_required
 def notification_list(request):
     notifications = Notification.objects.filter(recipient=request.user).order_by("-created_at")
-    return render(request, "admin_panel/notifications/list.html", {"notifications": notifications})
+    page_obj, per_page = paginate(request, notifications)
+    return render(request, "admin_panel/notifications/list.html", {"notifications": page_obj, "per_page": per_page})
 
 
 @staff_required

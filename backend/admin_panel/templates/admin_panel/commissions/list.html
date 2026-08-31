@@ -15,15 +15,16 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Agent</th>
         <th>Contract</th>
         <th>Amount</th>
-        <th>Status</th>
-        <th>Released</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Status</th>
+        <th class="hidden sm:table-cell">Released</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -32,7 +33,9 @@
         <td>{{ c.agent.get_full_name|default:c.agent.username }}</td>
         <td class="eo-num">{{ c.contract.contract_number }}</td>
         <td class="eo-num">{{ currency_symbol }}{{ c.amount|floatformat:2|intcomma }}</td>
-        <td>
+
+        {# Desktop: Status and Action are separate columns #}
+        <td class="hidden sm:table-cell">
           <span class="eo-stamp
             {% if c.status == 'released' %}eo-stamp--green
             {% elif c.status == 'cancelled' %}eo-stamp--red
@@ -40,8 +43,8 @@
             {{ c.get_status_display }}
           </span>
         </td>
-        <td class="eo-subtitle eo-num">{{ c.released_at|date:"Y-m-d"|default:"—" }}</td>
-        <td class="text-right">
+        <td class="hidden sm:table-cell eo-subtitle eo-num">{{ c.released_at|date:"Y-m-d"|default:"—" }}</td>
+        <td class="hidden sm:table-cell text-right">
           {% if c.status == 'pending' and can_release %}
           <form method="post" action="{% url 'admin_panel:commission_release' c.id %}" onsubmit="return confirm('Release this commission and record it as an expense?');">
             {% csrf_token %}
@@ -49,11 +52,30 @@
           </form>
           {% endif %}
         </td>
+
+        {# Mobile: Status badge and action merged into one cell #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp
+              {% if c.status == 'released' %}eo-stamp--green
+              {% elif c.status == 'cancelled' %}eo-stamp--red
+              {% else %}eo-stamp--gold{% endif %}">
+              {{ c.get_status_display }}
+            </span>
+            {% if c.status == 'pending' and can_release %}
+            <form method="post" action="{% url 'admin_panel:commission_release' c.id %}" onsubmit="return confirm('Release this commission and record it as an expense?');">
+              {% csrf_token %}
+              <button type="submit" class="eo-link">Release</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
       </tr>
       {% empty %}
       <tr><td colspan="6" class="text-center eo-subtitle py-6">No commissions yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=commissions per_page=per_page %}
 {% endblock %}

@@ -11,6 +11,7 @@ from properties.models import Reservation
 
 from .decorators import staff_required, dynamic_permission, audit_action
 from .forms import ContractForm, FeeForm
+from .pagination import paginate
 
 
 @dynamic_permission("contracts", "view")
@@ -19,8 +20,10 @@ def contract_list(request):
     status = request.GET.get("status")
     if status:
         contracts = contracts.filter(status=status)
+    page_obj, per_page = paginate(request, contracts)
     return render(request, "admin_panel/contracts/list.html", {
-        "contracts": contracts,
+        "contracts": page_obj,
+        "per_page": per_page,
         "statuses": Contract.Status.choices,
         "selected_status": status or "",
     })

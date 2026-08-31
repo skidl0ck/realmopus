@@ -4,20 +4,20 @@
 <h1 class="eo-title mb-1">Conversations</h1>
 <p class="eo-subtitle mb-6">Every chatbot session, most recent first.</p>
 
-<form method="get" class="mb-4">
-  <input type="text" name="q" value="{{ search }}" placeholder="Search message content…" class="eo-input" style="width: 20rem;">
+<form method="get" class="mb-4 flex flex-wrap gap-2">
+  <input type="text" name="q" value="{{ search }}" placeholder="Search message content…" class="eo-input w-full sm:w-80">
   <button type="submit" class="eo-btn-primary">Search</button>
   {% if search %}<a href="{% url 'admin_panel:conversation_list' %}" class="eo-btn-secondary">Clear</a>{% endif %}
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Session</th>
-        <th>Started</th>
+        <th class="hidden sm:table-cell">Started</th>
         <th>Last Message</th>
-        <th>Messages</th>
+        <th class="hidden sm:table-cell">Messages</th>
         <th></th>
       </tr>
     </thead>
@@ -25,15 +25,16 @@
       {% for c in conversations %}
       <tr>
         <td class="eo-num eo-subtitle">{{ c.session_id|truncatechars:16 }}</td>
-        <td class="eo-num">{{ c.started_at|date:"Y-m-d H:i" }}</td>
+        <td class="hidden sm:table-cell eo-num">{{ c.started_at|date:"Y-m-d H:i" }}</td>
         <td class="eo-num">{{ c.last_message_at|timesince }} ago</td>
-        <td class="eo-num">{{ c.message_count }}</td>
+        <td class="hidden sm:table-cell eo-num">{{ c.message_count }}</td>
         <td class="text-right"><a href="{% url 'admin_panel:conversation_detail' c.id %}" class="eo-link">View</a></td>
       </tr>
       {% empty %}
       <tr><td colspan="5" class="text-center eo-subtitle py-6">No conversations found.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=conversations per_page=per_page %}
 {% endblock %}

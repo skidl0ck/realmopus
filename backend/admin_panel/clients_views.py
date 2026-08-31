@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from accounts.models import User
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 
 
 @dynamic_permission("clients", "view")
@@ -14,7 +15,8 @@ def client_list(request):
         .select_related("active_contract")
         .order_by("username")
     )
-    return render(request, "admin_panel/clients/list.html", {"clients": clients})
+    page_obj, per_page = paginate(request, clients)
+    return render(request, "admin_panel/clients/list.html", {"clients": page_obj, "per_page": per_page})
 
 
 @dynamic_permission("clients", "edit")

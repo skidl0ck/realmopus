@@ -9,13 +9,15 @@ from payments.pdf import generate_receipt_pdf
 from sales.models import Installment
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 from .forms import ManualPaymentForm
 
 
 @dynamic_permission("payments", "view")
 def payment_list(request):
     payments = Payment.objects.select_related("contract", "installment", "recorded_by", "receipt").order_by("-created_at")
-    return render(request, "admin_panel/payments/list.html", {"payments": payments})
+    page_obj, per_page = paginate(request, payments)
+    return render(request, "admin_panel/payments/list.html", {"payments": page_obj, "per_page": per_page})
 
 
 @dynamic_permission("payments", "create")

@@ -7,6 +7,7 @@ from expenses.models import Expense, ExpenseCategory
 from accounts.models import User
 
 from .decorators import staff_required, dynamic_permission, audit_action
+from .pagination import paginate
 
 COMMISSION_EXPENSE_CATEGORY = "Agent Commissions"
 
@@ -21,8 +22,10 @@ def commission_list(request):
     status = request.GET.get("status")
     if status:
         commissions = commissions.filter(status=status)
+    page_obj, per_page = paginate(request, commissions)
     return render(request, "admin_panel/commissions/list.html", {
-        "commissions": commissions,
+        "commissions": page_obj,
+        "per_page": per_page,
         "statuses": Commission.Status.choices,
         "selected_status": status or "",
         "can_release": request.user.role in (User.Role.ADMIN, User.Role.ACCOUNTANT),

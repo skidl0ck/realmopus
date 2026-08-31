@@ -59,15 +59,16 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Project</th>
         <th>Block / Lot</th>
-        <th>Area (sqm)</th>
+        <th class="hidden sm:table-cell">Area (sqm)</th>
         <th>Total price</th>
-        <th>Status</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Status</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -75,9 +76,11 @@
       <tr>
         <td>{{ lot.project.name }}</td>
         <td>Blk {{ lot.block_number }}, Lot {{ lot.lot_number }}</td>
-        <td class="eo-num">{{ lot.area_sqm }}</td>
+        <td class="hidden sm:table-cell eo-num">{{ lot.area_sqm }}</td>
         <td class="eo-num">{{ currency_symbol }}{{ lot.total_price|floatformat:2|intcomma }}</td>
-        <td>
+
+        {# Desktop: Status and Actions are separate columns #}
+        <td class="hidden sm:table-cell">
           <span class="eo-stamp
             {% if lot.status == 'available' %}eo-stamp--green
             {% elif lot.status == 'reserved' %}eo-stamp--gold
@@ -86,15 +89,31 @@
             {{ lot.get_status_display }}
           </span>
         </td>
-        <td class="text-right">
+        <td class="hidden sm:table-cell text-right">
           <a href="{% url 'admin_panel:lot_detail' lot.id %}" class="eo-link">View</a>
           <a href="{% url 'admin_panel:lot_edit' lot.id %}" class="eo-link" style="margin-left: 0.75rem;">Edit</a>
+        </td>
+
+        {# Mobile: Status badge and actions merged into one cell to save width #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp
+              {% if lot.status == 'available' %}eo-stamp--green
+              {% elif lot.status == 'reserved' %}eo-stamp--gold
+              {% elif lot.status == 'sold' %}eo-stamp--gray
+              {% else %}eo-stamp--red{% endif %}">
+              {{ lot.get_status_display }}
+            </span>
+            <a href="{% url 'admin_panel:lot_detail' lot.id %}" class="eo-link">View</a>
+            <a href="{% url 'admin_panel:lot_edit' lot.id %}" class="eo-link">Edit</a>
+          </div>
         </td>
       </tr>
       {% empty %}
       <tr><td colspan="6" class="text-center eo-subtitle py-6">No lots yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=lots per_page=per_page %}
 {% endblock %}

@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from accounts.models import User
 
 from .decorators import staff_required, audit_action
+from .pagination import paginate
 from .forms import StaffCreateForm, StaffEditForm
 
 STAFF_ROLES = (User.Role.ADMIN, User.Role.SALES_AGENT, User.Role.ACCOUNTANT)
@@ -15,8 +16,10 @@ def staff_list(request):
     role_filter = request.GET.get("role")
     if role_filter:
         staff = staff.filter(role=role_filter)
+    page_obj, per_page = paginate(request, staff)
     return render(request, "admin_panel/staff/list.html", {
-        "staff": staff,
+        "staff": page_obj,
+        "per_page": per_page,
         "role_choices": [(r, User.Role(r).label) for r in STAFF_ROLES],
         "selected_role": role_filter or "",
     })

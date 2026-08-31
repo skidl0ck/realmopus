@@ -7,6 +7,7 @@ from core.services import notify
 from core.models import Notification
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 from .forms import ReservationForm
 
 
@@ -19,8 +20,10 @@ def reservation_list(request):
     if status:
         reservations = reservations.filter(status=status)
 
+    page_obj, per_page = paginate(request, reservations)
     return render(request, "admin_panel/reservations/list.html", {
-        "reservations": reservations,
+        "reservations": page_obj,
+        "per_page": per_page,
         "statuses": Reservation.Status.choices,
         "selected_status": status or "",
     })

@@ -6,15 +6,16 @@
 <p class="eo-subtitle mb-6">Active contracts with an overdue balance, as of {{ today }}.</p>
 
 <div class="eo-card mb-6">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Contract #</th>
         <th>Buyer</th>
         <th>Overdue Balance</th>
-        <th>Oldest Days Overdue</th>
-        <th>Last Reminder</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Oldest Days Overdue</th>
+        <th class="hidden sm:table-cell">Last Reminder</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Overdue</th>
       </tr>
     </thead>
     <tbody>
@@ -23,25 +24,42 @@
         <td><a href="{% url 'admin_panel:contract_detail' row.contract.id %}" class="eo-link">{{ row.contract.contract_number }}</a></td>
         <td>{{ row.buyer_name }}</td>
         <td class="eo-num">{{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }}</td>
-        <td class="eo-num">
+
+        {# Desktop: days-overdue badge, last reminder, and action are separate columns #}
+        <td class="hidden sm:table-cell eo-num">
           <span class="eo-stamp {% if row.oldest_days_overdue >= 30 %}eo-stamp--red{% elif row.oldest_days_overdue >= 15 %}eo-stamp--gold{% else %}eo-stamp--gray{% endif %}">
             {{ row.oldest_days_overdue }} day{{ row.oldest_days_overdue|pluralize }}
           </span>
         </td>
-        <td class="eo-subtitle text-sm">
+        <td class="hidden sm:table-cell eo-subtitle text-sm">
           {% if row.last_reminder %}
             {{ row.last_reminder.get_stage_display }}, {{ row.last_reminder.sent_at|timesince }} ago
           {% else %}
             Never sent
           {% endif %}
         </td>
-        <td class="text-right">
+        <td class="hidden sm:table-cell text-right">
           {% if can_edit.contracts %}
           <form method="post" action="{% url 'admin_panel:contract_send_reminder' row.contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }} overdue balance?');">
             {% csrf_token %}
             <button type="submit" class="eo-link">Send Reminder</button>
           </form>
           {% endif %}
+        </td>
+
+        {# Mobile: days-overdue badge and action merged into one cell #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp {% if row.oldest_days_overdue >= 30 %}eo-stamp--red{% elif row.oldest_days_overdue >= 15 %}eo-stamp--gold{% else %}eo-stamp--gray{% endif %}">
+              {{ row.oldest_days_overdue }}d
+            </span>
+            {% if can_edit.contracts %}
+            <form method="post" action="{% url 'admin_panel:contract_send_reminder' row.contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }} overdue balance?');">
+              {% csrf_token %}
+              <button type="submit" class="eo-link">Remind</button>
+            </form>
+            {% endif %}
+          </div>
         </td>
       </tr>
       {% empty %}
@@ -50,13 +68,19 @@
     </tbody>
     {% if rows %}
     <tfoot>
-      <tr>
+      <tr class="hidden sm:table-row">
         <td colspan="2"><strong>Total</strong></td>
         <td class="eo-num"><strong>{{ currency_symbol }}{{ grand_total|floatformat:2|intcomma }}</strong></td>
         <td colspan="3"></td>
       </tr>
+      <tr class="sm:hidden">
+        <td colspan="2"><strong>Total</strong></td>
+        <td class="eo-num"><strong>{{ currency_symbol }}{{ grand_total|floatformat:2|intcomma }}</strong></td>
+        <td></td>
+      </tr>
     </tfoot>
     {% endif %}
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=rows per_page=per_page %}
 {% endblock %}

@@ -7,6 +7,7 @@ from sales.models import Contract
 from sales.ar_reminders import get_overdue_summary
 
 from .decorators import dynamic_permission
+from .pagination import paginate
 
 
 @dynamic_permission("reports", "view")
@@ -41,8 +42,10 @@ def accounts_receivable_list(request):
     rows.sort(key=lambda r: r["oldest_days_overdue"], reverse=True)
 
     grand_total = sum((r["total_overdue"] for r in rows), Decimal("0"))
+    page_obj, per_page = paginate(request, rows)
     return render(request, "admin_panel/accounts_receivable/list.html", {
-        "rows": rows,
+        "rows": page_obj,
+        "per_page": per_page,
         "grand_total": grand_total,
         "today": today,
     })

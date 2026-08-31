@@ -11,6 +11,7 @@ from django.utils import timezone
 from core.models import Conversation, ChatMessage, KnowledgeBaseEntry
 
 from .decorators import dynamic_permission, audit_action
+from .pagination import paginate
 from .forms import KnowledgeBaseEntryForm
 
 # Common English words excluded from the "popular questions" keyword count —
@@ -59,8 +60,10 @@ def conversation_list(request):
     if search:
         conversations = conversations.filter(chat_messages__content__icontains=search).distinct()
 
+    page_obj, per_page = paginate(request, conversations)
     return render(request, "admin_panel/chatbot/conversation_list.html", {
-        "conversations": conversations,
+        "conversations": page_obj,
+        "per_page": per_page,
         "search": search,
     })
 
@@ -132,8 +135,10 @@ def kb_list(request):
     category = request.GET.get("category")
     if category:
         entries = entries.filter(category=category)
+    page_obj, per_page = paginate(request, entries)
     return render(request, "admin_panel/chatbot/kb_list.html", {
-        "entries": entries,
+        "entries": page_obj,
+        "per_page": per_page,
         "categories": KnowledgeBaseEntry.Category.choices,
         "selected_category": category or "",
     })

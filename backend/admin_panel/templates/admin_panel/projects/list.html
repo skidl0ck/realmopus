@@ -13,7 +13,7 @@
 </div>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Name</th>
@@ -42,6 +42,7 @@
       <tr><td colspan="4" class="text-center eo-subtitle py-6">No projects yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=projects per_page=per_page %}
 {% endblock %}

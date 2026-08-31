@@ -1,0 +1,43 @@
+{% comment %}
+Shared pagination controls. Include at the bottom of any list template with:
+  {% include "admin_panel/_pagination.html" with page_obj=<page var> per_page=per_page %}
+Expects the view to have used admin_panel.pagination.paginate() so page_obj
+is a real Django Page object and per_page is the resolved int.
+{% endcomment %}
+{% if page_obj.paginator.count > 0 %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4" style="border-top: 1px solid var(--hairline);">
+  <p class="text-sm eo-subtitle">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+  </p>
+
+  <div class="flex flex-wrap items-center gap-4">
+    <form method="get" class="flex items-center gap-2 text-sm">
+      {% for key, value in request.GET.items %}
+        {% if key != "per_page" and key != "page" %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endif %}
+      {% endfor %}
+      <label for="id_per_page" class="eo-subtitle whitespace-nowrap">Rows per page</label>
+      <input
+        type="number" min="1" max="500" name="per_page" id="id_per_page"
+        value="{{ per_page }}" class="eo-input" style="width: 4.5rem;"
+      >
+      <button type="submit" class="eo-btn-secondary">Apply</button>
+    </form>
+
+    <div class="flex items-center gap-3 text-sm">
+      {% if page_obj.has_previous %}
+        <a href="{% querystring page=page_obj.previous_page_number %}" class="eo-link">← Prev</a>
+      {% else %}
+        <span class="eo-subtitle" style="opacity: 0.4;">← Prev</span>
+      {% endif %}
+      <span class="eo-subtitle whitespace-nowrap">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="{% querystring page=page_obj.next_page_number %}" class="eo-link">Next →</a>
+      {% else %}
+        <span class="eo-subtitle" style="opacity: 0.4;">Next →</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}

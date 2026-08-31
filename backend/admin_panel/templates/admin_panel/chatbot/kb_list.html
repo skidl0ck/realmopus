@@ -49,4 +49,5 @@
   <p class="eo-subtitle text-sm py-6 text-center">No FAQ entries yet.</p>
   {% endfor %}
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=entries per_page=per_page %}
 {% endblock %}

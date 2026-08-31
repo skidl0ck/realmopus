@@ -2,19 +2,19 @@
 {% load humanize %}
 {% block title %}Contracts — EstateOS Staff{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
   <div>
     <h1 class="eo-title mb-1">Contracts</h1>
     <p class="eo-subtitle">All sale contracts across projects.</p>
   </div>
   <a href="{% url 'admin_panel:contract_create' %}"
-     class="eo-btn-primary">
+     class="eo-btn-primary text-center">
     New Contract
   </a>
 </div>
 
 <form method="get" class="mb-4">
-  <select name="status" onchange="this.form.submit()" class="eo-input">
+  <select name="status" onchange="this.form.submit()" class="eo-input sm:w-auto sm:min-w-[10rem]">
     <option value="">All statuses</option>
     {% for value, label in statuses %}
       <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
@@ -23,15 +23,16 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Contract #</th>
         <th>Buyer</th>
-        <th>Lot</th>
+        <th class="hidden sm:table-cell">Lot</th>
         <th>Total price</th>
-        <th>Status</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Status</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -39,9 +40,11 @@
       <tr>
         <td class="eo-num">{{ contract.contract_number }}</td>
         <td>{{ contract.client.get_full_name|default:contract.buyer_full_name }}</td>
-        <td class="eo-subtitle">Blk {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">Blk {{ contract.lot.block_number }}, Lot {{ contract.lot.lot_number }}</td>
         <td class="eo-num">{{ currency_symbol }}{{ contract.total_contract_price|floatformat:2|intcomma }}</td>
-        <td>
+
+        {# Desktop: Status and Action are separate columns #}
+        <td class="hidden sm:table-cell">
           <span class="eo-stamp
             {% if contract.status == 'active' %}eo-stamp--green
             {% elif contract.status == 'completed' %}eo-stamp--blue
@@ -50,14 +53,29 @@
             {{ contract.get_status_display }}
           </span>
         </td>
-        <td class="text-right">
+        <td class="hidden sm:table-cell text-right">
           <a href="{% url 'admin_panel:contract_detail' contract.id %}" class="eo-link">View</a>
+        </td>
+
+        {# Mobile: Status badge and View link merged into one cell to save width #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp
+              {% if contract.status == 'active' %}eo-stamp--green
+              {% elif contract.status == 'completed' %}eo-stamp--blue
+              {% elif contract.status == 'draft' %}eo-stamp--gray
+              {% else %}eo-stamp--red{% endif %}">
+              {{ contract.get_status_display }}
+            </span>
+            <a href="{% url 'admin_panel:contract_detail' contract.id %}" class="eo-link">View</a>
+          </div>
         </td>
       </tr>
       {% empty %}
       <tr><td colspan="6" class="text-center eo-subtitle py-6">No contracts yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=contracts per_page=per_page %}
 {% endblock %}

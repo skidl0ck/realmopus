@@ -20,6 +20,7 @@ from accounts.models import User
 
 from .decorators import staff_required, _client_ip
 from .models import AdminLoginAttempt
+from .lockout import get_lockout_status
 
 
 def login_view(request):
@@ -29,6 +30,16 @@ def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
+
+        is_locked, unlock_at, minutes_remaining = get_lockout_status(username)
+        if is_locked:
+            messages.error(
+                request,
+                f"Too many failed login attempts. Try again in {minutes_remaining} minute"
+                f"{'s' if minutes_remaining != 1 else ''}.",
+            )
+            return render(request, "admin_panel/login.html")
+
         user = authenticate(request, username=username, password=password)
 
         is_staff_role = bool(user and user.role in ("admin", "sales_agent", "accountant"))
@@ -42,7 +53,17 @@ def login_view(request):
             # Credentials were correct, but this account isn't a staff role.
             messages.error(request, "This account doesn't have staff access.")
         else:
-            messages.error(request, "Invalid username or password.")
+            # This failed attempt may have just crossed a new lockout threshold —
+            # tell them now rather than waiting for their next attempt to find out.
+            is_locked, unlock_at, minutes_remaining = get_lockout_status(username)
+            if is_locked:
+                messages.error(
+                    request,
+                    f"Too many failed login attempts. Try again in {minutes_remaining} minute"
+                    f"{'s' if minutes_remaining != 1 else ''}.",
+                )
+            else:
+                messages.error(request, "Invalid username or password.")
 
     return render(request, "admin_panel/login.html")
 

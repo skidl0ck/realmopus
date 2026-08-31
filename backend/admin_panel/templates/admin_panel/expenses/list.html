@@ -16,31 +16,32 @@
 </div>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Description</th>
-        <th>Scope</th>
-        <th>Category</th>
+        <th class="hidden sm:table-cell">Scope</th>
+        <th class="hidden sm:table-cell">Category</th>
         <th>Amount</th>
-        <th>Date</th>
+        <th class="hidden sm:table-cell">Date</th>
       </tr>
     </thead>
     <tbody>
       {% for expense in expenses %}
       <tr>
         <td>{{ expense.description }}</td>
-        <td class="eo-subtitle">
+        <td class="hidden sm:table-cell eo-subtitle">
           {% if expense.scope == 'project' %}{{ expense.project.name }}{% else %}Company-wide{% endif %}
         </td>
-        <td class="eo-subtitle">{{ expense.category.name }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ expense.category.name }}</td>
         <td class="eo-num" style="color: var(--stamp);">{{ currency_symbol }}{{ expense.amount|floatformat:2|intcomma }}</td>
-        <td class="eo-subtitle eo-num">{{ expense.incurred_on }}</td>
+        <td class="hidden sm:table-cell eo-subtitle eo-num">{{ expense.incurred_on }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="5" class="text-center eo-subtitle py-6">No expenses yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=expenses per_page=per_page %}
 {% endblock %}

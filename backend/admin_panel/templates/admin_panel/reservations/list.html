@@ -20,16 +20,17 @@
 </form>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Lot</th>
         <th>Buyer</th>
-        <th>Agent</th>
-        <th>Reserved on</th>
+        <th class="hidden sm:table-cell">Agent</th>
+        <th class="hidden sm:table-cell">Reserved on</th>
         <th>Deadline</th>
-        <th>Status</th>
-        <th></th>
+        <th class="hidden sm:table-cell">Status</th>
+        <th class="hidden sm:table-cell"></th>
+        <th class="sm:hidden text-right">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -37,10 +38,12 @@
       <tr>
         <td>{{ res.lot.project.name }} — Blk {{ res.lot.block_number }}, Lot {{ res.lot.lot_number }}</td>
         <td>{{ res.buyer_full_name }}</td>
-        <td class="eo-subtitle">{{ res.agent.get_full_name|default:"—" }}</td>
-        <td class="eo-num">{{ res.created_at|date:"Y-m-d" }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ res.agent.get_full_name|default:"—" }}</td>
+        <td class="hidden sm:table-cell eo-num">{{ res.created_at|date:"Y-m-d" }}</td>
         <td class="eo-num">{{ res.deadline }}</td>
-        <td>
+
+        {# Desktop: Status and Actions are separate columns #}
+        <td class="hidden sm:table-cell">
           <span class="eo-stamp
             {% if res.status == 'active' %}eo-stamp--green
             {% elif res.status == 'converted' %}eo-stamp--blue
@@ -49,7 +52,7 @@
             {{ res.get_status_display }}
           </span>
         </td>
-        <td class="text-right">
+        <td class="hidden sm:table-cell text-right">
           {% if res.status == 'active' %}
             <a href="{% url 'admin_panel:contract_create' %}?reservation={{ res.id }}" class="eo-link">Convert</a>
             <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" style="display:inline;" onsubmit="return confirm('Cancel this reservation and release the lot?');">
@@ -63,11 +66,37 @@
             </form>
           {% endif %}
         </td>
+
+        {# Mobile: Status badge and actions merged into one cell #}
+        <td class="sm:hidden text-right">
+          <div class="flex items-center justify-end gap-2 flex-wrap">
+            <span class="eo-stamp
+              {% if res.status == 'active' %}eo-stamp--green
+              {% elif res.status == 'converted' %}eo-stamp--blue
+              {% elif res.status == 'expired' %}eo-stamp--gray
+              {% else %}eo-stamp--red{% endif %}">
+              {{ res.get_status_display }}
+            </span>
+            {% if res.status == 'active' %}
+              <a href="{% url 'admin_panel:contract_create' %}?reservation={{ res.id }}" class="eo-link">Convert</a>
+              <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" style="display:inline;" onsubmit="return confirm('Cancel this reservation and release the lot?');">
+                {% csrf_token %}
+                <button type="submit" style="color: var(--stamp);">Cancel</button>
+              </form>
+            {% elif res.status == 'cancelled' or res.status == 'expired' %}
+              <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Permanently delete this reservation record? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" style="color: var(--stamp);">Delete</button>
+              </form>
+            {% endif %}
+          </div>
+        </td>
       </tr>
       {% empty %}
       <tr><td colspan="7" class="text-center eo-subtitle py-6">No reservations yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=reservations per_page=per_page %}
 {% endblock %}

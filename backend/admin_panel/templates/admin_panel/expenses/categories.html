@@ -10,7 +10,7 @@
 </div>
 
 <div class="eo-card overflow-hidden">
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead><tr><th>Name</th><th>Expenses recorded</th></tr></thead>
     <tbody>
       {% for category in categories %}
@@ -22,6 +22,7 @@
       <tr><td colspan="2" class="text-center eo-subtitle py-6">No categories yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
+{% include "admin_panel/_pagination.html" with page_obj=categories per_page=per_page %}
 {% endblock %}
