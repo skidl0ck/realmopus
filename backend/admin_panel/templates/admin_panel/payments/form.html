@@ -2,16 +2,40 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
+
+{% if reservation %}
+<div class="eo-alert eo-alert--success max-w-lg mb-4">
+  Recording the reservation fee for <strong>{{ reservation.buyer_full_name }}</strong>
+  ({{ reservation.lot.project.name }} — Blk {{ reservation.lot.block_number }}, Lot {{ reservation.lot.lot_number }}).
+</div>
+{% endif %}
+
 <form method="post" id="payment-form" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
 
   <div>
-    <label class="eo-eyebrow block mb-1">{{ form.contract.label }}</label>
-    {{ form.contract }}
-    {% if form.contract.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.contract.errors|join:", " }}</p>{% endif %}
+    <label class="eo-eyebrow block mb-1">Transaction</label>
+    <div class="flex gap-4 mb-2 text-sm">
+      <label class="flex items-center gap-1.5">
+        <input type="radio" name="transaction_type" value="contract" id="transaction-type-contract">
+        Contract
+      </label>
+      <label class="flex items-center gap-1.5">
+        <input type="radio" name="transaction_type" value="reservation" id="transaction-type-reservation">
+        Reservation
+      </label>
+    </div>
+    <div id="transaction-field-contract">
+      {{ form.contract }}
+      {% if form.contract.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ form.contract.errors|join:", " }}</p>{% endif %}
+    </div>
+    <div id="transaction-field-reservation" style="display: none;">
+      {{ form.reservation }}
+      <p class="eo-subtitle text-xs mt-1">Only reservations still awaiting their fee payment are listed here.</p>
+    </div>
   </div>
 
-  <div>
+  <div id="installment-field">
     <label class="eo-eyebrow block mb-1">{{ form.installment.label }}</label>
     {{ form.installment }}
     <p class="eo-subtitle text-xs mt-1">Optional — pick a contract first to see its own schedule.</p>
@@ -69,6 +93,12 @@
 <script>
   (function () {
     var contractSelect = document.getElementById('id_contract');
+    var reservationSelect = document.getElementById('id_reservation');
+    var typeContract = document.getElementById('transaction-type-contract');
+    var typeReservation = document.getElementById('transaction-type-reservation');
+    var fieldContract = document.getElementById('transaction-field-contract');
+    var fieldReservation = document.getElementById('transaction-field-reservation');
+    var installmentField = document.getElementById('installment-field');
     var installmentSelect = document.getElementById('id_installment');
     var amountField = document.getElementById('id_amount');
     var methodSelect = document.getElementById('id_method');
@@ -76,6 +106,21 @@
     var chequeFields = document.getElementById('method-fields-cheque');
     var form = document.getElementById('payment-form');
     var submitBtn = document.getElementById('payment-submit');
+
+    function toggleTransactionType() {
+      var isReservation = typeReservation.checked;
+      fieldContract.style.display = isReservation ? 'none' : 'block';
+      fieldReservation.style.display = isReservation ? 'block' : 'none';
+      installmentField.style.display = isReservation ? 'none' : 'block';
+      // Clear whichever field is now hidden, so a stale selection never
+      // gets submitted alongside the one actually intended.
+      if (isReservation) {
+        contractSelect.value = '';
+        installmentSelect.innerHTML = '<option value="">— None —</option>';
+      } else {
+        reservationSelect.value = '';
+      }
+    }
 
     function loadInstallments() {
       var contractId = contractSelect.value;
@@ -110,6 +155,8 @@
       chequeFields.style.display = methodSelect.value === 'cheque' ? 'block' : 'none';
     }
 
+    if (typeContract) { typeContract.addEventListener('change', toggleTransactionType); }
+    if (typeReservation) { typeReservation.addEventListener('change', toggleTransactionType); }
     if (contractSelect) contractSelect.addEventListener('change', loadInstallments);
     if (installmentSelect) installmentSelect.addEventListener('change', prefillAmount);
     if (methodSelect) { methodSelect.addEventListener('change', toggleMethodFields); toggleMethodFields(); }
@@ -120,8 +167,17 @@
       });
     }
 
-    // On first load, nothing is scoped yet — don't show every contract's
-    // installments until one is actually picked.
+    // Default the toggle to whichever field actually arrived pre-filled
+    // (e.g. the "Pay" button from a reservation's row), otherwise Contract.
+    if (reservationSelect && reservationSelect.value) {
+      typeReservation.checked = true;
+    } else {
+      typeContract.checked = true;
+    }
+    toggleTransactionType();
+
+    // On first load with Contract selected, nothing is scoped yet — don't
+    // show every contract's installments until one is actually picked.
     if (contractSelect && !contractSelect.value) {
       installmentSelect.innerHTML = '<option value="">— None —</option>';
     }

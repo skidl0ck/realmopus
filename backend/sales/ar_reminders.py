@@ -15,6 +15,7 @@ deployment would want this on an actual periodic task (Celery beat) instead,
 so it fires reliably even on a day nobody opens the dashboard.
 """
 import logging
+import re
 from datetime import date
 from decimal import Decimal
 
@@ -73,15 +74,38 @@ def determine_next_stage(contract: Contract, as_of: date | None = None) -> str |
     return None if already_sent else eligible_stage
 
 
+def _substitute_placeholders(template: str, values: dict) -> str:
+    """Deliberately NOT str.format_map() here, even with the safe-dict
+    fallback above — Python's format-string syntax supports dotted
+    attribute access (e.g. "{buyer_name.__class__}" is valid format syntax
+    and Python will actually try to resolve it), which could let a
+    staff-customized template probe object internals beyond the plain
+    string values this is meant to substitute. A regex matching only
+    \\w+ between braces has no such surface at all: anything that isn't a
+    bare {word} token, recognized or not, is left completely untouched."""
+    def _replace(match):
+        return str(values.get(match.group(1), match.group(0)))
+    return re.sub(r"\{(\w+)\}", _replace, template)
+
+
 def _compose_reminder_email(contract: Contract, stage: str, total_overdue: Decimal, oldest_days_overdue: int):
     from admin_panel.models import PlatformSettings
     settings_row = PlatformSettings.load()
     cur = settings_row.currency_symbol
     buyer_name = (contract.client.get_full_name() or contract.client.username) if contract.client else contract.buyer_full_name
 
+    placeholders = dict(
+        buyer_name=buyer_name,
+        contract_number=contract.contract_number,
+        amount=f"{cur}{total_overdue:,.2f}",
+        days_overdue=str(oldest_days_overdue),
+        company_name=settings_row.company_name,
+        support_email=settings_row.support_email,
+    )
+
     if stage == PaymentReminder.Stage.FORMAL:
-        subject = f"Formal Payment Notice — Contract {contract.contract_number}"
-        body = (
+        default_subject = f"Formal Payment Notice — Contract {contract.contract_number}"
+        default_body = (
             f"Dear {buyer_name},\n\n"
             f"This is a formal notice that your account on Contract {contract.contract_number} is significantly "
             f"overdue — {cur}{total_overdue:,.2f} has been outstanding for {oldest_days_overdue} days.\n\n"
@@ -89,18 +113,20 @@ def _compose_reminder_email(contract: Contract, stage: str, total_overdue: Decim
             f"paid or believe this is an error, please contact us right away.\n\n"
             f"{settings_row.company_name}\n{settings_row.support_email}"
         )
+        custom_subject, custom_body = settings_row.reminder_subject_formal, settings_row.reminder_body_formal
     elif stage == PaymentReminder.Stage.FIRM:
-        subject = f"Overdue Payment — Contract {contract.contract_number}"
-        body = (
+        default_subject = f"Overdue Payment — Contract {contract.contract_number}"
+        default_body = (
             f"Dear {buyer_name},\n\n"
             f"Your account on Contract {contract.contract_number} is now {oldest_days_overdue} days overdue, "
             f"with a total outstanding balance of {cur}{total_overdue:,.2f}.\n\n"
             f"Please settle this as soon as possible. Contact us if you'd like to discuss your payment schedule.\n\n"
             f"{settings_row.company_name}\n{settings_row.support_email}"
         )
+        custom_subject, custom_body = settings_row.reminder_subject_firm, settings_row.reminder_body_firm
     else:  # GENTLE or MANUAL use the same friendly tone
-        subject = f"Friendly Payment Reminder — Contract {contract.contract_number}"
-        body = (
+        default_subject = f"Friendly Payment Reminder — Contract {contract.contract_number}"
+        default_body = (
             f"Dear {buyer_name},\n\n"
             f"This is a friendly reminder that your account on Contract {contract.contract_number} has an "
             f"outstanding balance of {cur}{total_overdue:,.2f}.\n\n"
@@ -108,6 +134,10 @@ def _compose_reminder_email(contract: Contract, stage: str, total_overdue: Decim
             f"settling it at your earliest convenience — reach out if you have any questions.\n\n"
             f"{settings_row.company_name}\n{settings_row.support_email}"
         )
+        custom_subject, custom_body = settings_row.reminder_subject_gentle, settings_row.reminder_body_gentle
+
+    subject = _substitute_placeholders(custom_subject, placeholders) if custom_subject.strip() else default_subject
+    body = _substitute_placeholders(custom_body, placeholders) if custom_body.strip() else default_body
     return subject, body
 
 

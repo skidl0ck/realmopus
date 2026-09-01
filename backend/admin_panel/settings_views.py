@@ -31,6 +31,8 @@ def business_settings(request):
             form.save()
             messages.success(request, "Business settings updated. These apply to newly created contracts and reservations going forward.")
             return redirect("admin_panel:business_settings")
+        else:
+            messages.error(request, "Couldn't save your changes — check the highlighted field below.")
     else:
         form = BusinessSettingsForm(instance=settings_row)
     return render(request, "admin_panel/settings/business_settings.html", {"form": form})

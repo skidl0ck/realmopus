@@ -12,6 +12,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-producti
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
+# Off by default -- see core/utils.py:get_client_ip() for why. Only enable
+# this once you've confirmed your production reverse proxy strips/overwrites
+# any client-supplied X-Forwarded-For header rather than passing it through.
+TRUST_PROXY_HEADERS = config('TRUST_PROXY_HEADERS', default=False, cast=bool)
+
 INSTALLED_APPS = [
     # 'django.contrib.admin' deliberately excluded — it gives raw, unrestricted
     # CRUD access to every registered model (User, Contract, Payment, ...),

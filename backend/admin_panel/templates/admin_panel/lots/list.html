@@ -62,13 +62,13 @@
   <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
-        <th>Project</th>
-        <th>Block / Lot</th>
-        <th class="hidden sm:table-cell">Area (sqm)</th>
-        <th>Total price</th>
-        <th class="hidden sm:table-cell">Status</th>
+        <th><a href="{% querystring sort=sort_columns.project.next %}" class="eo-sort-link">Project <span>{{ sort_columns.project.arrow }}</span></a></th>
+        <th><a href="{% querystring sort=sort_columns.block_lot.next %}" class="eo-sort-link">Block / Lot <span>{{ sort_columns.block_lot.arrow }}</span></a></th>
+        <th class="hidden sm:table-cell"><a href="{% querystring sort=sort_columns.area.next %}" class="eo-sort-link">Area (sqm) <span>{{ sort_columns.area.arrow }}</span></a></th>
+        <th><a href="{% querystring sort=sort_columns.price.next %}" class="eo-sort-link">Total price <span>{{ sort_columns.price.arrow }}</span></a></th>
+        <th class="hidden sm:table-cell"><a href="{% querystring sort=sort_columns.status.next %}" class="eo-sort-link">Status <span>{{ sort_columns.status.arrow }}</span></a></th>
         <th class="hidden sm:table-cell"></th>
-        <th class="sm:hidden text-right">Status</th>
+        <th class="sm:hidden text-right"><a href="{% querystring sort=sort_columns.status.next %}" class="eo-sort-link">Status <span>{{ sort_columns.status.arrow }}</span></a></th>
       </tr>
     </thead>
     <tbody>

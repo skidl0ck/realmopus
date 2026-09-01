@@ -15,13 +15,6 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CLIENT)
     phone_number = models.CharField(max_length=32, blank=True)
-    # For client-role users: the Contract currently granting portal login access.
-    # Set on registration/reactivation via a transaction number; once that
-    # contract completes, login is blocked until a new active_contract is set.
-    active_contract = models.ForeignKey(
-        "sales.Contract", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="active_account_holder",
-    )
     email_notifications_enabled = models.BooleanField(
         default=False,
         help_text="Client opt-in for email notifications about their account/payments. Staff are always emailed.",
@@ -54,11 +47,6 @@ class User(AbstractUser):
     @property
     def is_client(self):
         return self.role == self.Role.CLIENT
-
-    @property
-    def has_active_transaction(self):
-        """Whether this client's linked contract is currently active (eligible to log in)."""
-        return bool(self.active_contract_id and self.active_contract.status == "active")
 
 
 class SalesAgentProfile(models.Model):

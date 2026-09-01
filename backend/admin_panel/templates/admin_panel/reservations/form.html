@@ -2,7 +2,7 @@
 {% block title %}{{ title }} — EstateOS Staff{% endblock %}
 {% block content %}
 <h1 class="eo-title mb-6">{{ title }}</h1>
-<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+<form method="post" id="reservation-form" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
   {% for field in form %}
     <div>
@@ -14,4 +14,24 @@
   {% endfor %}
   <button type="submit" class="eo-btn-primary">Save</button>
 </form>
+
+<script>
+  (function () {
+    var clientSelect = document.getElementById('id_client');
+    var buyerNameField = document.getElementById('id_buyer_full_name');
+    var buyerEmailField = document.getElementById('id_buyer_email');
+    var buyerPhoneField = document.getElementById('id_buyer_phone');
+
+    function prefillBuyerFromClient() {
+      var selected = clientSelect.options[clientSelect.selectedIndex];
+      if (!selected || !selected.dataset.fullName) return;
+      // Pre-fill only — never overwrites something staff already typed.
+      if (!buyerNameField.value) buyerNameField.value = selected.dataset.fullName;
+      if (!buyerEmailField.value) buyerEmailField.value = selected.dataset.email;
+      if (!buyerPhoneField.value) buyerPhoneField.value = selected.dataset.phone;
+    }
+
+    if (clientSelect) { clientSelect.addEventListener('change', prefillBuyerFromClient); }
+  })();
+</script>
 {% endblock %}

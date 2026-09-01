@@ -69,8 +69,15 @@
     .eo-nav-group-toggle.active { color: var(--ledger); border-left-color: var(--ledger); }
     .eo-nav-chevron { font-size: 0.625rem; transition: transform 0.15s ease; display: inline-block; }
     .eo-nav-chevron.open { transform: rotate(90deg); }
-    .eo-nav-subgroup { padding-left: 0.75rem; }
-    .eo-nav-subgroup .eo-nav-link { font-size: 0.8125rem; }
+    /* Sub-menu indentation — was only a 12px step from the top-level items
+       above it (0.75rem wrapper + the link's own 0.75rem padding = 1.5rem
+       total, barely distinct from top-level items' own 0.75rem). Widened
+       the step and added a persistent guide line, a standard nested-tree
+       pattern, so the hierarchy reads clearly at a glance, not just on
+       close inspection — matters more on mobile, where everything is
+       already smaller and closer together. */
+    .eo-nav-subgroup { margin-left: 0.75rem; padding-left: 0.5rem; border-left: 1px solid var(--hairline); }
+    .eo-nav-subgroup .eo-nav-link { font-size: 0.8125rem; padding-left: 0.75rem; }
 
     /* Section-level toggle (Sales, Finance, People, etc.) — one level up from
        eo-nav-group-toggle above. Collapsed by default; only the section
@@ -115,6 +122,8 @@
     .eo-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
     .eo-table thead { background: rgba(20,35,29,0.03); }
     .eo-table th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+    .eo-sort-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .eo-sort-link:hover { color: var(--ink); }
     .eo-table td { padding: 0.75rem 1rem; border-top: 1px solid var(--hairline); }
     .eo-table .eo-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
 

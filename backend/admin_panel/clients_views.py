@@ -12,7 +12,6 @@ def client_list(request):
     clients = (
         User.objects.filter(role=User.Role.CLIENT)
         .prefetch_related("contracts")
-        .select_related("active_contract")
         .order_by("username")
     )
     page_obj, per_page = paginate(request, clients)

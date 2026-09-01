@@ -96,9 +96,13 @@ def generate_amortization_schedule(contract: Contract) -> list[Installment]:
 
 def apply_late_penalties(as_of: date | None = None) -> int:
     """
-    Scans all pending/partially-paid installments past due_date and applies the
-    contract's penalty_rate_percent on the outstanding balance. Meant to run daily
-    (Celery beat task or cron management command). Returns number of installments updated.
+    Scans all pending/partially-paid INSTALLMENT-plan rows past due_date and
+    applies the contract's penalty_rate_percent on the outstanding balance.
+    Full-payment plans are deliberately excluded — a full-payment contract's
+    single lump-sum row keeps a due date for reference (the contract date),
+    but was never meant to accrue a punitive late fee the way a real
+    installment schedule does. Meant to run daily (Celery beat task or cron
+    management command). Returns number of installments updated.
     """
     as_of = as_of or date.today()
     overdue_qs = Installment.objects.filter(
@@ -108,9 +112,15 @@ def apply_late_penalties(as_of: date | None = None) -> int:
 
     updated = 0
     for inst in overdue_qs:
-        rate = inst.contract.penalty_rate_percent / Decimal("100")
-        new_penalty = (inst.balance * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        if new_penalty != inst.penalty_amount:
+        # Full-payment rows keep their due date and can still meaningfully
+        # show as overdue (useful for staff follow-up), but never accrue an
+        # actual penalty amount — see the docstring above.
+        if inst.kind == Installment.Kind.FULL_PAYMENT:
+            new_penalty = Decimal("0.00")
+        else:
+            rate = inst.contract.penalty_rate_percent / Decimal("100")
+            new_penalty = (inst.balance * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if new_penalty != inst.penalty_amount or inst.status != Installment.Status.OVERDUE:
             inst.penalty_amount = new_penalty
             inst.amount_due = inst.principal_amount + inst.fees_amount + inst.penalty_amount
             inst.status = Installment.Status.OVERDUE

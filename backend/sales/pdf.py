@@ -1,30 +1,19 @@
 """PDF generation for Contract documents and Statements of Account, via xhtml2pdf
 (a pure-Python renderer — no native OS dependencies, unlike weasyprint)."""
-import io
 import logging
 
 from django.core.files.base import ContentFile
-from django.template.loader import render_to_string
 from django.utils import timezone
-from xhtml2pdf import pisa
 
-from core.fonts import DEJAVU_SANS_REGULAR, DEJAVU_SANS_BOLD
+from core.pdf import render_pdf
 
 logger = logging.getLogger(__name__)
-
-
-def _render_pdf(template_name: str, context: dict) -> bytes:
-    context = {**context, "font_regular": DEJAVU_SANS_REGULAR, "font_bold": DEJAVU_SANS_BOLD}
-    html = render_to_string(template_name, context)
-    buffer = io.BytesIO()
-    pisa.CreatePDF(html, dest=buffer)
-    return buffer.getvalue()
 
 
 def generate_contract_pdf(contract) -> ContentFile:
     from admin_panel.models import PlatformSettings
 
-    pdf_bytes = _render_pdf("sales/pdf/contract.html", {
+    pdf_bytes = render_pdf("sales/pdf/contract.html", {
         "contract": contract,
         "settings": PlatformSettings.load(),
     })
@@ -34,7 +23,7 @@ def generate_contract_pdf(contract) -> ContentFile:
 def generate_soa_pdf(contract) -> ContentFile:
     from admin_panel.models import PlatformSettings
 
-    pdf_bytes = _render_pdf("sales/pdf/soa.html", {
+    pdf_bytes = render_pdf("sales/pdf/soa.html", {
         "contract": contract,
         "installments": contract.installments.all().order_by("installment_number"),
         "payments": contract.payments.filter(status="completed").order_by("paid_at"),

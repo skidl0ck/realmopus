@@ -33,3 +33,49 @@
   opacity: 0;
   animation: lot-fade-in 0.5s ease-out forwards;
 }
+
+/* Page-wide scrollbar theming — the whole site uses the dark "ink"
+   background, so the browser's default light/white scrollbar would be
+   jarring on every page, not just the chat widget where this was first
+   noticed. Same reasoning as .themed-scrollbar below, just applied globally
+   instead of needing the class added to every scrollable element. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-clay) var(--color-ink);
+}
+html::-webkit-scrollbar {
+  width: 10px;
+}
+html::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+html::-webkit-scrollbar-thumb {
+  background: var(--color-clay);
+  border-radius: 9999px;
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sand);
+}
+
+/* Themed scrollbar — browsers default to a light gray/white scrollbar,
+   which stands out jarringly against the dark "Sun-Baked" theme (this is
+   specifically what made the chat widget's scrollbar look out of place).
+   scrollbar-color covers Firefox; the ::-webkit-scrollbar rules cover
+   Chrome/Safari/Edge, which don't support scrollbar-color. */
+.themed-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-clay) var(--color-ink);
+}
+.themed-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.themed-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+.themed-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-clay);
+  border-radius: 9999px;
+}
+.themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sand);
+}

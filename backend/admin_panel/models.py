@@ -67,6 +67,22 @@ class PlatformSettings(models.Model):
     reminder_stage3_days = models.PositiveIntegerField(
         default=30, help_text="Days overdue before a formal payment demand is sent.",
     )
+
+    # Customizable reminder email content, per stage. Blank means "use the
+    # built-in default wording" — see sales/ar_reminders.py:_compose_reminder_email.
+    # {placeholders} are substituted per-contract; an unrecognized or
+    # misspelled one is left as literal text rather than breaking the send.
+    REMINDER_PLACEHOLDER_HELP = (
+        "Leave blank to use the built-in default wording. Available placeholders: "
+        "{buyer_name}, {contract_number}, {amount}, {days_overdue}, {company_name}, {support_email}"
+    )
+    reminder_subject_gentle = models.CharField(max_length=200, blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+    reminder_body_gentle = models.TextField(blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+    reminder_subject_firm = models.CharField(max_length=200, blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+    reminder_body_firm = models.TextField(blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+    reminder_subject_formal = models.CharField(max_length=200, blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+    reminder_body_formal = models.TextField(blank=True, help_text=REMINDER_PLACEHOLDER_HELP)
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -67,7 +67,7 @@ export default function PayPage() {
           <option value="">Select an installment…</option>
           {unpaidInstallments.map((inst: Installment) => (
             <option key={inst.id} value={inst.id}>
-              #{inst.installment_number} — due {inst.due_date} — {currency}
+              #{inst.installment_number} — {contract?.payment_plan_type === "full_payment" ? "contract date" : "due"} {inst.due_date} — {currency}
               {Number(inst.amount_due).toLocaleString()}
             </option>
           ))}

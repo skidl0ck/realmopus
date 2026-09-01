@@ -54,6 +54,40 @@ class ContractViewSet(viewsets.ModelViewSet):
 
         return Response(InstallmentSerializer(installments, many=True).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=["get"])
+    def receipts_zip(self, request, pk=None):
+        """Bundles every receipt PDF for this contract into one ZIP download.
+        Uses get_object(), so this inherits the same ownership scoping as
+        everything else on this viewset — a client can only ever generate a
+        zip for their own contract, same as detail/list access."""
+        import io
+        import zipfile
+        from django.http import HttpResponse
+        from payments.models import Receipt
+
+        contract = self.get_object()
+        receipts = (
+            Receipt.objects.filter(payment__contract=contract)
+            .exclude(pdf_file="")
+            .select_related("payment")
+        )
+        if not receipts.exists():
+            return Response({"detail": "No receipts with a generated PDF for this contract yet."}, status=status.HTTP_404_NOT_FOUND)
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for receipt in receipts:
+                try:
+                    with receipt.pdf_file.open("rb") as f:
+                        zf.writestr(f"{receipt.receipt_number}.pdf", f.read())
+                except (FileNotFoundError, ValueError):
+                    continue  # a receipt whose file went missing shouldn't fail the whole zip
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{contract.contract_number}_receipts.zip"'
+        return response
+
     @action(detail=True, methods=["post"], permission_classes=[IsAdminOrSalesAgent])
     def set_commission(self, request, pk=None):
         """Create or update the Commission for this contract's agent."""

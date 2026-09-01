@@ -28,10 +28,10 @@
 <div class="amount">{{ settings.currency_symbol }}{{ payment.amount|floatformat:2|intcomma }}</div>
 
 <table class="info">
-  <tr><td class="label">Received From</td><td>{{ payment.contract.client.get_full_name|default:payment.contract.buyer_full_name }}</td></tr>
-  <tr><td class="label">Contract</td><td>{{ payment.contract.contract_number }}</td></tr>
-  <tr><td class="label">Property</td><td>{{ payment.contract.lot.project.name }} — Block {{ payment.contract.lot.block_number }}, Lot {{ payment.contract.lot.lot_number }}</td></tr>
-  <tr><td class="label">Payment Method</td><td>{{ payment.get_method_display }}</td></tr>
+  <tr><td class="label">Received From</td><td>{{ payment.payer_display }}</td></tr>
+  <tr><td class="label">{{ payment.reference_type_label }}</td><td>{{ payment.reference_display }}</td></tr>
+  <tr><td class="label">Property</td><td>{{ payment.property_display }}</td></tr>
+  <tr><td class="label">Payment Method</td><td>{{ payment.method_detail_display }}</td></tr>
   <tr><td class="label">Date Paid</td><td>{{ payment.paid_at|date:"Y-m-d" }}</td></tr>
   {% if payment.installment %}<tr><td class="label">Installment #</td><td>{{ payment.installment.installment_number }}</td></tr>{% endif %}
 </table>

@@ -10,11 +10,11 @@ from .models import StaffAuditLog
 STAFF_ROLES = ("admin", "sales_agent", "accountant")
 
 
+from core.utils import get_client_ip
+
+
 def _client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
+    return get_client_ip(request)
 
 
 def staff_required(view_func=None, roles=STAFF_ROLES):

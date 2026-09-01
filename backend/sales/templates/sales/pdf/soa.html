@@ -50,7 +50,7 @@
 {% if installments %}
 <h2>Amortization Schedule</h2>
 <table class="sched">
-  <tr><th>#</th><th>Due Date</th><th>Amount Due</th><th>Amount Paid</th><th>Status</th></tr>
+  <tr><th>#</th><th>{% if contract.payment_plan_type == 'full_payment' %}Contract Date{% else %}Due Date{% endif %}</th><th>Amount Due</th><th>Amount Paid</th><th>Status</th></tr>
   {% for inst in installments %}
   <tr>
     <td>{{ inst.installment_number }}</td>

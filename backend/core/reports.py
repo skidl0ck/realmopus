@@ -1,17 +1,20 @@
 """Shared CSV/PDF export utilities for the Reports section — every report
 renders through these two functions so formatting stays consistent."""
 import csv
-import io
 
 from django.http import HttpResponse
-from django.template.loader import render_to_string
-from xhtml2pdf import pisa
 
-from core.fonts import DEJAVU_SANS_REGULAR, DEJAVU_SANS_BOLD
+from core.pdf import render_pdf
 
 
 def csv_response(filename: str, headers: list, rows: list) -> HttpResponse:
     response = HttpResponse(content_type="text/csv")
+    # UTF-8 BOM: without this, Excel (especially on Windows) doesn't reliably
+    # detect the file is UTF-8 and falls back to the system locale encoding
+    # (commonly Windows-1252), which mangles any non-ASCII character — this
+    # is exactly what turned the peso sign into "â‚±". The raw file bytes were
+    # always valid UTF-8; the BOM just tells Excel to read them that way.
+    response.write("\ufeff")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     writer = csv.writer(response)
     writer.writerow(headers)
@@ -34,7 +37,7 @@ def pdf_response(filename: str, title: str, headers: list, rows: list, subtitle:
     safe_rows = [[cell if str(cell).strip() else "—" for cell in row] for row in rows]
     safe_totals = [cell if str(cell).strip() else "—" for cell in totals] if totals else totals
 
-    html = render_to_string("core/pdf/generic_report.html", {
+    pdf_bytes = render_pdf("core/pdf/generic_report.html", {
         "title": title,
         "subtitle": subtitle,
         "headers": headers,
@@ -42,8 +45,6 @@ def pdf_response(filename: str, title: str, headers: list, rows: list, subtitle:
         "totals": safe_totals,
         "settings": PlatformSettings.load(),
     })
-    buffer = io.BytesIO()
-    pisa.CreatePDF(html, dest=buffer)
-    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response

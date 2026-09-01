@@ -11,7 +11,6 @@
         <th>Name</th>
         <th class="hidden sm:table-cell">Username</th>
         <th class="hidden sm:table-cell">Contracts</th>
-        <th class="hidden sm:table-cell">Can log in</th>
         <th class="hidden sm:table-cell">Account</th>
         <th class="hidden sm:table-cell"></th>
         <th class="sm:hidden text-right">Account</th>
@@ -28,11 +27,6 @@
           {% empty %}
             <span class="eo-subtitle">—</span>
           {% endfor %}
-        </td>
-        <td class="hidden sm:table-cell">
-          <span class="eo-stamp {% if client.is_active and client.has_active_transaction %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
-            {% if client.is_active and client.has_active_transaction %}Yes{% else %}No{% endif %}
-          </span>
         </td>
 
         {# Desktop: Account status and action are separate columns #}
@@ -64,7 +58,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="text-center eo-subtitle py-6">No registered clients yet.</td></tr>
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">No registered clients yet.</td></tr>
       {% endfor %}
     </tbody>
   </table></div>

@@ -9,6 +9,5 @@ router.register("client-profiles", views.ClientProfileViewSet, basename="client-
 
 urlpatterns = [
     path('register/', views.ClientRegisterView.as_view(), name='client-register'),
-    path('reactivate/', views.ReactivateAccountView.as_view(), name='client-reactivate'),
     path('', include(router.urls)),
 ]

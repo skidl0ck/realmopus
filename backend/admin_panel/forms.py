@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from properties.models import Project, Lot
 
@@ -74,19 +76,59 @@ class LotSelectWithPrice(forms.Select):
         return option
 
 
+class ClientSelectWithInfo(forms.Select):
+    """A registered-client <select> whose options carry the client's own
+    name/email/phone as data attributes, so selecting one can pre-fill the
+    buyer_full_name/buyer_email/buyer_phone fields — convenience only, still
+    editable, since staff may want to correct or override what's on file."""
+
+    def __init__(self, *args, client_info=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client_info = client_info or {}
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        info = self.client_info.get(str(value))
+        if info:
+            option["attrs"]["data-full-name"] = info["full_name"]
+            option["attrs"]["data-email"] = info["email"]
+            option["attrs"]["data-phone"] = info["phone"]
+        return option
+
+
+class ClientChoiceField(forms.ModelChoiceField):
+    """Plain name only — every option here is already a client by definition
+    (the queryset is scoped to role=CLIENT), so the default label_from_instance
+    (which includes "(Client)" via User.__str__) would just be redundant noise."""
+    def label_from_instance(self, obj):
+        return obj.get_full_name() or obj.username
+
+
+def _client_choices_and_info():
+    """Registered clients for a buyer-select dropdown, plus a dict of their
+    name/email/phone keyed by user id (for ClientSelectWithInfo's pre-fill)."""
+    from accounts.models import User
+    clients = User.objects.filter(role=User.Role.CLIENT, is_active=True).order_by("first_name", "last_name")
+    info = {
+        str(c.id): {"full_name": c.get_full_name() or c.username, "email": c.email, "phone": c.phone_number}
+        for c in clients
+    }
+    return clients, info
+
+
 class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract
         fields = [
-            "lot", "buyer_full_name", "buyer_email", "buyer_phone", "agent",
+            "lot", "client", "buyer_full_name", "buyer_email", "buyer_phone", "agent",
             "payment_plan_type", "total_contract_price", "down_payment", "term_months",
             "interest_rate", "penalty_rate_percent", "contract_date",
         ]
         widgets = {
             "lot": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "buyer_full_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
-            "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
-            "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "buyer_full_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_full_name"}),
+            "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_email"}),
+            "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_phone"}),
             "agent": forms.Select(attrs={"class": INPUT_CLASSES}),
             "payment_plan_type": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_payment_plan_type"}),
             "total_contract_price": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01", "id": "id_total_contract_price"}),
@@ -98,11 +140,23 @@ class ContractForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        extra_lot_id = kwargs.pop("extra_lot_id", None)
         super().__init__(*args, **kwargs)
+        from django.db.models import Q
         from properties.models import Lot
         from accounts.models import User
-        # Only lots not already tied to a contract can be sold
-        lot_qs = Lot.objects.filter(contract__isnull=True).order_by("project__name", "block_number")
+        # Only lots not already tied to a contract, and currently available
+        # (not reserved or on hold), can be sold. contract__isnull=True alone
+        # isn't enough — a lot can be reserved or put on hold without a
+        # contract existing yet, and both should be excluded here too.
+        # extra_lot_id is the one deliberate exception: when converting a
+        # reservation into a contract, that reservation's own lot is (by
+        # definition) marked reserved — it still needs to be selectable and
+        # pre-filled here, or the conversion flow breaks.
+        lot_filter = Q(contract__isnull=True, status=Lot.Status.AVAILABLE)
+        if extra_lot_id:
+            lot_filter |= Q(pk=extra_lot_id)
+        lot_qs = Lot.objects.filter(lot_filter).order_by("project__name", "block_number")
         lot_prices = {str(lot.pk): lot.total_price for lot in lot_qs}
         # Widget must be assigned BEFORE queryset — ModelChoiceField.queryset's
         # setter has a side effect (self.widget.choices = self.choices) that only
@@ -113,6 +167,16 @@ class ContractForm(forms.ModelForm):
         self.fields["lot"].queryset = lot_qs
         self.fields["agent"].queryset = User.objects.filter(role=User.Role.SALES_AGENT)
         self.fields["agent"].required = False
+
+        # Optional: pick an already-registered client directly, pre-filling
+        # (not locking) the buyer_* fields from their profile. Still
+        # supports a walk-in prospect with no account yet — just leave this
+        # blank and fill buyer_full_name/email/phone in as before.
+        client_qs, client_info = _client_choices_and_info()
+        self.fields["client"] = ClientChoiceField(
+            queryset=client_qs, required=False,
+            widget=ClientSelectWithInfo(attrs={"class": INPUT_CLASSES, "id": "id_client"}, client_info=client_info),
+        )
 
         # Pre-fill new contracts with the platform's suggested rates — staff can still
         # override per contract. Only applies on create, not when editing an instance.
@@ -127,6 +191,18 @@ class ContractForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         plan_type = cleaned.get("payment_plan_type")
+
+        # These fields are only meaningful for an installment plan (the form
+        # already hides them client-side when switching to Full Payment, but
+        # that's a display convenience, not something to rely on for actual
+        # data integrity — a stale value typed in before switching plan types
+        # could otherwise still reach the database untouched).
+        if plan_type == Contract.PaymentPlanType.FULL_PAYMENT:
+            cleaned["down_payment"] = Decimal("0")
+            cleaned["term_months"] = 0
+            cleaned["interest_rate"] = Decimal("0")
+            cleaned["penalty_rate_percent"] = Decimal("0")
+
         term_months = cleaned.get("term_months")
         if plan_type == Contract.PaymentPlanType.INSTALLMENT and not term_months:
             self.add_error("term_months", "Required for installment payment plans.")
@@ -163,9 +239,10 @@ from payments.models import Payment
 class ManualPaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
-        fields = ["contract", "installment", "amount", "method", "bank_name", "reference_number", "cheque_number"]
+        fields = ["contract", "reservation", "installment", "amount", "method", "bank_name", "reference_number", "cheque_number"]
         widgets = {
             "contract": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_contract"}),
+            "reservation": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_reservation"}),
             "installment": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_installment"}),
             "amount": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01", "id": "id_amount"}),
             "method": forms.Select(attrs={"class": INPUT_CLASSES, "id": "id_method"}),
@@ -177,6 +254,7 @@ class ManualPaymentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from sales.models import Installment
+        from properties.models import Reservation
         self.fields["method"].choices = [
             (Payment.Method.CASH, "Cash"),
             (Payment.Method.BANK_DEPOSIT, "Bank Deposit"),
@@ -184,6 +262,9 @@ class ManualPaymentForm(forms.ModelForm):
         ]
         self.fields["installment"].queryset = Installment.objects.exclude(status="paid").select_related("contract")
         self.fields["installment"].required = False
+        self.fields["contract"].required = False
+        self.fields["reservation"].queryset = Reservation.objects.filter(status=Reservation.Status.PENDING_PAYMENT).select_related("lot", "lot__project")
+        self.fields["reservation"].required = False
         self.fields["bank_name"].required = False
         self.fields["reference_number"].required = False
         self.fields["cheque_number"].required = False
@@ -196,6 +277,9 @@ class ManualPaymentForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        contract, reservation = cleaned.get("contract"), cleaned.get("reservation")
+        if bool(contract) == bool(reservation):
+            self.add_error("contract", "Select exactly one — either a contract or a reservation, not both or neither.")
         method = cleaned.get("method")
         if method == Payment.Method.BANK_DEPOSIT and not cleaned.get("reference_number"):
             self.add_error("reference_number", "Required for bank deposit payments.")
@@ -262,12 +346,12 @@ from properties.models import Reservation
 class ReservationForm(forms.ModelForm):
     class Meta:
         model = Reservation
-        fields = ["lot", "buyer_full_name", "buyer_email", "buyer_phone", "agent", "reservation_fee", "deadline"]
+        fields = ["lot", "client", "buyer_full_name", "buyer_email", "buyer_phone", "agent", "reservation_fee", "deadline"]
         widgets = {
             "lot": forms.Select(attrs={"class": INPUT_CLASSES}),
-            "buyer_full_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
-            "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
-            "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "buyer_full_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_full_name"}),
+            "buyer_email": forms.EmailInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_email"}),
+            "buyer_phone": forms.TextInput(attrs={"class": INPUT_CLASSES, "id": "id_buyer_phone"}),
             "agent": forms.Select(attrs={"class": INPUT_CLASSES}),
             "reservation_fee": forms.NumberInput(attrs={"class": INPUT_CLASSES, "step": "0.01"}),
             "deadline": forms.DateInput(attrs={"class": INPUT_CLASSES, "type": "date"}),
@@ -276,8 +360,23 @@ class ReservationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from django.db.models import Q
+        from datetime import date, timedelta
         from properties.models import Lot
         from accounts.models import User
+        from admin_panel.models import PlatformSettings
+
+        # The model's own default (date.today) is a static fallback that
+        # can't know about reservation_hold_days — it's only ever correct
+        # by accident. For a genuinely new reservation, compute the real
+        # configured deadline instead. Editing an existing reservation
+        # already correctly shows its real stored deadline via the instance,
+        # so this only needs to apply when there's no instance yet.
+        # _state.adding (not pk) is the right check here — Reservation's
+        # UUID primary key is generated at instantiation via default=uuid4,
+        # so pk is already truthy even on a brand-new, unsaved instance.
+        if self.instance._state.adding:
+            hold_days = PlatformSettings.load().reservation_hold_days
+            self.fields["deadline"].initial = date.today() + timedelta(days=hold_days)
 
         # A lot is reservable if it's currently available, OR it's the lot already
         # tied to this reservation being edited (so editing doesn't lose the option).
@@ -289,6 +388,12 @@ class ReservationForm(forms.ModelForm):
         self.fields["agent"].queryset = User.objects.filter(role=User.Role.SALES_AGENT)
         self.fields["agent"].required = False
         self.fields["reservation_fee"].required = False
+
+        client_qs, client_info = _client_choices_and_info()
+        self.fields["client"] = ClientChoiceField(
+            queryset=client_qs, required=False,
+            widget=ClientSelectWithInfo(attrs={"class": INPUT_CLASSES, "id": "id_client"}, client_info=client_info),
+        )
 
     def clean_lot(self):
         lot = self.cleaned_data["lot"]
@@ -329,6 +434,9 @@ class BusinessSettingsForm(forms.ModelForm):
             "default_penalty_rate_percent", "default_interest_rate_percent",
             "default_reservation_fee", "reservation_hold_days",
             "reminder_stage1_days", "reminder_stage2_days", "reminder_stage3_days",
+            "reminder_subject_gentle", "reminder_body_gentle",
+            "reminder_subject_firm", "reminder_body_firm",
+            "reminder_subject_formal", "reminder_body_formal",
         ]
         widgets = {
             "currency_symbol": forms.TextInput(attrs={"class": INPUT_CLASSES, "maxlength": 5, "style": "max-width: 6rem;"}),
@@ -339,6 +447,12 @@ class BusinessSettingsForm(forms.ModelForm):
             "reminder_stage1_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
             "reminder_stage2_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
             "reminder_stage3_days": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_subject_gentle": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_body_gentle": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 5}),
+            "reminder_subject_firm": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_body_firm": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 5}),
+            "reminder_subject_formal": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "reminder_body_formal": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 5}),
         }
         help_texts = {
             "currency_symbol": "Shown everywhere money is displayed — site-wide, and on all PDFs. Display only; amounts are never converted.",

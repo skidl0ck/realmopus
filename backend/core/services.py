@@ -69,7 +69,7 @@ def notify_payment_failed(payment, reason: str = ""):
     are currently stubs — see payments/gateways.py) and can actually detect a
     failed charge. Call this from the gateway's failure/webhook handler once built.
     """
-    client = payment.contract.client
+    client = payment.contract.client if payment.contract_id else None
     if client:
         from admin_panel.models import PlatformSettings
         cur = PlatformSettings.load().currency_symbol

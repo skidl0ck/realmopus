@@ -33,9 +33,9 @@ class Contract(models.Model):
     buyer_email = models.EmailField(blank=True)
     buyer_phone = models.CharField(max_length=32, blank=True)
 
-    # Linked once the buyer self-registers on the client portal using this
-    # contract's contract_number. Null until claimed. See accounts.User.active_contract
-    # for the flip side of this relationship (which contract currently grants login).
+    # Linked either when staff pick an existing registered client while
+    # creating the contract, or when a client registers a standalone account
+    # and staff (or the client) later associates it with this contract.
     client = models.ForeignKey(
         "accounts.User", on_delete=models.PROTECT, related_name="contracts",
         null=True, blank=True,

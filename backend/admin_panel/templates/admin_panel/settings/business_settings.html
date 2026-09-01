@@ -9,6 +9,14 @@
 <form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
   {% csrf_token %}
   {% for field in form %}
+    {% if field.name == "reminder_subject_gentle" %}
+      <div class="pt-2" style="border-top: 1px solid var(--hairline);">
+        <h2 class="eo-display font-semibold text-base mb-1">Reminder Email Content</h2>
+        <p class="eo-subtitle text-sm mb-2">
+          Customize the subject and wording sent at each escalation stage. Leave any of these blank to use the built-in default.
+        </p>
+      </div>
+    {% endif %}
     <div>
       <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
       {{ field }}

@@ -42,7 +42,7 @@
           {% if can_edit.contracts %}
           <form method="post" action="{% url 'admin_panel:contract_send_reminder' row.contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }} overdue balance?');">
             {% csrf_token %}
-            <button type="submit" class="eo-link">Send Reminder</button>
+            <button type="submit" class="eo-link" title="{{ row.reminder_count }} reminder{{ row.reminder_count|pluralize }} sent so far">Send Reminder</button>
           </form>
           {% endif %}
         </td>
@@ -56,7 +56,7 @@
             {% if can_edit.contracts %}
             <form method="post" action="{% url 'admin_panel:contract_send_reminder' row.contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ row.total_overdue|floatformat:2|intcomma }} overdue balance?');">
               {% csrf_token %}
-              <button type="submit" class="eo-link">Remind</button>
+              <button type="submit" class="eo-link" title="{{ row.reminder_count }} reminder{{ row.reminder_count|pluralize }} sent so far">Remind</button>
             </form>
             {% endif %}
           </div>

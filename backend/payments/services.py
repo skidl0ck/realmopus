@@ -39,20 +39,37 @@ def _apply_to_installment(installment, amount: Decimal) -> Decimal:
 @transaction.atomic
 def apply_payment(payment: Payment) -> Payment:
     """
-    Marks a Payment completed, applies its amount to the linked Installment
-    (updating amount_paid/status), issues a Receipt, and rolls the Contract
-    to 'completed' once fully paid. Idempotent: re-applying an already
-    completed payment is a no-op.
+    Marks a Payment completed and issues a Receipt, then applies whatever
+    follows from that depending on what the payment is actually for.
+    Idempotent: re-applying an already completed payment is a no-op.
 
-    Overpayment: if the payment amount exceeds what's owed on the selected
-    installment, the excess cascades forward to the next unpaid installment(s)
-    on the same contract, in order, until it's exhausted or none remain.
+    Contract payment (payment.contract is set): applies its amount to the
+    linked Installment (updating amount_paid/status), and rolls the
+    Contract to 'completed' once fully paid. Overpayment cascades forward
+    to the next unpaid installment(s) on the same contract, in order.
+
+    Reservation-fee payment (payment.reservation is set instead): none of
+    the installment/contract logic applies at all -- see
+    _apply_reservation_fee_payment for what a reservation fee actually does.
     """
     if payment.status == Payment.Status.COMPLETED:
         return payment
 
     payment.status = Payment.Status.COMPLETED
     payment.save(update_fields=["status", "paid_at"] if payment.paid_at else ["status"])
+
+    if not hasattr(payment, "receipt"):
+        receipt = Receipt.objects.create(payment=payment, receipt_number=_next_receipt_number())
+        try:
+            from .pdf import generate_receipt_pdf
+            pdf = generate_receipt_pdf(receipt)
+            receipt.pdf_file.save(pdf.name, pdf, save=True)
+        except Exception:
+            logger.exception("Failed to generate receipt PDF for %s", receipt.receipt_number)
+
+    if payment.reservation_id:
+        _apply_reservation_fee_payment(payment)
+        return payment
 
     if payment.installment is not None:
         leftover = _apply_to_installment(payment.installment, payment.amount)
@@ -66,15 +83,6 @@ def apply_payment(payment: Payment) -> Payment:
                 if leftover <= 0:
                     break
                 leftover = _apply_to_installment(inst, leftover)
-
-    if not hasattr(payment, "receipt"):
-        receipt = Receipt.objects.create(payment=payment, receipt_number=_next_receipt_number())
-        try:
-            from .pdf import generate_receipt_pdf
-            pdf = generate_receipt_pdf(receipt)
-            receipt.pdf_file.save(pdf.name, pdf, save=True)
-        except Exception:
-            logger.exception("Failed to generate receipt PDF for %s", receipt.receipt_number)
 
     contract = payment.contract
     if contract.outstanding_balance <= Decimal("0") and contract.status == Contract.Status.ACTIVE:
@@ -102,6 +110,34 @@ def apply_payment(payment: Payment) -> Payment:
     regenerate_contract_documents(contract)
 
     return payment
+
+
+def _apply_reservation_fee_payment(payment: Payment) -> None:
+    """Confirms the reservation now that its fee is paid: releases the lot
+    from on-hold to reserved, activates the reservation, and notifies the
+    assigned agent (if any). There's no client account yet at this point in
+    the flow (accounts are created from a signed contract, not a
+    reservation) -- the agent is the only one reachable to notify here."""
+    from properties.models import Reservation, Lot
+
+    reservation = payment.reservation
+    if reservation.status == Reservation.Status.PENDING_PAYMENT:
+        reservation.status = Reservation.Status.ACTIVE
+        reservation.save(update_fields=["status"])
+    if reservation.lot.status == Lot.Status.ON_HOLD:
+        reservation.lot.status = Lot.Status.RESERVED
+        reservation.lot.save(update_fields=["status"])
+
+    if reservation.agent:
+        from admin_panel.models import PlatformSettings
+        cur = PlatformSettings.load().currency_symbol
+        notify(
+            reservation.agent, Notification.NotificationType.PAYMENT_RECEIVED,
+            "Reservation fee received",
+            f"The {cur}{payment.amount:,.2f} reservation fee for {reservation.buyer_full_name} "
+            f"({reservation.lot}) has been received — the reservation is now active.",
+            related_object_id=payment.id,
+        )
 
 
 def _contract_client_and_agent(contract):

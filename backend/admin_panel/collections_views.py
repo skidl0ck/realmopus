@@ -38,6 +38,10 @@ def accounts_receivable_list(request):
             "total_overdue": total_overdue,
             "oldest_days_overdue": oldest_days_overdue,
             "last_reminder": last_reminder,
+            # len(...all()) rather than .count() -- payment_reminders is
+            # already prefetch_related'd above, and .count() would issue a
+            # fresh query per row regardless, silently reintroducing an N+1.
+            "reminder_count": len(contract.payment_reminders.all()),
         })
     rows.sort(key=lambda r: r["oldest_days_overdue"], reverse=True)
 

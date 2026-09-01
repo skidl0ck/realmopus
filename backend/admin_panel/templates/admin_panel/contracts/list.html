@@ -5,7 +5,7 @@
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
   <div>
     <h1 class="eo-title mb-1">Contracts</h1>
-    <p class="eo-subtitle">All sale contracts across projects.</p>
+    <p class="eo-subtitle">{% if own_contracts_only %}Your contracts.{% else %}All sale contracts across projects.{% endif %}</p>
   </div>
   <a href="{% url 'admin_panel:contract_create' %}"
      class="eo-btn-primary text-center">

@@ -8,6 +8,7 @@ from sales.services import generate_amortization_schedule
 from sales.ar_reminders import get_overdue_summary, send_payment_reminder
 from sales.pdf import regenerate_contract_documents
 from properties.models import Reservation
+from accounts.models import User
 
 from .decorators import staff_required, dynamic_permission, audit_action
 from .forms import ContractForm, FeeForm
@@ -17,6 +18,11 @@ from .pagination import paginate
 @dynamic_permission("contracts", "view")
 def contract_list(request):
     contracts = Contract.objects.select_related("lot", "client", "agent").order_by("-created_at")
+    if request.user.role == User.Role.SALES_AGENT:
+        # Agents only ever see their own contracts — not everyone's, even
+        # though "view" access to the section as a whole may be granted.
+        # Same scoping already applied to Commissions.
+        contracts = contracts.filter(agent=request.user)
     status = request.GET.get("status")
     if status:
         contracts = contracts.filter(status=status)
@@ -26,6 +32,7 @@ def contract_list(request):
         "per_page": per_page,
         "statuses": Contract.Status.choices,
         "selected_status": status or "",
+        "own_contracts_only": request.user.role == User.Role.SALES_AGENT,
     })
 
 
@@ -38,7 +45,7 @@ def contract_create(request):
         reservation = Reservation.objects.filter(pk=reservation_id, status=Reservation.Status.ACTIVE).first()
 
     if request.method == "POST":
-        form = ContractForm(request.POST)
+        form = ContractForm(request.POST, extra_lot_id=reservation.lot_id if reservation else None)
         if form.is_valid():
             contract = form.save(commit=False)
             contract.contract_number = _generate_contract_number()
@@ -67,7 +74,7 @@ def contract_create(request):
                 "buyer_phone": reservation.buyer_phone,
                 "agent": reservation.agent_id,
             }
-        form = ContractForm(initial=initial)
+        form = ContractForm(initial=initial, extra_lot_id=reservation.lot_id if reservation else None)
     return render(request, "admin_panel/contracts/form.html", {
         "form": form, "title": "New Contract", "reservation": reservation,
     })
@@ -82,11 +89,15 @@ def _generate_contract_number():
 
 @dynamic_permission("contracts", "view")
 def contract_detail(request, pk):
-    contract = get_object_or_404(
-        Contract.objects.select_related("lot", "client", "agent", "commission")
-        .prefetch_related("fees", "installments", "payments", "payment_reminders"),
-        pk=pk,
+    contract_qs = Contract.objects.select_related("lot", "client", "agent", "commission").prefetch_related(
+        "fees", "installments", "payments", "payment_reminders"
     )
+    if request.user.role == User.Role.SALES_AGENT:
+        # Mirrors the same scoping on the list — without this, an agent could
+        # still view any other agent's contract in full simply by navigating
+        # to its URL directly, even though it's hidden from their own list.
+        contract_qs = contract_qs.filter(agent=request.user)
+    contract = get_object_or_404(contract_qs, pk=pk)
     fee_form = FeeForm()
     total_overdue, oldest_days_overdue, _ = get_overdue_summary(contract)
     last_reminder = contract.payment_reminders.first()  # Meta.ordering = ["-sent_at"]

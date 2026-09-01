@@ -39,7 +39,11 @@ def _collections_data(request):
     cur = _currency()
     start, end, range_param = parse_date_range(request)
     payments = (
-        Payment.objects.filter(status=Payment.Status.COMPLETED, paid_at__date__gte=start, paid_at__date__lte=end)
+        Payment.objects.filter(
+            status=Payment.Status.COMPLETED, paid_at__date__gte=start, paid_at__date__lte=end,
+            contract__isnull=False,  # collections is specifically about contract payments — a
+                                      # reservation-fee payment isn't a "collection" against a contract yet
+        )
         .select_related("contract")
         .order_by("paid_at")
     )

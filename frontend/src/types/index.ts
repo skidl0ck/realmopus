@@ -70,6 +70,9 @@ export interface Installment {
 export interface Receipt {
   id: string;
   payment: string;
+  contract: string;
+  contract_number: string;
+  lot_display: string | null;
   receipt_number: string;
   pdf_file: string | null;
   issued_at: string;

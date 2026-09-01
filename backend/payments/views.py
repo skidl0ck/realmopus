@@ -14,7 +14,7 @@ from . import gateways
 class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerClientOrStaff]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ["contract", "installment", "status", "method"]
+    filterset_fields = ["contract", "reservation", "installment", "status", "method"]
     ordering_fields = ["created_at", "amount"]
 
     def get_serializer_class(self):
@@ -23,12 +23,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
         return PaymentSerializer
 
     def get_queryset(self):
+        from django.db.models import Q
         user = self.request.user
-        qs = Payment.objects.select_related("contract", "installment", "recorded_by", "receipt")
+        qs = Payment.objects.select_related("contract", "reservation", "installment", "recorded_by", "receipt")
         if user.role == "client":
+            # No reservation__client filter here deliberately -- a reservation
+            # has no client account yet at the point its fee is paid (accounts
+            # are created from a signed contract, not a reservation).
             qs = qs.filter(contract__client=user)
         elif user.role == "sales_agent":
-            qs = qs.filter(contract__agent=user)
+            # Unlike contracts, a reservation IS assigned an agent up front,
+            # so an agent's own reservation-fee payments should show here too.
+            qs = qs.filter(Q(contract__agent=user) | Q(reservation__agent=user))
         return qs
 
     def get_permissions(self):
@@ -73,10 +79,14 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["payment"]
 
     def get_queryset(self):
+        from django.db.models import Q
         user = self.request.user
-        qs = Receipt.objects.select_related("payment", "payment__contract")
+        qs = Receipt.objects.select_related(
+            "payment", "payment__contract", "payment__contract__lot", "payment__contract__lot__project",
+            "payment__reservation", "payment__reservation__lot", "payment__reservation__lot__project",
+        )
         if user.role == "client":
             qs = qs.filter(payment__contract__client=user)
         elif user.role == "sales_agent":
-            qs = qs.filter(payment__contract__agent=user)
+            qs = qs.filter(Q(payment__contract__agent=user) | Q(payment__reservation__agent=user))
         return qs

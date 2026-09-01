@@ -18,9 +18,53 @@ LOT_CSV_REQUIRED_COLUMNS = {"project", "block_number", "lot_number", "area_sqm",
 LOT_CSV_OPTIONAL_COLUMNS = {"total_price", "status"}
 
 
+SORT_FIELDS = {
+    "project": ("project__name", "block_number", "lot_number"),
+    "block_lot": ("block_number", "lot_number"),
+    "area": ("area_sqm",),
+    "price": ("total_price",),
+    "status": ("status",),
+}
+DEFAULT_SORT = "project"
+
+
+def _apply_sort(request, queryset):
+    """Whitelisted sort — never trust a raw ?sort= value as an ORM field
+    name directly, since that would let someone probe for related-field
+    names or cause an error on an unexpected one. Returns the sorted
+    queryset and the resolved sort key (so an invalid param doesn't leave
+    the UI showing a sort state that isn't what's actually applied)."""
+    sort_param = request.GET.get("sort", DEFAULT_SORT)
+    descending = sort_param.startswith("-")
+    key = sort_param.lstrip("-")
+    if key not in SORT_FIELDS:
+        key, descending = DEFAULT_SORT, False
+    fields = SORT_FIELDS[key]
+    order_fields = [f"-{f}" for f in fields] if descending else list(fields)
+    resolved_sort = f"-{key}" if descending else key
+    return queryset.order_by(*order_fields), resolved_sort
+
+
+def _sort_columns(current_sort):
+    """Precomputes, per sortable column, the ?sort= value clicking its
+    header should go to next (a simple 3-state toggle: ascending -> the
+    column becomes the sort key and starts ascending; click again ->
+    descending; click a different column -> that one starts ascending) and
+    which arrow (if any) to show for the currently active column."""
+    is_desc = current_sort.startswith("-")
+    active_key = current_sort.lstrip("-")
+    columns = {}
+    for key in SORT_FIELDS:
+        if key == active_key:
+            columns[key] = {"next": key if is_desc else f"-{key}", "arrow": "▼" if is_desc else "▲"}
+        else:
+            columns[key] = {"next": key, "arrow": ""}
+    return columns
+
+
 @dynamic_permission("lots", "view")
 def lot_list(request):
-    lots = Lot.objects.select_related("project").order_by("project__name", "block_number", "lot_number")
+    lots = Lot.objects.select_related("project")
     project_id = request.GET.get("project")
     if project_id:
         lots = lots.filter(project_id=project_id)
@@ -51,6 +95,7 @@ def lot_list(request):
         except InvalidOperation:
             pass
 
+    lots, current_sort = _apply_sort(request, lots)
     page_obj, per_page = paginate(request, lots)
     return render(request, "admin_panel/lots/list.html", {
         "lots": page_obj,
@@ -62,6 +107,7 @@ def lot_list(request):
         "search": search,
         "price_min": price_min or "",
         "price_max": price_max or "",
+        "sort_columns": _sort_columns(current_sort),
     })
 
 

@@ -46,6 +46,7 @@
         <td class="hidden sm:table-cell">
           <span class="eo-stamp
             {% if res.status == 'active' %}eo-stamp--green
+            {% elif res.status == 'pending_payment' %}eo-stamp--gold
             {% elif res.status == 'converted' %}eo-stamp--blue
             {% elif res.status == 'expired' %}eo-stamp--gray
             {% else %}eo-stamp--red{% endif %}">
@@ -58,6 +59,12 @@
             <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" style="display:inline;" onsubmit="return confirm('Cancel this reservation and release the lot?');">
               {% csrf_token %}
               <button type="submit" style="color: var(--stamp); margin-left: 0.75rem;">Cancel</button>
+            </form>
+          {% elif res.status == 'pending_payment' %}
+            <a href="{% url 'admin_panel:payment_create' %}?reservation={{ res.id }}" class="eo-link">Pay</a>
+            <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Delete this reservation? The lot will be released back to available.');">
+              {% csrf_token %}
+              <button type="submit" style="color: var(--stamp); margin-left: 0.75rem;">Delete</button>
             </form>
           {% elif res.status == 'cancelled' or res.status == 'expired' %}
             <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Permanently delete this reservation record? This cannot be undone.');">
@@ -72,6 +79,7 @@
           <div class="flex items-center justify-end gap-2 flex-wrap">
             <span class="eo-stamp
               {% if res.status == 'active' %}eo-stamp--green
+              {% elif res.status == 'pending_payment' %}eo-stamp--gold
               {% elif res.status == 'converted' %}eo-stamp--blue
               {% elif res.status == 'expired' %}eo-stamp--gray
               {% else %}eo-stamp--red{% endif %}">
@@ -82,6 +90,12 @@
               <form method="post" action="{% url 'admin_panel:reservation_cancel' res.id %}" style="display:inline;" onsubmit="return confirm('Cancel this reservation and release the lot?');">
                 {% csrf_token %}
                 <button type="submit" style="color: var(--stamp);">Cancel</button>
+              </form>
+            {% elif res.status == 'pending_payment' %}
+              <a href="{% url 'admin_panel:payment_create' %}?reservation={{ res.id }}" class="eo-link">Pay</a>
+              <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Delete this reservation? The lot will be released back to available.');">
+                {% csrf_token %}
+                <button type="submit" style="color: var(--stamp);">Delete</button>
               </form>
             {% elif res.status == 'cancelled' or res.status == 'expired' %}
               <form method="post" action="{% url 'admin_panel:reservation_delete' res.id %}" style="display:inline;" onsubmit="return confirm('Permanently delete this reservation record? This cannot be undone.');">

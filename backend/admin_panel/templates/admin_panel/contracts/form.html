@@ -44,6 +44,10 @@
     var priceField = document.getElementById('id_total_contract_price');
     var planTypeSelect = document.getElementById('id_payment_plan_type');
     var installmentFields = document.getElementById('installment-only-fields');
+    var clientSelect = document.getElementById('id_client');
+    var buyerNameField = document.getElementById('id_buyer_full_name');
+    var buyerEmailField = document.getElementById('id_buyer_email');
+    var buyerPhoneField = document.getElementById('id_buyer_phone');
     var form = document.getElementById('contract-form');
     var submitBtn = document.getElementById('contract-submit');
 
@@ -59,8 +63,19 @@
       installmentFields.style.display = planTypeSelect.value === 'installment' ? 'block' : 'none';
     }
 
-    if (lotSelect) lotSelect.addEventListener('change', prefillPrice);
+    function prefillBuyerFromClient() {
+      var selected = clientSelect.options[clientSelect.selectedIndex];
+      if (!selected || !selected.dataset.fullName) return;
+      // Pre-fill only — never overwrites something staff already typed, so
+      // picking a client after already entering buyer info won't clobber it.
+      if (!buyerNameField.value) buyerNameField.value = selected.dataset.fullName;
+      if (!buyerEmailField.value) buyerEmailField.value = selected.dataset.email;
+      if (!buyerPhoneField.value) buyerPhoneField.value = selected.dataset.phone;
+    }
+
+    if (lotSelect) { lotSelect.addEventListener('change', prefillPrice); prefillPrice(); }
     if (planTypeSelect) { planTypeSelect.addEventListener('change', toggleInstallmentFields); toggleInstallmentFields(); }
+    if (clientSelect) { clientSelect.addEventListener('change', prefillBuyerFromClient); }
     if (form) {
       form.addEventListener('submit', function () {
         submitBtn.disabled = true;

@@ -90,6 +90,7 @@ class Reservation(models.Model):
     GRACE_PERIOD_DAYS = 1
 
     class Status(models.TextChoices):
+        PENDING_PAYMENT = "pending_payment", "Pending Fee Payment"
         ACTIVE = "active", "Active"
         CONVERTED = "converted", "Converted to Contract"
         EXPIRED = "expired", "Expired"
@@ -103,10 +104,11 @@ class Reservation(models.Model):
     # not at the database level.
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name="reservations")
 
-    # The prospect's identity, captured directly (public reservation requests and
-    # most staff-created reservations happen before any account exists — mirrors
-    # Contract.buyer_full_name/email/phone). client is only ever set later, if this
-    # reservation is converted into a Contract that gets claimed by a registered account.
+    # The prospect's identity, captured directly (still supported for a
+    # walk-in/unregistered prospect, or a public reservation before signing
+    # up). client links this reservation directly to a registered account,
+    # either picked by staff at creation time or by the client themself when
+    # self-service reserving on the public site while logged in.
     buyer_full_name = models.CharField(max_length=200, default="")
     buyer_email = models.EmailField(blank=True)
     buyer_phone = models.CharField(max_length=32, blank=True)

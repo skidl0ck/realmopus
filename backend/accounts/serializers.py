@@ -1,19 +1,16 @@
-from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import User, SalesAgentProfile, ClientProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
-    has_active_transaction = serializers.BooleanField(read_only=True)
-
     class Meta:
         model = User
         fields = [
             "id", "username", "email", "first_name", "last_name", "role", "phone_number",
-            "is_active", "active_contract", "has_active_transaction", "email_notifications_enabled",
+            "is_active", "email_notifications_enabled",
         ]
-        read_only_fields = ["id", "active_contract"]
+        read_only_fields = ["id"]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -53,86 +50,35 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
 
 
 class ClientRegistrationSerializer(serializers.Serializer):
-    """Self-service signup: buyer claims a staff-created Contract using its transaction number."""
+    """Self-service signup: a standalone client profile, not tied to any
+    contract or reservation at registration time. Staff can later link an
+    existing registered client to a contract or reservation, or the client
+    can self-service reserve a lot themselves once logged in."""
 
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    phone_number = serializers.CharField(max_length=32)
     username = serializers.CharField()
-    email = serializers.EmailField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
-    transaction_number = serializers.CharField()
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("This username is already taken.")
         return value
 
-    def validate_transaction_number(self, value):
-        from sales.models import Contract
-
-        try:
-            contract = Contract.objects.get(contract_number=value)
-        except Contract.DoesNotExist:
-            raise serializers.ValidationError("No transaction found with that number.")
-        if contract.client_id is not None:
-            raise serializers.ValidationError("This transaction has already been claimed by an account.")
-        if contract.status != Contract.Status.ACTIVE:
-            raise serializers.ValidationError("This transaction is not currently active.")
-        self._contract = contract
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
         return value
 
     def create(self, validated_data):
-        contract = self._contract
-        user = User.objects.create_user(
+        return User.objects.create_user(
             username=validated_data["username"],
-            email=validated_data.get("email", ""),
+            email=validated_data["email"],
             password=validated_data["password"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            phone_number=validated_data["phone_number"],
             role=User.Role.CLIENT,
-            active_contract=contract,
         )
-        contract.client = user
-        contract.save(update_fields=["client"])
-        return user
-
-
-class ReactivateAccountSerializer(serializers.Serializer):
-    """
-    For client accounts whose linked contract has completed: re-validates the
-    existing username/password, then re-links the account to a new active
-    transaction number to restore login access.
-    """
-
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-    transaction_number = serializers.CharField()
-
-    def validate(self, attrs):
-        from sales.models import Contract
-
-        user = authenticate(username=attrs["username"], password=attrs["password"])
-        if user is None:
-            raise serializers.ValidationError("Invalid username or password.")
-        if user.role != User.Role.CLIENT:
-            raise serializers.ValidationError("Only client accounts use transaction-based reactivation.")
-
-        try:
-            contract = Contract.objects.get(contract_number=attrs["transaction_number"])
-        except Contract.DoesNotExist:
-            raise serializers.ValidationError({"transaction_number": "No transaction found with that number."})
-        if contract.client_id is not None:
-            raise serializers.ValidationError(
-                {"transaction_number": "This transaction has already been claimed by an account."}
-            )
-        if contract.status != Contract.Status.ACTIVE:
-            raise serializers.ValidationError({"transaction_number": "This transaction is not currently active."})
-
-        attrs["user"] = user
-        attrs["contract"] = contract
-        return attrs
-
-    def save(self):
-        user = self.validated_data["user"]
-        contract = self.validated_data["contract"]
-        user.active_contract = contract
-        user.save(update_fields=["active_contract"])
-        contract.client = user
-        contract.save(update_fields=["client"])
-        return user

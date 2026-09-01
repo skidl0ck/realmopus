@@ -12,7 +12,6 @@ interface RegisterResponse {
   refresh: string;
 }
 
-export class TransactionRequiredError extends Error {}
 export class AccountDeactivatedError extends Error {}
 
 function storeSession(user: User, access: string, refresh: string) {
@@ -31,9 +30,6 @@ export async function login(username: string, password: string): Promise<User> {
     return me.data;
   } catch (err: unknown) {
     const response = (err as { response?: { status?: number; data?: { code?: string } } })?.response;
-    if (response?.status === 403 && response?.data?.code === "transaction_required") {
-      throw new TransactionRequiredError();
-    }
     if (response?.status === 403 && response?.data?.code === "account_deactivated") {
       throw new AccountDeactivatedError();
     }
@@ -41,31 +37,23 @@ export async function login(username: string, password: string): Promise<User> {
   }
 }
 
-export async function registerWithTransaction(
-  username: string,
-  password: string,
-  transactionNumber: string,
-  email?: string
-): Promise<User> {
-  const { data } = await apiClient.post<RegisterResponse>("/accounts/register/", {
-    username,
-    password,
-    email,
-    transaction_number: transactionNumber,
-  });
-  storeSession(data.user, data.access, data.refresh);
-  return data.user;
+export interface RegisterFields {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  username: string;
+  password: string;
 }
 
-export async function reactivateWithTransaction(
-  username: string,
-  password: string,
-  transactionNumber: string
-): Promise<User> {
-  const { data } = await apiClient.post<RegisterResponse>("/accounts/reactivate/", {
-    username,
-    password,
-    transaction_number: transactionNumber,
+export async function register(fields: RegisterFields): Promise<User> {
+  const { data } = await apiClient.post<RegisterResponse>("/accounts/register/", {
+    first_name: fields.firstName,
+    last_name: fields.lastName,
+    email: fields.email,
+    phone_number: fields.phoneNumber,
+    username: fields.username,
+    password: fields.password,
   });
   storeSession(data.user, data.access, data.refresh);
   return data.user;

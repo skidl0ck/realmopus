@@ -54,7 +54,7 @@ def chatbot_dashboard(request):
 
 @dynamic_permission("chatbot", "view")
 def conversation_list(request):
-    conversations = Conversation.objects.annotate(message_count=Count("chat_messages")).order_by("-last_message_at")
+    conversations = Conversation.objects.annotate(message_count=Count("chat_messages", distinct=True)).order_by("-last_message_at")
 
     search = request.GET.get("q", "").strip()
     if search:

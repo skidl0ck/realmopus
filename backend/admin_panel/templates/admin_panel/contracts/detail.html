@@ -22,10 +22,12 @@
     <p class="eo-stat-value">{{ currency_symbol }}{{ contract.total_contract_price|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Total price</p>
   </div>
+  {% if contract.payment_plan_type != 'full_payment' %}
   <div class="eo-stat">
     <p class="eo-stat-value">{{ currency_symbol }}{{ contract.down_payment|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Down payment</p>
   </div>
+  {% endif %}
   <div class="eo-stat">
     <p class="eo-stat-value">{{ currency_symbol }}{{ contract.total_paid|floatformat:2|intcomma }}</p>
     <p class="eo-stat-label">Total paid</p>
@@ -60,10 +62,13 @@
   </form>
   {% endif %}
   {% if total_overdue > 0 %}
-  <form method="post" action="{% url 'admin_panel:contract_send_reminder' contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ total_overdue|floatformat:2|intcomma }} overdue balance?');">
-    {% csrf_token %}
-    <button type="submit" class="eo-btn-secondary">Send Reminder</button>
-  </form>
+  <div>
+    <form method="post" action="{% url 'admin_panel:contract_send_reminder' contract.id %}" onsubmit="return confirm('Send a payment reminder for the {{ currency_symbol }}{{ total_overdue|floatformat:2|intcomma }} overdue balance?');">
+      {% csrf_token %}
+      <button type="submit" class="eo-btn-secondary">Send Reminder</button>
+    </form>
+    <p class="eo-subtitle text-xs mt-1">{{ reminder_history|length }} reminder{{ reminder_history|length|pluralize }} sent so far</p>
+  </div>
   {% endif %}
 </div>
 
@@ -91,7 +96,7 @@
 {% if reminder_history %}
 <div class="eo-card mb-6">
   <h2 class="eo-display font-semibold text-base px-6 pt-6 pb-4">Reminder History</h2>
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Stage</th>
@@ -112,7 +117,7 @@
       </tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
 {% endif %}
 
@@ -157,11 +162,11 @@
 
 <div class="eo-card overflow-hidden">
   <h2 class="eo-display font-semibold text-base px-6 pt-6 pb-4">Payment Schedule</h2>
-  <table class="eo-table">
+  <div class="eo-table-scroll"><table class="eo-table">
     <thead>
       <tr>
         <th>Item</th>
-        <th>Due date</th>
+        <th>{% if contract.payment_plan_type == 'full_payment' %}Contract date{% else %}Due date{% endif %}</th>
         <th>Amount due</th>
         <th>Paid</th>
         <th>Status</th>
@@ -192,6 +197,6 @@
       <tr><td colspan="5" class="text-center eo-subtitle py-6">No schedule generated yet.</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </div>
 {% endblock %}

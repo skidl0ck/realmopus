@@ -59,7 +59,8 @@ def _chat_rate_limited(request) -> bool:
     workers would want a shared cache (Redis) for this to work correctly
     across processes."""
     from django.core.cache import cache
-    ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "unknown")).split(",")[0].strip()
+    from core.utils import get_client_ip
+    ip = get_client_ip(request)
     key = f"chat_rate:{ip}"
     count = cache.get(key, 0)
     if count >= CHAT_RATE_LIMIT:

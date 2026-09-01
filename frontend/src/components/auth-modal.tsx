@@ -4,16 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   login,
-  registerWithTransaction,
-  reactivateWithTransaction,
+  register,
   dashboardPathForRole,
-  TransactionRequiredError,
   AccountDeactivatedError,
 } from "@/lib/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 
-type Panel = "login" | "register" | "reactivate";
+type Panel = "login" | "register";
 
 export function AuthModal() {
   const router = useRouter();
@@ -23,8 +21,10 @@ export function AuthModal() {
   const [panel, setPanel] = useState<Panel>(mode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [transactionNumber, setTransactionNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -34,8 +34,10 @@ export function AuthModal() {
       setPanel(mode);
       setUsername("");
       setPassword("");
+      setFirstName("");
+      setLastName("");
       setEmail("");
-      setTransactionNumber("");
+      setPhoneNumber("");
       setError(null);
     }
   }, [isOpen, mode]);
@@ -56,9 +58,7 @@ export function AuthModal() {
       const user = await login(username, password);
       finishAuth(user);
     } catch (err) {
-      if (err instanceof TransactionRequiredError) {
-        setPanel("reactivate");
-      } else if (err instanceof AccountDeactivatedError) {
+      if (err instanceof AccountDeactivatedError) {
         setError("This account has been deactivated. Please contact support.");
       } else {
         setError("Invalid username or password.");
@@ -73,30 +73,11 @@ export function AuthModal() {
     setError(null);
     setLoading(true);
     try {
-      const user = await registerWithTransaction(username, password, transactionNumber, email);
+      const user = await register({ firstName, lastName, email, phoneNumber, username, password });
       finishAuth(user);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
       setError(detail ? Object.values(detail).flat().join(" ") : "Couldn't create your account. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleReactivate(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const user = await reactivateWithTransaction(username, password, transactionNumber);
-      finishAuth(user);
-    } catch (err: unknown) {
-      const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
-      setError(
-        detail
-          ? Object.values(detail).flat().join(" ")
-          : "Couldn't reactivate your account. Check the transaction number and try again."
-      );
     } finally {
       setLoading(false);
     }
@@ -121,7 +102,7 @@ export function AuthModal() {
           <form onSubmit={handleLogin}>
             <h1 className="font-display text-2xl mb-1 text-cream">Sign in</h1>
             <p className="text-sand text-sm mb-6">
-              Access your contract, payment schedule, and receipts.
+              Access your contracts, payment schedule, and receipts.
             </p>
 
             {error && (
@@ -158,13 +139,13 @@ export function AuthModal() {
             </button>
 
             <p className="mt-5 text-center text-sm text-sand">
-              New buyer?{" "}
+              New here?{" "}
               <button
                 type="button"
                 onClick={() => { setPanel("register"); setError(null); }}
                 className="text-marigold font-medium hover:underline"
               >
-                Register with your transaction number
+                Create an account
               </button>
             </p>
           </form>
@@ -174,7 +155,7 @@ export function AuthModal() {
           <form onSubmit={handleRegister}>
             <h1 className="font-display text-2xl mb-1 text-cream">Create your account</h1>
             <p className="text-sand text-sm mb-6">
-              Enter the transaction number from your contract to set up online payments.
+              Set up your profile — you can browse, reserve a lot, and view contracts once you're in.
             </p>
 
             {error && (
@@ -183,14 +164,45 @@ export function AuthModal() {
               </p>
             )}
 
-            <label className="block text-sm font-medium text-sand mb-1">Transaction number</label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-sand mb-1">First name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-sand mb-1">Last name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                />
+              </div>
+            </div>
+
+            <label className="block text-sm font-medium text-sand mb-1">Email</label>
             <input
-              type="text"
-              value={transactionNumber}
-              onChange={(e) => setTransactionNumber(e.target.value)}
-              placeholder="e.g. GV-2026-0001"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              autoFocus
+              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+            />
+
+            <label className="block text-sm font-medium text-sand mb-1">Phone number</label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
               className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
@@ -200,14 +212,6 @@ export function AuthModal() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
-
-            <label className="block text-sm font-medium text-sand mb-1">Email (optional)</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
             />
 
@@ -238,49 +242,6 @@ export function AuthModal() {
                 Sign in
               </button>
             </p>
-          </form>
-        )}
-
-        {panel === "reactivate" && (
-          <form onSubmit={handleReactivate}>
-            <h1 className="font-display text-2xl mb-1 text-cream">Transaction completed</h1>
-            <p className="text-sand text-sm mb-6">
-              Your last transaction has been fully paid. Enter a new active
-              transaction number to log in again.
-            </p>
-
-            {error && (
-              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
-                {error}
-              </p>
-            )}
-
-            <label className="block text-sm font-medium text-sand mb-1">New transaction number</label>
-            <input
-              type="text"
-              value={transactionNumber}
-              onChange={(e) => setTransactionNumber(e.target.value)}
-              placeholder="e.g. GV-2026-0002"
-              required
-              autoFocus
-              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
-            >
-              {loading ? "Verifying…" : "Reactivate and sign in"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setPanel("login"); setError(null); }}
-              className="mt-4 w-full text-center text-sm text-sand hover:text-cream"
-            >
-              ← Back to sign in
-            </button>
           </form>
         )}
       </div>

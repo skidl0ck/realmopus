@@ -47,6 +47,12 @@ def installments_for_contract(request, pk):
 @dynamic_permission("payments", "create")
 @audit_action("recorded_payment", model_name="Payment", get_object_id=lambda request: None)
 def payment_create(request):
+    reservation_id = request.GET.get("reservation") or request.POST.get("reservation_prefill")
+    reservation = None
+    if reservation_id:
+        from properties.models import Reservation
+        reservation = Reservation.objects.filter(pk=reservation_id, status=Reservation.Status.PENDING_PAYMENT).first()
+
     if request.method == "POST":
         form = ManualPaymentForm(request.POST)
         if form.is_valid():
@@ -60,8 +66,13 @@ def payment_create(request):
             messages.success(request, f"Payment of {cur}{payment.amount:,.2f} recorded.")
             return redirect("admin_panel:payment_list")
     else:
-        form = ManualPaymentForm()
-    return render(request, "admin_panel/payments/form.html", {"form": form, "title": "Record Payment"})
+        initial = {}
+        if reservation:
+            initial = {"reservation": reservation.id, "amount": reservation.reservation_fee}
+        form = ManualPaymentForm(initial=initial)
+    return render(request, "admin_panel/payments/form.html", {
+        "form": form, "title": "Record Payment", "reservation": reservation,
+    })
 
 
 @dynamic_permission("payments", "create")
