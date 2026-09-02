@@ -4,23 +4,44 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  first_name: string;
+  last_name: string;
   role: UserRole;
   phone_number?: string;
+  is_active: boolean;
   email_notifications_enabled: boolean;
 }
 
 export type LotStatus = "available" | "reserved" | "sold" | "on_hold";
 
+export interface LotImage {
+  id: string;
+  image: string;
+  is_thumbnail: boolean;
+}
+
 export interface Lot {
   id: string;
   project: string;
+  project_name?: string;
   block_number: string;
   lot_number: string;
   area_sqm: string;
   price_per_sqm: string;
   total_price: string;
   status: LotStatus;
-  photos: string[];
+  thumbnail: string | null;
+  images?: LotImage[];
+}
+
+export interface Reservation {
+  id: string;
+  lot: string;
+  lot_display: string;
+  reservation_fee: string;
+  deadline: string;
+  status: "pending_payment" | "active" | "converted" | "expired" | "cancelled";
+  created_at: string;
 }
 
 export interface Project {

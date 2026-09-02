@@ -41,12 +41,46 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "user", "address", "valid_id_number", "date_of_birth", "occupation", "referred_by"]
 
 
-class NotificationPreferenceSerializer(serializers.ModelSerializer):
-    """Deliberately narrow — the only field a user may self-edit via /me/ PATCH."""
+class SelfProfileSerializer(serializers.ModelSerializer):
+    """The fields a user may self-edit via /me/ PATCH: their own profile
+    details and notification preference. Deliberately excludes role,
+    is_active, and username — username stays a staff-only change, since
+    letting someone change their own login identifier risks them locking
+    themselves out via a typo, or simply forgetting what they changed it to."""
 
     class Meta:
         model = User
-        fields = ["email_notifications_enabled"]
+        fields = ["first_name", "last_name", "email", "phone_number", "email_notifications_enabled"]
+
+    def validate_email(self, value):
+        # email isn't unique at the DB level (a stock AbstractUser quirk --
+        # username is, email isn't), so this has to be checked manually.
+        # Excludes the instance itself, since saving your own unchanged
+        # email back shouldn't be rejected as a duplicate.
+        if User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Self-service password change — requires the current password to
+    confirm it's genuinely the account owner making the change, not just
+    someone with a stolen/still-logged-in session."""
+
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    def validate_current_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def save(self):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user
 
 
 class ClientRegistrationSerializer(serializers.Serializer):

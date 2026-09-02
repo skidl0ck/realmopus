@@ -116,6 +116,105 @@ def _client_choices_and_info():
     return clients, info
 
 
+class ClientEditForm(forms.ModelForm):
+    """Admin editing an existing registered client's own profile details —
+    distinct from StaffEditForm, which also handles role/commission
+    concerns that don't apply to a client account."""
+
+    new_password = forms.CharField(
+        required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}),
+        help_text="Leave blank to keep their current password. Shown as plain text here, not masked — "
+                   "you'll need to actually read and share it with the client.",
+    )
+
+    class Meta:
+        from accounts.models import User
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "phone_number"]
+        widgets = {
+            "username": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "first_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "last_name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "email": forms.EmailInput(attrs={"class": INPUT_CLASSES}),
+            "phone_number": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+        }
+
+    def clean_email(self):
+        from accounts.models import User
+        email = self.cleaned_data["email"]
+        # email isn't unique at the DB level (a stock AbstractUser quirk --
+        # username is, email isn't), so this has to be checked manually.
+        # Excludes the instance itself, since editing shouldn't reject
+        # saving the client's own unchanged email back.
+        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def clean_new_password(self):
+        from django.contrib.auth.password_validation import validate_password
+        password = self.cleaned_data.get("new_password")
+        if password:
+            validate_password(password)
+        return password
+
+    def save(self, commit=True):
+        client = super().save(commit=False)
+        new_password = self.cleaned_data.get("new_password")
+        if new_password:
+            client.set_password(new_password)
+        if commit:
+            client.save()
+        return client
+
+
+class ClientQuickCreateForm(forms.Form):
+    """Backs the '+ New Client' quick-add modal on the New Contract form --
+    lets staff register a client account without leaving the contract form,
+    mirroring expense_category_quick_create's established pattern. Unlike
+    ClientEditForm, this creates a brand-new account, so it needs a password
+    too (staff sets it directly and communicates it to the client, same
+    pattern as StaffCreateForm/StaffEditForm elsewhere in this file)."""
+
+    first_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={"class": INPUT_CLASSES}))
+    phone_number = forms.CharField(max_length=32, widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    username = forms.CharField(widget=forms.TextInput(attrs={"class": INPUT_CLASSES}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES}))
+
+    def clean_username(self):
+        from accounts.models import User
+        username = self.cleaned_data["username"]
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
+
+    def clean_email(self):
+        from accounts.models import User
+        email = self.cleaned_data["email"]
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def clean_password(self):
+        from django.contrib.auth.password_validation import validate_password
+        password = self.cleaned_data["password"]
+        validate_password(password)
+        return password
+
+    def save(self):
+        from accounts.models import User
+        return User.objects.create_user(
+            username=self.cleaned_data["username"],
+            email=self.cleaned_data["email"],
+            password=self.cleaned_data["password"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data["last_name"],
+            phone_number=self.cleaned_data["phone_number"],
+            role=User.Role.CLIENT,
+        )
+
+
 class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract

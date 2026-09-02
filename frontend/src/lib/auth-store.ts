@@ -33,6 +33,7 @@ export const NAV_ITEMS_BY_ROLE: Record<string, { label: string; href: string }[]
   ],
   client: [
     { label: "My Contract", href: "/portal" },
+    { label: "My Reservations", href: "/portal/reservations" },
     { label: "Payment Schedule", href: "/portal/schedule" },
     { label: "Make a Payment", href: "/portal/pay" },
     { label: "Receipts", href: "/portal/receipts" },

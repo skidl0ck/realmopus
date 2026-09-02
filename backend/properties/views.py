@@ -1,21 +1,36 @@
 import csv
 import io
 
+import django_filters
 from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.utils import timezone
-from rest_framework import viewsets, filters, serializers as drf_serializers, status
+from rest_framework import viewsets, filters, generics, serializers as drf_serializers, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from core.permissions import ReadOnlyOrIsStaff, IsAdminOrSalesAgent
+from core.permissions import ReadOnlyOrIsStaff, IsAdminOrSalesAgent, IsClient
 from .models import Project, Lot, Reservation
-from .serializers import ProjectSerializer, LotSerializer, ReservationSerializer
+from .serializers import ProjectSerializer, LotSerializer, ReservationSerializer, SelfServiceReservationSerializer
 
 LOT_CSV_REQUIRED_COLUMNS = {"project", "block_number", "lot_number", "area_sqm", "price_per_sqm"}
 LOT_CSV_OPTIONAL_COLUMNS = {"total_price", "status"}
+
+
+class LotFilter(django_filters.FilterSet):
+    """Adds range filtering (price, lot size) on top of the exact-match
+    project/status filters -- plain filterset_fields only supports exact
+    matches, not >=/<= ranges, so this needs its own FilterSet."""
+    price_min = django_filters.NumberFilter(field_name="total_price", lookup_expr="gte")
+    price_max = django_filters.NumberFilter(field_name="total_price", lookup_expr="lte")
+    area_min = django_filters.NumberFilter(field_name="area_sqm", lookup_expr="gte")
+    area_max = django_filters.NumberFilter(field_name="area_sqm", lookup_expr="lte")
+
+    class Meta:
+        model = Lot
+        fields = ["project", "status", "price_min", "price_max", "area_min", "area_max"]
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -37,7 +52,7 @@ class LotViewSet(viewsets.ModelViewSet):
     serializer_class = LotSerializer
     permission_classes = [ReadOnlyOrIsStaff]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["project", "status"]
+    filterset_class = LotFilter
     search_fields = ["lot_number", "block_number"]
     ordering_fields = ["total_price", "area_sqm", "created_at"]
 
@@ -173,3 +188,17 @@ class ReservationViewSet(viewsets.ModelViewSet):
         reservation.lot.status = Lot.Status.AVAILABLE
         reservation.lot.save(update_fields=["status"])
         return Response(ReservationSerializer(reservation).data)
+
+
+class MyReservationsView(generics.ListCreateAPIView):
+    """Logged-in client self-service: reserve a lot for themselves (POST),
+    or see their own reservations (GET) -- the public-site equivalent of a
+    staff member creating a reservation for a walk-in prospect, except the
+    client is reserving for themself and doesn't need to type buyer info
+    that's already on their own profile."""
+
+    serializer_class = SelfServiceReservationSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        return Reservation.objects.filter(client=self.request.user).select_related("lot", "lot__project").order_by("-created_at")

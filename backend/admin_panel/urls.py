@@ -28,6 +28,7 @@ urlpatterns = [
 
     path('contracts/', sales_views.contract_list, name='contract_list'),
     path('contracts/new/', sales_views.contract_create, name='contract_create'),
+    path('contracts/clients/quick-create/', sales_views.client_quick_create, name='client_quick_create'),
     path('contracts/<uuid:pk>/', sales_views.contract_detail, name='contract_detail'),
     path('contracts/<uuid:pk>/regenerate-documents/', sales_views.contract_regenerate_documents, name='contract_regenerate_documents'),
     path('contracts/<uuid:pk>/send-reminder/', sales_views.contract_send_reminder, name='contract_send_reminder'),
@@ -85,6 +86,7 @@ urlpatterns = [
     path('account/change-password/', account_views.change_password, name='change_password'),
 
     path('clients/', clients_views.client_list, name='client_list'),
+    path('clients/<uuid:pk>/edit/', clients_views.client_edit, name='client_edit'),
     path('clients/<uuid:pk>/toggle-active/', clients_views.client_toggle_active, name='client_toggle_active'),
 
     path('settings/role-permissions/', permissions_views.role_permissions, name='role_permissions'),

@@ -7,7 +7,7 @@ from core.permissions import IsAdmin
 from .models import User, SalesAgentProfile, ClientProfile
 from .serializers import (
     UserSerializer, UserCreateSerializer, SalesAgentProfileSerializer, ClientProfileSerializer,
-    ClientRegistrationSerializer, NotificationPreferenceSerializer,
+    ClientRegistrationSerializer, SelfProfileSerializer, ChangePasswordSerializer,
 )
 
 
@@ -46,10 +46,17 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         if request.method == "PATCH":
-            serializer = NotificationPreferenceSerializer(request.user, data=request.data, partial=True)
+            serializer = SelfProfileSerializer(request.user, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(UserSerializer(request.user).data)
+
+    @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def change_password(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Password changed."})
 
 
 class SalesAgentProfileViewSet(viewsets.ModelViewSet):

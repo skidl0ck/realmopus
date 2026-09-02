@@ -1,0 +1,49 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Edit {{ client.get_full_name|default:client.username }} — EstateOS Staff{% endblock %}
+{% block content %}
+<h1 class="eo-title mb-1">Edit Client Profile</h1>
+<p class="eo-subtitle mb-6">{{ client.get_full_name|default:client.username }}</p>
+
+<form method="post" class="max-w-lg eo-card eo-card-pad space-y-4">
+  {% csrf_token %}
+  {% for field in form %}
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label class="eo-eyebrow">{{ field.label }}</label>
+        {% if field.name == "new_password" %}
+        <button type="button" id="generate-password" class="eo-link text-xs">Generate</button>
+        {% endif %}
+      </div>
+      {{ field }}
+      {% if field.help_text %}<p class="eo-subtitle text-xs mt-1">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="text-sm mt-1" style="color: var(--stamp);">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+  {% endfor %}
+  <div class="flex gap-3">
+    <button type="submit" class="eo-btn-primary">Save</button>
+    <a href="{% url 'admin_panel:client_list' %}" class="eo-btn-secondary">Cancel</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var generateBtn = document.getElementById('generate-password');
+    var passwordField = document.getElementById('id_new_password');
+    if (generateBtn && passwordField) {
+      generateBtn.addEventListener('click', function () {
+        // Excludes visually-ambiguous characters (0/O, 1/l/I) -- this password
+        // needs to actually be read out or typed over to the client, so easy
+        // transcription matters more here than raw entropy.
+        var charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+        var values = new Uint32Array(14);
+        crypto.getRandomValues(values);
+        var password = '';
+        for (var i = 0; i < values.length; i++) {
+          password += charset[values[i] % charset.length];
+        }
+        passwordField.value = password;
+      });
+    }
+  })();
+</script>
+{% endblock %}

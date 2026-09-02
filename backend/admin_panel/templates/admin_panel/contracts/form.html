@@ -26,7 +26,12 @@
       {% if field.name == "penalty_rate_percent" %}</div>{% endif %}
     {% else %}
       <div>
-        <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+        <div class="flex items-center justify-between mb-1">
+          <label class="eo-eyebrow">{{ field.label }}</label>
+          {% if field.name == "client" %}
+          <button type="button" id="open-client-modal" class="eo-link text-xs">+ New Client</button>
+          {% endif %}
+        </div>
         {{ field }}
         {% if field.help_text %}<p class="eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
         {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
@@ -37,6 +42,49 @@
     Save
   </button>
 </form>
+
+<!-- Quick-add client modal -->
+<div id="client-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(20,35,29,0.4); z-index: 50; align-items: center; justify-content: center;">
+  <div class="eo-card eo-card-pad" style="width: 100%; max-width: 26rem;">
+    <h2 class="eo-display font-semibold text-base mb-3">New Client</h2>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="eo-eyebrow block mb-1">First name</label>
+          <input type="text" id="client-modal-first-name" class="eo-input" style="width: 100%;">
+        </div>
+        <div>
+          <label class="eo-eyebrow block mb-1">Last name</label>
+          <input type="text" id="client-modal-last-name" class="eo-input" style="width: 100%;">
+        </div>
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">Email</label>
+        <input type="email" id="client-modal-email" class="eo-input" style="width: 100%;">
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">Phone number</label>
+        <input type="text" id="client-modal-phone" class="eo-input" style="width: 100%;">
+      </div>
+      <div>
+        <label class="eo-eyebrow block mb-1">Username</label>
+        <input type="text" id="client-modal-username" class="eo-input" style="width: 100%;">
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="eo-eyebrow">Password</label>
+          <button type="button" id="generate-client-password" class="eo-link text-xs">Generate</button>
+        </div>
+        <input type="text" id="client-modal-password" class="eo-input" style="width: 100%;">
+      </div>
+    </div>
+    <p id="client-modal-error" class="text-sm mt-2" style="color: var(--stamp); display: none;"></p>
+    <div class="flex gap-3 mt-4">
+      <button type="button" id="client-modal-save" class="eo-btn-primary">Save</button>
+      <button type="button" id="client-modal-cancel" class="eo-btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <script>
   (function () {
@@ -80,6 +128,105 @@
       form.addEventListener('submit', function () {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Saving…';
+      });
+    }
+  })();
+
+  (function () {
+    var openBtn = document.getElementById('open-client-modal');
+    var overlay = document.getElementById('client-modal-overlay');
+    var firstNameInput = document.getElementById('client-modal-first-name');
+    var lastNameInput = document.getElementById('client-modal-last-name');
+    var emailInput = document.getElementById('client-modal-email');
+    var phoneInput = document.getElementById('client-modal-phone');
+    var usernameInput = document.getElementById('client-modal-username');
+    var passwordInput = document.getElementById('client-modal-password');
+    var generatePasswordBtn = document.getElementById('generate-client-password');
+    var errorEl = document.getElementById('client-modal-error');
+    var saveBtn = document.getElementById('client-modal-save');
+    var cancelBtn = document.getElementById('client-modal-cancel');
+    var clientSelect = document.getElementById('id_client');
+    var csrfToken = document.querySelector('#contract-form [name=csrfmiddlewaretoken]').value;
+
+    function generatePassword() {
+      // Excludes visually-ambiguous characters (0/O, 1/l/I) -- this password
+      // needs to actually be read out or typed over to the client, so easy
+      // transcription matters more here than raw entropy.
+      var charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+      var values = new Uint32Array(14);
+      crypto.getRandomValues(values);
+      var password = '';
+      for (var i = 0; i < values.length; i++) {
+        password += charset[values[i] % charset.length];
+      }
+      return password;
+    }
+    if (generatePasswordBtn) {
+      generatePasswordBtn.addEventListener('click', function () {
+        passwordInput.value = generatePassword();
+      });
+    }
+
+    function openModal() {
+      firstNameInput.value = '';
+      lastNameInput.value = '';
+      emailInput.value = '';
+      phoneInput.value = '';
+      usernameInput.value = '';
+      passwordInput.value = '';
+      errorEl.style.display = 'none';
+      overlay.style.display = 'flex';
+      firstNameInput.focus();
+    }
+    function closeModal() {
+      overlay.style.display = 'none';
+    }
+
+    if (openBtn) openBtn.addEventListener('click', openModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (overlay) overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function () {
+        errorEl.style.display = 'none';
+        saveBtn.disabled = true;
+        var body = 'first_name=' + encodeURIComponent(firstNameInput.value.trim())
+          + '&last_name=' + encodeURIComponent(lastNameInput.value.trim())
+          + '&email=' + encodeURIComponent(emailInput.value.trim())
+          + '&phone_number=' + encodeURIComponent(phoneInput.value.trim())
+          + '&username=' + encodeURIComponent(usernameInput.value.trim())
+          + '&password=' + encodeURIComponent(passwordInput.value);
+        fetch('/admin_panel/contracts/clients/quick-create/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body,
+        })
+          .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+          .then(function (result) {
+            saveBtn.disabled = false;
+            if (!result.ok) {
+              var errors = result.data.errors;
+              var msg = errors ? Object.keys(errors).map(function (k) { return errors[k][0]; }).join(' ') : 'Could not create client.';
+              errorEl.textContent = msg;
+              errorEl.style.display = 'block';
+              return;
+            }
+            var opt = document.createElement('option');
+            opt.value = result.data.id;
+            opt.textContent = result.data.full_name;
+            opt.dataset.fullName = result.data.full_name;
+            opt.dataset.email = result.data.email;
+            opt.dataset.phone = result.data.phone;
+            opt.selected = true;
+            clientSelect.appendChild(opt);
+            clientSelect.dispatchEvent(new Event('change'));
+            closeModal();
+          })
+          .catch(function () {
+            saveBtn.disabled = false;
+            errorEl.textContent = 'Something went wrong — please try again.';
+            errorEl.style.display = 'block';
+          });
       });
     }
   })();

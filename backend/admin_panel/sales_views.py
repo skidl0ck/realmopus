@@ -11,7 +11,7 @@ from properties.models import Reservation
 from accounts.models import User
 
 from .decorators import staff_required, dynamic_permission, audit_action
-from .forms import ContractForm, FeeForm
+from .forms import ContractForm, FeeForm, ClientQuickCreateForm
 from .pagination import paginate
 
 
@@ -85,6 +85,28 @@ def _generate_contract_number():
     year = timezone.now().year
     count = Contract.objects.filter(contract_number__startswith=f"GV-{year}-").count() + 1
     return f"GV-{year}-{count:04d}"
+
+
+@dynamic_permission("contracts", "create")
+@audit_action("quick_created_client", model_name="User", get_object_id=lambda request: None)
+def client_quick_create(request):
+    """JSON endpoint backing the '+ New Client' modal on the New Contract
+    form -- lets staff register a client account without losing whatever
+    else they've already filled in on that form. Mirrors
+    expense_category_quick_create's established pattern (expenses_views.py)."""
+    from django.http import JsonResponse
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    form = ClientQuickCreateForm(request.POST)
+    if form.is_valid():
+        client = form.save()
+        return JsonResponse({
+            "id": str(client.id),
+            "full_name": client.get_full_name() or client.username,
+            "email": client.email,
+            "phone": client.phone_number,
+        })
+    return JsonResponse({"errors": form.errors}, status=400)
 
 
 @dynamic_permission("contracts", "view")

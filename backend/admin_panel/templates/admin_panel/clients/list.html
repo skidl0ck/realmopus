@@ -10,7 +10,6 @@
       <tr>
         <th>Name</th>
         <th class="hidden sm:table-cell">Username</th>
-        <th class="hidden sm:table-cell">Contracts</th>
         <th class="hidden sm:table-cell">Account</th>
         <th class="hidden sm:table-cell"></th>
         <th class="sm:hidden text-right">Account</th>
@@ -21,13 +20,6 @@
       <tr>
         <td>{{ client.get_full_name|default:"—" }}</td>
         <td class="hidden sm:table-cell eo-subtitle">{{ client.username }}</td>
-        <td class="hidden sm:table-cell">
-          {% for contract in client.contracts.all %}
-            <a href="{% url 'admin_panel:contract_detail' contract.id %}" class="eo-link eo-num" style="display: block;">{{ contract.contract_number }}</a>
-          {% empty %}
-            <span class="eo-subtitle">—</span>
-          {% endfor %}
-        </td>
 
         {# Desktop: Account status and action are separate columns #}
         <td class="hidden sm:table-cell">
@@ -36,10 +28,11 @@
           </span>
         </td>
         <td class="hidden sm:table-cell text-right">
-          <form method="post" action="{% url 'admin_panel:client_toggle_active' client.id %}"
+          <a href="{% url 'admin_panel:client_edit' client.id %}" class="eo-link">Edit</a>
+          <form method="post" action="{% url 'admin_panel:client_toggle_active' client.id %}" style="display: inline;"
                 onsubmit="return confirm('{% if client.is_active %}Disable{% else %}Re-activate{% endif %} this account?');">
             {% csrf_token %}
-            <button type="submit" class="eo-link">{% if client.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+            <button type="submit" class="eo-link" style="margin-left: 0.75rem;">{% if client.is_active %}Deactivate{% else %}Activate{% endif %}</button>
           </form>
         </td>
 
@@ -49,7 +42,8 @@
             <span class="eo-stamp {% if client.is_active %}eo-stamp--green{% else %}eo-stamp--red{% endif %}">
               {% if client.is_active %}Active{% else %}Disabled{% endif %}
             </span>
-            <form method="post" action="{% url 'admin_panel:client_toggle_active' client.id %}"
+            <a href="{% url 'admin_panel:client_edit' client.id %}" class="eo-link">Edit</a>
+            <form method="post" action="{% url 'admin_panel:client_toggle_active' client.id %}" style="display: inline;"
                   onsubmit="return confirm('{% if client.is_active %}Disable{% else %}Re-activate{% endif %} this account?');">
               {% csrf_token %}
               <button type="submit" class="eo-link">{% if client.is_active %}Deactivate{% else %}Activate{% endif %}</button>
@@ -58,7 +52,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" class="text-center eo-subtitle py-6">No registered clients yet.</td></tr>
+      <tr><td colspan="4" class="text-center eo-subtitle py-6">No registered clients yet.</td></tr>
       {% endfor %}
     </tbody>
   </table></div>

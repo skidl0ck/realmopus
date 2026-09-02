@@ -77,7 +77,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         if not self.instance:
             if lot.status != Lot.Status.AVAILABLE:
                 raise serializers.ValidationError("This lot is not available for reservation.")
-            if lot.reservations.filter(status=Reservation.Status.ACTIVE).exists():
+            if lot.reservations.filter(status__in=[Reservation.Status.ACTIVE, Reservation.Status.PENDING_PAYMENT]).exists():
                 raise serializers.ValidationError("This lot already has an active reservation.")
         return lot
 
@@ -89,20 +89,27 @@ class ReservationSerializer(serializers.ModelSerializer):
         return reservation
 
 
-class PublicReservationSerializer(serializers.ModelSerializer):
-    """Used by the public 'Reserve this lot' form — no auth required, minimal fields."""
+class SelfServiceReservationSerializer(serializers.ModelSerializer):
+    """A logged-in client reserving a lot for themselves on the public site.
+    No separate buyer info to type in — pulled from their own profile —
+    and follows the same pending-until-paid pattern as a staff-created
+    reservation with a fee (see admin_panel/reservations_views.py:
+    reservation_create): a fee > 0 means the lot goes on hold, not fully
+    reserved, until that fee is actually paid."""
+
+    lot_display = serializers.CharField(source="lot.__str__", read_only=True)
 
     class Meta:
         model = Reservation
-        fields = ["id", "lot", "buyer_full_name", "buyer_email", "buyer_phone", "reservation_fee", "deadline", "status"]
-        read_only_fields = ["id", "reservation_fee", "deadline", "status"]
+        fields = ["id", "lot", "lot_display", "reservation_fee", "deadline", "status", "created_at"]
+        read_only_fields = ["id", "reservation_fee", "deadline", "status", "created_at"]
 
     def validate_lot(self, lot):
         if lot.status != Lot.Status.AVAILABLE:
-            raise serializers.ValidationError("This lot is no longer available.")
+            raise serializers.ValidationError("This lot is not available for reservation.")
         if not lot.project.is_published:
             raise serializers.ValidationError("This lot is not currently open for reservations.")
-        if lot.reservations.filter(status=Reservation.Status.ACTIVE).exists():
+        if lot.reservations.filter(status__in=[Reservation.Status.ACTIVE, Reservation.Status.PENDING_PAYMENT]).exists():
             raise serializers.ValidationError("This lot already has an active reservation.")
         return lot
 
@@ -111,12 +118,21 @@ class PublicReservationSerializer(serializers.ModelSerializer):
         from datetime import timedelta
         from admin_panel.models import PlatformSettings
 
+        user = self.context["request"].user
         settings_row = PlatformSettings.load()
-        validated_data["reservation_fee"] = settings_row.default_reservation_fee
-        validated_data["deadline"] = timezone.now().date() + timedelta(days=settings_row.reservation_hold_days)
+        fee = settings_row.default_reservation_fee or 0
 
-        reservation = Reservation.objects.create(**validated_data)
+        reservation = Reservation.objects.create(
+            lot=validated_data["lot"],
+            client=user,
+            buyer_full_name=user.get_full_name() or user.username,
+            buyer_email=user.email,
+            buyer_phone=user.phone_number,
+            reservation_fee=fee,
+            deadline=timezone.now().date() + timedelta(days=settings_row.reservation_hold_days),
+            status=Reservation.Status.PENDING_PAYMENT if fee > 0 else Reservation.Status.ACTIVE,
+        )
         lot = reservation.lot
-        lot.status = Lot.Status.RESERVED
+        lot.status = Lot.Status.ON_HOLD if fee > 0 else Lot.Status.RESERVED
         lot.save(update_fields=["status"])
         return reservation

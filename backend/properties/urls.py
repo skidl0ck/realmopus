@@ -8,5 +8,6 @@ router.register("lots", views.LotViewSet, basename="lot")
 router.register("reservations", views.ReservationViewSet, basename="reservation")
 
 urlpatterns = [
+    path('reservations/mine/', views.MyReservationsView.as_view(), name='my-reservations'),
     path('', include(router.urls)),
 ]

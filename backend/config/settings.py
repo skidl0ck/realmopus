@@ -143,6 +143,11 @@ PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='')
 PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')  # sandbox | live
 
 PAYMONGO_SECRET_KEY = config('PAYMONGO_SECRET_KEY', default='')
+PAYMONGO_PUBLIC_KEY = config('PAYMONGO_PUBLIC_KEY', default='')
+# Only needed if/when a webhook endpoint is registered in the PayMongo
+# dashboard — the primary payment-confirmation path (client returns from
+# checkout -> backend polls the Payment Intent directly) doesn't need this.
+PAYMONGO_WEBHOOK_SECRET = config('PAYMONGO_WEBHOOK_SECRET', default='')
 
 # AI chatbot — using Google's Gemini API for its free tier (a deliberate cost
 # decision — see the project notes). Set a real key via environment variable
@@ -158,7 +163,6 @@ CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
 CELERY_TIMEZONE = config('CELERY_TIMEZONE', default='Asia/Manila')
 CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cast=bool)
-PAYMONGO_PUBLIC_KEY = config('PAYMONGO_PUBLIC_KEY', default='')
 
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 # Generic SMTP settings — work with Gmail (app password) for local testing, or swap
