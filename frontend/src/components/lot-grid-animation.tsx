@@ -35,9 +35,9 @@ function nextStatus(current: Status): Status {
 }
 
 const STATUS_STYLES: Record<Status, string> = {
-  available: "bg-sage",
-  reserved: "bg-marigold/70",
-  sold: "bg-cream/20",
+  available: "bg-accent",
+  reserved: "bg-accent-200",
+  sold: "bg-transparent border border-divider",
 };
 
 export function LotGridAnimation() {
@@ -78,10 +78,10 @@ export function LotGridAnimation() {
               return (
                 <div
                   key={i}
-                  className={`lot-cell flex-1 aspect-square rounded-sm transition-colors duration-700 ease-out ${
+                  className={`lot-cell flex-1 aspect-square transition-colors duration-700 ease-out ${
                     STATUS_STYLES[status]
                   } ${isPulsing ? "animate-lot-pulse" : ""} ${
-                    isFlashing ? "ring-2 ring-white/80 scale-110" : ""
+                    isFlashing ? "ring-2 ring-accent-700 scale-110" : ""
                   }`}
                   style={{ animationDelay: `${i * 35}ms`, transitionProperty: "background-color, transform" }}
                 />
@@ -91,15 +91,15 @@ export function LotGridAnimation() {
         ))}
       </div>
 
-      <div className="flex items-center gap-4 mt-5 text-xs text-sand">
+      <div className="flex items-center gap-4 mt-5 text-xs text-neutral-600 uppercase tracking-wide">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-sage inline-block" /> Available
+          <span className="w-2 h-2 bg-accent inline-block" /> Available
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-marigold/70 inline-block" /> Reserved
+          <span className="w-2 h-2 bg-accent-200 inline-block" /> Reserved
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-cream/20 inline-block" /> Sold
+          <span className="w-2 h-2 border border-divider inline-block" /> Sold
         </span>
       </div>
     </div>

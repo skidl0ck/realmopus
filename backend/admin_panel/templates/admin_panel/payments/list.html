@@ -37,11 +37,19 @@
         {# Desktop: Status and Receipt action are separate columns #}
         <td class="hidden sm:table-cell">
           <span class="eo-stamp
-            {% if payment.status == 'completed' %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+            {% if payment.status == 'completed' %}eo-stamp--green
+            {% elif payment.status == 'refund_needed' %}eo-stamp--red
+            {% else %}eo-stamp--gray{% endif %}">
             {{ payment.get_status_display }}
           </span>
         </td>
-        <td class="hidden sm:table-cell eo-subtitle">{{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">
+          {% if payment.recorded_by %}
+            {{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }}
+          {% else %}
+            <span class="eo-subtitle">Client self-service</span>
+          {% endif %}
+        </td>
         <td class="hidden sm:table-cell eo-subtitle eo-num">{{ payment.paid_at|date:"Y-m-d" }}</td>
         <td class="hidden sm:table-cell text-right">
           {% if payment.receipt.pdf_file %}
@@ -58,7 +66,9 @@
         <td class="sm:hidden text-right">
           <div class="flex items-center justify-end gap-2 flex-wrap">
             <span class="eo-stamp
-              {% if payment.status == 'completed' %}eo-stamp--green{% else %}eo-stamp--gray{% endif %}">
+              {% if payment.status == 'completed' %}eo-stamp--green
+              {% elif payment.status == 'refund_needed' %}eo-stamp--red
+              {% else %}eo-stamp--gray{% endif %}">
               {{ payment.get_status_display }}
             </span>
             {% if payment.receipt.pdf_file %}

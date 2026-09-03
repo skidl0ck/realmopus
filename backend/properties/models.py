@@ -127,6 +127,14 @@ class Reservation(models.Model):
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
+    extension_count = models.PositiveIntegerField(
+        default=0, help_text="How many times the client has self-extended this reservation's deadline."
+    )
+    dismissed_by_client = models.BooleanField(
+        default=False,
+        help_text="Client explicitly gave up on this reservation from their own reservations list "
+                   "(distinct from it simply lapsing past its grace period on its own).",
+    )
 
     class Meta:
         ordering = ["-created_at"]

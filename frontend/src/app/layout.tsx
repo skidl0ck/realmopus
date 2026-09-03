@@ -1,26 +1,20 @@
 import type { Metadata } from "next";
-import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { AuthModal } from "@/components/auth-modal";
 
-const fraunces = Fraunces({
+const barlow = Barlow({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  axes: ["opsz", "SOFT", "WONK"],
-});
-
-const workSans = Work_Sans({
-  subsets: ["latin"],
-  variable: "--font-worksans",
+  weight: ["400", "500", "700"],
+  variable: "--font-barlow",
   display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
+const barlowCondensed = Barlow_Condensed({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plexmono",
+  weight: ["400", "600"],
+  variable: "--font-barlow-condensed",
   display: "swap",
 });
 
@@ -31,8 +25,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`h-full antialiased ${fraunces.variable} ${workSans.variable} ${plexMono.variable}`}>
-      <body className="min-h-full flex flex-col bg-ink text-cream font-body">
+    <html lang="en" className={`h-full antialiased ${barlow.variable} ${barlowCondensed.variable}`}>
+      <body className="min-h-full flex flex-col bg-bg text-ink font-body">
         <Providers>
           {children}
           <AuthModal />

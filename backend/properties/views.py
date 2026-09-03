@@ -202,3 +202,116 @@ class MyReservationsView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Reservation.objects.filter(client=self.request.user).select_related("lot", "lot__project").order_by("-created_at")
+
+
+class ReservationDetailView(generics.RetrieveAPIView):
+    """Single-reservation fetch for the checkout page -- MyReservationsView
+    above only lists, so this covers the "load one specific reservation by
+    id" case that a dedicated checkout page needs on its own."""
+
+    serializer_class = SelfServiceReservationSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        return Reservation.objects.filter(client=self.request.user).select_related("lot", "lot__project")
+
+
+class ExtendReservationView(generics.GenericAPIView):
+    """Client self-service: push a PENDING_PAYMENT reservation's deadline
+    out by one full hold period (from today, not from the old deadline --
+    extending a reservation that's already days overdue by adding time to
+    an already-past date would just produce another past date).
+
+    Deliberately allowed even once the deadline (and grace period) have
+    passed, as long as the lot genuinely hasn't been released yet -- that's
+    the whole point of self-extend existing. Whether it's actually still
+    available depends on timing: expire_stale_reservations() is staff-facing
+    lazy cleanup (see properties/services.py), so a client can still win this
+    race and extend right up until a staff member happens to load a page
+    that releases it first."""
+
+    serializer_class = SelfServiceReservationSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        return Reservation.objects.filter(client=self.request.user).select_related("lot")
+
+    def post(self, request, pk):
+        from datetime import timedelta
+        from django.utils import timezone
+        from admin_panel.models import PlatformSettings
+
+        reservation = self.get_object()
+
+        if reservation.status != Reservation.Status.PENDING_PAYMENT:
+            return Response(
+                {"detail": "This reservation can no longer be extended."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if reservation.dismissed_by_client:
+            return Response(
+                {"detail": "This reservation was dismissed and can no longer be extended."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        settings_row = PlatformSettings.load()
+        if reservation.extension_count >= settings_row.max_reservation_extensions:
+            return Response(
+                {"detail": "This reservation has already been extended the maximum number of times. "
+                            "Please contact us for help."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # The lot might have already been released by staff-facing lazy
+        # cleanup in the meantime -- re-check right before committing to the
+        # extension, not just at page-load time.
+        if reservation.lot.status != Lot.Status.ON_HOLD:
+            return Response(
+                {"detail": "This lot is no longer being held for you — it may have been released. "
+                            "Please reserve it again if it's still available."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        reservation.deadline = timezone.now().date() + timedelta(days=settings_row.reservation_hold_days)
+        reservation.extension_count += 1
+        reservation.save(update_fields=["deadline", "extension_count"])
+        return Response(self.get_serializer(reservation).data)
+
+
+class DismissReservationView(generics.GenericAPIView):
+    """Client self-service dismissal, covering two different situations:
+
+    - PENDING_PAYMENT: give up on a reservation whose fee was never paid,
+      rather than letting it sit until staff-facing lazy cleanup eventually
+      catches it. Cancels it and releases the lot immediately as a
+      courtesy — same as before.
+    - EXPIRED: the fee WAS paid (reservation went ACTIVE) but the client
+      never went on to sign a contract before that deadline passed.
+      expire_stale_reservations() already released the lot by the time
+      status reaches EXPIRED, so there's nothing left to release here —
+      the client is just clearing dead history from their own view, so
+      this deletes the row outright rather than leaving it around forever."""
+
+    serializer_class = SelfServiceReservationSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        return Reservation.objects.filter(client=self.request.user).select_related("lot")
+
+    def post(self, request, pk):
+        reservation = self.get_object()
+
+        if reservation.status == Reservation.Status.EXPIRED:
+            reservation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if reservation.status != Reservation.Status.PENDING_PAYMENT:
+            return Response(
+                {"detail": "This reservation can no longer be dismissed."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reservation.dismissed_by_client = True
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.save(update_fields=["dismissed_by_client", "status"])
+        if reservation.lot.status == Lot.Status.ON_HOLD:
+            reservation.lot.status = Lot.Status.AVAILABLE
+            reservation.lot.save(update_fields=["status"])
+        return Response(self.get_serializer(reservation).data)

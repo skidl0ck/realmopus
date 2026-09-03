@@ -86,64 +86,65 @@ export function AuthModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" onClick={close} />
+      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={close} />
 
       {/* Modal card */}
-      <div className="relative w-full max-w-sm rounded-2xl bg-clay shadow-xl p-8 border border-clay">
+      <div className="blueprint relative w-full max-w-sm bg-bg shadow-lg p-8">
+        <i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" />
         <button
           onClick={close}
           aria-label="Close"
-          className="absolute top-4 right-4 text-sand/70 hover:text-cream"
+          className="absolute top-4 right-4 text-neutral-500 hover:text-ink cursor-pointer"
         >
           ✕
         </button>
 
         {panel === "login" && (
           <form onSubmit={handleLogin}>
-            <h1 className="font-display text-2xl mb-1 text-cream">Sign in</h1>
-            <p className="text-sand text-sm mb-6">
+            <h1 className="font-display font-semibold text-2xl uppercase mb-1 text-ink">Sign in</h1>
+            <p className="text-neutral-600 text-sm mb-6">
               Access your contracts, payment schedule, and receipts.
             </p>
 
             {error && (
-              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
                 {error}
               </p>
             )}
 
-            <label className="block text-sm font-medium text-sand mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoFocus
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-4">
+              <label>Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+                className="input"
+              />
+            </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-6">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="input"
+              />
+            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="btn btn-primary btn-block w-full">
               {loading ? "Signing in…" : "Sign in"}
             </button>
 
-            <p className="mt-5 text-center text-sm text-sand">
+            <p className="mt-5 text-center text-sm text-neutral-600">
               New here?{" "}
               <button
                 type="button"
                 onClick={() => { setPanel("register"); setError(null); }}
-                className="text-marigold font-medium hover:underline"
+                className="text-accent font-medium hover:underline cursor-pointer"
               >
                 Create an account
               </button>
@@ -153,91 +154,95 @@ export function AuthModal() {
 
         {panel === "register" && (
           <form onSubmit={handleRegister}>
-            <h1 className="font-display text-2xl mb-1 text-cream">Create your account</h1>
-            <p className="text-sand text-sm mb-6">
-              Set up your profile — you can browse, reserve a lot, and view contracts once you're in.
+            <h1 className="font-display font-semibold text-2xl uppercase mb-1 text-ink">Create your account</h1>
+            <p className="text-neutral-600 text-sm mb-6">
+              Set up your profile — you can browse, reserve a lot, and view contracts once you&apos;re in.
             </p>
 
             {error && (
-              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
                 {error}
               </p>
             )}
 
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-sand mb-1">First name</label>
+              <div className="field">
+                <label>First name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                   autoFocus
-                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                  className="input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-sand mb-1">Last name</label>
+              <div className="field">
+                <label>Last name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                  className="input"
                 />
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-4">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="input"
+              />
+            </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Phone number</label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-4">
+              <label>Phone number</label>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+                className="input"
+              />
+            </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-4">
+              <label>Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="input"
+              />
+            </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full mb-6 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
-            />
+            <div className="field mb-6">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="input"
+              />
+            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-marigold text-ink py-2.5 font-semibold hover:opacity-90 transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="btn btn-primary btn-block w-full">
               {loading ? "Creating account…" : "Create account"}
             </button>
 
-            <p className="mt-5 text-center text-sm text-sand">
+            <p className="mt-5 text-center text-sm text-neutral-600">
               Already registered?{" "}
               <button
                 type="button"
                 onClick={() => { setPanel("login"); setError(null); }}
-                className="text-marigold font-medium hover:underline"
+                className="text-accent font-medium hover:underline cursor-pointer"
               >
                 Sign in
               </button>

@@ -1,19 +1,159 @@
 @import "tailwindcss";
 
 @theme {
-  /* EstateOS "Sun-Baked" palette — see docs/design.md */
-  --color-ink: #262220;
-  --color-clay: #4a4038;
-  --color-marigold: #d68a3e;
-  --color-sand: #a69a82;
-  --color-cream: #f5efe4;
-  --color-sage: #7a8b6f;
-  --color-rust: #9b4a3a;
+  /* EstateOS "Industry" palette — a light, technical blueprint theme.
+     See the uploaded design system (Barlow Condensed headings, steel-blue
+     accent, square corners, hairline borders). "ink" is the text color
+     here (not a background, unlike the old dark theme) — kept the name
+     since it reads naturally as "the dark ink color text is set in". */
+  --color-bg: #f2f2f3;
+  --color-surface: #e9e9ea;
+  --color-ink: #1d1f20;
+  --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
 
-  --font-display: var(--font-fraunces), serif;
-  --font-body: var(--font-worksans), sans-serif;
-  --font-data: var(--font-plexmono), monospace;
+  --color-accent-100: #eef6ff;
+  --color-accent-200: #d6ebff;
+  --color-accent-300: #b5d9fd;
+  --color-accent-400: #94bce3;
+  --color-accent-500: #749dc4;
+  --color-accent: #5980a6;
+  --color-accent-600: #597ea3;
+  --color-accent-700: #416180;
+  --color-accent-800: #2c455d;
+  --color-accent-900: #1d2d3d;
+
+  --color-neutral-100: #f5f5f8;
+  --color-neutral-200: #e7e7ea;
+  --color-neutral-300: #d4d4d7;
+  --color-neutral-400: #b7b7ba;
+  --color-neutral-500: #98989b;
+  --color-neutral-600: #7a7a7d;
+  --color-neutral-700: #5d5d60;
+  --color-neutral-800: #424244;
+  --color-neutral-900: #2b2b2d;
+
+  /* font-data reuses the heading font (Barlow Condensed) for numeric/price
+     display, matching the source theme -- it has no separate mono font,
+     numbers just take the condensed heading treatment. */
+  --font-display: var(--font-barlow-condensed), system-ui, sans-serif;
+  --font-body: var(--font-barlow), system-ui, sans-serif;
+  --font-data: var(--font-barlow-condensed), system-ui, sans-serif;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2b2b2d 22%, transparent);
 }
+
+/* — Blueprint frame: the system's signature device. Every card, figure and
+   primary button wears four "+" registration marks at its corners, drawn
+   from four <i class="corner tl/tr/bl/br"> children inside a .blueprint
+   wrapper. Square, hairline-bordered, never filled or rounded. */
+.blueprint {
+  position: relative;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+}
+.blueprint.duotone { overflow: visible; }
+.blueprint > .corner {
+  position: absolute; width: 11px; height: 11px;
+  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+}
+.blueprint > .corner::before, .blueprint > .corner::after {
+  content: ""; position: absolute; background: currentColor;
+}
+.blueprint > .corner::before { left: 5px; top: 0; width: 1px; height: 100%; }
+.blueprint > .corner::after  { top: 5px; left: 0; width: 100%; height: 1px; }
+.blueprint > .corner.tl { top: -6px; left: -6px; }
+.blueprint > .corner.tr { top: -6px; right: -6px; }
+.blueprint > .corner.bl { bottom: -6px; left: -6px; }
+.blueprint > .corner.br { bottom: -6px; right: -6px; }
+
+/* — Duotone: photographs washed in the accent, like a screen print. */
+.duotone { position: relative; overflow: hidden; }
+.duotone::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: var(--color-accent); mix-blend-mode: color;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Component layer, translated from the Industry design system — square
+   corners, transparent line-drawing cards/buttons/inputs, one solid
+   accent fill (the primary button) as the only deliberate exception.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 14px; line-height: 1.2; color: var(--color-ink);
+  background: transparent; border: 1px solid var(--color-divider);
+  padding: 10px 20px; border-radius: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-bg); border-color: var(--color-accent); }
+.btn-primary:hover { background: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-ink) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-ink) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); border-color: transparent; padding-inline: 6px; }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
+.card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 20px; border-radius: 0;
+  background: transparent; border: 1px solid var(--color-divider);
+}
+.card-kicker { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); font-weight: 600; }
+.card-title {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 20px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.02em;
+}
+.card-body { margin: 0; font-size: 14px; opacity: 0.8; flex: 1; }
+.card-meta {
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+}
+
+.tag {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: 0;
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+
+.field > label {
+  display: block; font-size: 12px; margin-bottom: 5px; font-weight: 500;
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+}
+.input {
+  width: 100%; min-height: 40px; padding: 8px 12px; font: inherit;
+  font-size: 14px; color: var(--color-ink); caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider); border-radius: 0;
+}
+.input::placeholder { color: color-mix(in srgb, var(--color-ink) 45%, transparent); }
+.input:hover { border-color: color-mix(in srgb, var(--color-ink) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline: 2px solid var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+  color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+  padding: 10px; border-bottom: 1px solid var(--color-divider);
+}
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-ink) 4%, transparent); }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
 
 @keyframes lot-pulse {
   0%, 100% { opacity: 1; }
@@ -34,48 +174,39 @@
   animation: lot-fade-in 0.5s ease-out forwards;
 }
 
-/* Page-wide scrollbar theming — the whole site uses the dark "ink"
-   background, so the browser's default light/white scrollbar would be
-   jarring on every page, not just the chat widget where this was first
-   noticed. Same reasoning as .themed-scrollbar below, just applied globally
-   instead of needing the class added to every scrollable element. */
+/* Page-wide scrollbar theming, matched to the light ground. */
 html {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-clay) var(--color-ink);
+  scrollbar-color: var(--color-neutral-400) var(--color-bg);
 }
 html::-webkit-scrollbar {
   width: 10px;
 }
 html::-webkit-scrollbar-track {
-  background: var(--color-ink);
+  background: var(--color-bg);
 }
 html::-webkit-scrollbar-thumb {
-  background: var(--color-clay);
+  background: var(--color-neutral-400);
   border-radius: 9999px;
 }
 html::-webkit-scrollbar-thumb:hover {
-  background: var(--color-sand);
+  background: var(--color-neutral-600);
 }
 
-/* Themed scrollbar — browsers default to a light gray/white scrollbar,
-   which stands out jarringly against the dark "Sun-Baked" theme (this is
-   specifically what made the chat widget's scrollbar look out of place).
-   scrollbar-color covers Firefox; the ::-webkit-scrollbar rules cover
-   Chrome/Safari/Edge, which don't support scrollbar-color. */
 .themed-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-clay) var(--color-ink);
+  scrollbar-color: var(--color-neutral-400) var(--color-bg);
 }
 .themed-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
 .themed-scrollbar::-webkit-scrollbar-track {
-  background: var(--color-ink);
+  background: var(--color-bg);
 }
 .themed-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-clay);
+  background: var(--color-neutral-400);
   border-radius: 9999px;
 }
 .themed-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-sand);
+  background: var(--color-neutral-600);
 }

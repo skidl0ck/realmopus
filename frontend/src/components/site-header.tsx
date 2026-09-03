@@ -10,6 +10,7 @@ import { getStoredUser, logout, dashboardPathForRole } from "@/lib/auth";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
   const openAuthModal = useAuthModalStore((s) => s.open);
   const { user, setUser } = useAuthStore();
@@ -21,6 +22,7 @@ export function SiteHeader() {
   useEffect(() => {
     const stored = getStoredUser();
     if (stored) setUser(stored);
+    setAuthLoading(false);
   }, [setUser]);
 
   function handleSignOut() {
@@ -31,30 +33,35 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-clay">
-      <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="font-display text-lg font-semibold text-cream tracking-tight">
+    <header className="nav sticky top-0 z-40 bg-bg/95 backdrop-blur border-b border-divider">
+      <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between w-full">
+        <Link href="/" className="font-display font-semibold text-lg text-ink tracking-tight uppercase">
           {companyName}
         </Link>
 
-        <nav className="hidden sm:flex items-center gap-8 text-sm font-medium text-sand">
-          <Link href="/#offerings" className="hover:text-marigold transition">What we offer</Link>
-          <Link href="/lots" className="hover:text-marigold transition">Browse lots</Link>
-          <Link href="/#how-it-works" className="hover:text-marigold transition">How it works</Link>
+        <nav className="hidden sm:flex items-center gap-8 text-sm font-medium text-neutral-700">
+          <Link href="/#offerings" className="hover:text-accent transition">What we offer</Link>
+          <Link href="/lots" className="hover:text-accent transition">Browse lots</Link>
+          <Link href="/#how-it-works" className="hover:text-accent transition">How it works</Link>
         </nav>
 
         <div className="hidden sm:flex items-center gap-3">
-          {user ? (
+          {authLoading ? (
+            <>
+              <span className="h-5 w-24 animate-pulse rounded bg-neutral-200" aria-hidden="true" />
+              <span className="h-10 w-20 animate-pulse rounded bg-neutral-200" aria-hidden="true" />
+            </>
+          ) : user ? (
             <>
               <Link
                 href={dashboardPathForRole(user.role)}
-                className="text-sm font-medium text-sand hover:text-marigold transition"
+                className="text-sm font-medium text-neutral-700 hover:text-accent transition"
               >
                 {user.first_name || user.username}
               </Link>
               <button
                 onClick={handleSignOut}
-                className="rounded-full bg-clay text-cream text-sm font-semibold px-4 py-2 hover:opacity-90 transition cursor-pointer"
+                className="btn btn-secondary"
               >
                 Sign out
               </button>
@@ -63,13 +70,13 @@ export function SiteHeader() {
             <>
               <button
                 onClick={() => openAuthModal("login")}
-                className="text-sm font-medium text-sand hover:text-marigold transition cursor-pointer"
+                className="text-sm font-medium text-neutral-700 hover:text-accent transition cursor-pointer"
               >
                 Client login
               </button>
               <button
                 onClick={() => openAuthModal("register")}
-                className="rounded-full bg-marigold text-ink text-sm font-semibold px-4 py-2 hover:opacity-90 transition cursor-pointer"
+                className="btn btn-primary"
               >
                 Register
               </button>
@@ -79,7 +86,7 @@ export function SiteHeader() {
 
         <button
           onClick={() => setOpen(!open)}
-          className="sm:hidden text-sand"
+          className="sm:hidden text-neutral-700"
           aria-label="Toggle menu"
         >
           {open ? "✕" : "☰"}
@@ -87,14 +94,20 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="sm:hidden border-t border-clay px-6 py-4 space-y-3 text-sm font-medium text-sand">
+        <div className="sm:hidden border-t border-divider px-6 py-4 space-y-3 text-sm font-medium text-neutral-700">
           <Link href="/#offerings" className="block" onClick={() => setOpen(false)}>What we offer</Link>
           <Link href="/lots" className="block" onClick={() => setOpen(false)}>Browse lots</Link>
           <Link href="/#how-it-works" className="block" onClick={() => setOpen(false)}>How it works</Link>
-          {user ? (
+          <hr className="border-divider" />
+          {authLoading ? (
+            <div className="flex gap-3" aria-label="Loading authentication options">
+              <span className="h-5 w-24 animate-pulse rounded bg-neutral-200" aria-hidden="true" />
+              <span className="h-5 w-16 animate-pulse rounded bg-neutral-200" aria-hidden="true" />
+            </div>
+          ) : user ? (
             <>
               <Link href={dashboardPathForRole(user.role)} className="block" onClick={() => setOpen(false)}>
-                {user.first_name || user.username}
+                My Portal ({user.first_name || user.username})
               </Link>
               <button className="block text-left" onClick={handleSignOut}>Sign out</button>
             </>
@@ -107,7 +120,7 @@ export function SiteHeader() {
                 Client login
               </button>
               <button
-                className="block text-left text-marigold"
+                className="block text-left text-accent"
                 onClick={() => { setOpen(false); openAuthModal("register"); }}
               >
                 Register

@@ -15,7 +15,13 @@ from .forms import ManualPaymentForm
 
 @dynamic_permission("payments", "view")
 def payment_list(request):
-    payments = Payment.objects.select_related("contract", "installment", "recorded_by", "receipt").order_by("-created_at")
+    payments = (
+        Payment.objects.select_related(
+            "contract", "reservation", "pending_reservation_lot", "pending_reservation_client",
+            "installment", "recorded_by", "receipt",
+        )
+        .order_by("-created_at")
+    )
     page_obj, per_page = paginate(request, payments)
     return render(request, "admin_panel/payments/list.html", {"payments": page_obj, "per_page": per_page})
 

@@ -7,7 +7,7 @@ import { apiClient } from "@/lib/api-client";
 import type { Lot } from "@/types";
 import { Reveal } from "@/components/reveal";
 import { LotGridAnimation } from "@/components/lot-grid-animation";
-import { SierraMadreMotif } from "@/components/sierra-madre-motif";
+import { Blueprint } from "@/components/blueprint";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { useCurrencySymbol } from "@/lib/currency";
 import { useCompanyName } from "@/lib/site-config";
@@ -21,7 +21,7 @@ async function fetchFeaturedLots(): Promise<Lot[]> {
 const OFFERINGS = [
   {
     title: "Flexible payment plans",
-    body: "Pay in full, or spread your purchase over fixed monthly installments with transparent service fees — no hidden charges.",
+    body: "Pay in full, or spread your purchase over fixed monthly installments with transparent service fees - no hidden charges.",
   },
   {
     title: "Reserve online",
@@ -33,7 +33,7 @@ const OFFERINGS = [
   },
   {
     title: "Clear payment schedule",
-    body: "See your full amortization schedule up front — every due date, amount, and fee, laid out with no surprises.",
+    body: "See your full amortization schedule up front - every due date, amount, and fee, laid out with no surprises.",
   },
   {
     title: "Digital receipts",
@@ -62,75 +62,79 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-ink text-cream min-h-[92vh] flex flex-col">
-        {/* Dawn glow rising from the horizon — ties the accent color directly to
-            the mountain motif instead of leaving it as a flat dark rectangle */}
+      <section className="relative overflow-hidden">
+        <video
+          autoPlay muted loop playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/videos/5031099-uhd_3840_2160_30fps.mp4" type="video/mp4" />
+        </video>
+        {/* Accent wash over the footage -- ties it to the same "photographs
+            washed in the accent" treatment used everywhere else in this
+            theme, rather than a raw, unrelated stock clip. */}
         <div
-          className="absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse 90% 60% at 50% 100%, rgba(214, 138, 62, 0.22), transparent 70%)",
-          }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "var(--color-accent)", mixBlendMode: "color" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-ink via-ink/95 to-transparent" />
+        {/* Light scrim so the dark headline stays legible regardless of what
+            the footage is doing at any given moment -- strongest behind the
+            text column, fading out toward the site-plan card on the right,
+            which already has its own solid ground. */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-bg via-bg/85 to-bg/40" />
 
-        <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 pt-24 pb-10">
-          <p className="text-marigold font-medium tracking-wide uppercase text-sm">
-            {companyName} — Tuguegarao City, Cagayan Valley
-          </p>
-          <h1 className="mt-5 text-5xl sm:text-6xl font-display font-medium leading-tight max-w-3xl">
-            Your family&apos;s place in the valley.
-          </h1>
-          <p className="mt-6 text-sand max-w-xl text-lg">
-            Quality subdivision lots across Cagayan Valley, in view of the Sierra
-            Madre — reserve online and pay at your own pace, whether you&apos;re
-            building here or from abroad.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-4 justify-center">
-            <Link
-              href="/lots"
-              className="rounded-full bg-marigold text-ink px-6 py-3 font-semibold hover:opacity-90 transition"
-            >
-              Browse available lots
-            </Link>
-            <button
-              onClick={() => openAuthModal("login")}
-              className="rounded-full border border-sand/40 px-6 py-3 font-medium hover:bg-cream/5 transition"
-            >
-              Client portal login
-            </button>
+        <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-16 grid lg:grid-cols-[7fr_5fr] gap-12 items-end">
+          <div>
+            <h1 className="font-display font-semibold uppercase leading-[1.04] tracking-tight text-5xl sm:text-6xl lg:text-7xl text-ink">
+              Your family&apos;s place<br />in the valley.
+            </h1>
+            <p className="mt-7 text-neutral-700 max-w-xl text-[17px] leading-relaxed">
+              Surveyed subdivision lots across Cagayan Valley, in view of the Sierra
+              Madre. Reserve online, pay on a fixed schedule, and track every peso
+              from your account - whether you&apos;re building here or sending from abroad.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/lots" className="btn btn-primary">
+                Browse available lots
+              </Link>
+              <button onClick={() => openAuthModal("login")} className="btn btn-secondary">
+                Client portal login
+              </button>
+            </div>
+            <p className="mt-8 text-xs tracking-widest uppercase font-semibold text-neutral-500">
+              {companyName} · Tuguegarao City · Cagayan Valley
+            </p>
           </div>
-        </div>
 
-        {/* Mountain horizon — the dominant visual close, not a footnote */}
-        <div className="relative h-[28vh] sm:h-[34vh] min-h-[180px]">
-          <SierraMadreMotif className="absolute inset-0 w-full h-full block" />
-          {/* Lot availability grid, tucked into the valley floor as a supporting
-              detail — ambient motion, not competing with the headline for attention */}
-          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 scale-[0.55] sm:scale-75 origin-bottom-right opacity-90">
-            <LotGridAnimation />
+          <Blueprint className="p-5 bg-bg">
+            <div className="flex justify-between gap-3 text-xs tracking-widest uppercase font-semibold text-neutral-600 mb-3.5">
+              <span>Site plan</span>
+            <span>Live inventory</span>
           </div>
+          <LotGridAnimation />
+          </Blueprint>
         </div>
       </section>
 
       {/* About */}
-      <section className="bg-ink mx-auto max-w-3xl px-6 py-20 text-center">
-        <Reveal>
-          <h2 className="font-display text-3xl mb-4 text-cream">A simpler way to buy land</h2>
-          <p className="text-sand leading-relaxed">
-            {companyName} offers straightforward lot ownership across Cagayan Valley, on your terms.
-            Whether you&apos;re ready to pay in full or prefer to spread the cost over time, the
-            entire process — from browsing available lots to making your final
-            payment — happens online, with nothing lost in translation between
-            you and our sales office.
-          </p>
-        </Reveal>
+      <section className="bg-surface border-y border-divider">
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <Reveal>
+            <h2 className="font-display font-semibold uppercase text-3xl mb-4 text-ink">A simpler way to buy land</h2>
+            <p className="text-neutral-700 leading-relaxed">
+              {companyName} offers straightforward lot ownership across Cagayan Valley, on your terms.
+              Whether you&apos;re ready to pay in full or prefer to spread the cost over time, the
+              entire process - from browsing available lots to making your final
+              payment - happens online, with nothing lost in translation between
+              you and our sales office.
+            </p>
+          </Reveal>
+        </div>
       </section>
 
       {/* Community photo */}
-      <section className="bg-ink mx-auto max-w-6xl px-6 pb-20">
+      <section className="mx-auto max-w-6xl px-6 py-20">
         <Reveal>
-          <div className="relative rounded-2xl overflow-hidden aspect-[16/7] bg-clay">
-            {/* /public/images/community-aerial.jpg — see image guide below */}
+          <Blueprint className="duotone relative overflow-hidden aspect-[16/7]" as="figure">
             <Image
               src="/images/community-aerial.jpg"
               alt={`Aerial view of a ${companyName} subdivision`}
@@ -138,153 +142,145 @@ export default function HomePage() {
               className="object-cover"
               sizes="(min-width: 1024px) 1152px, 100vw"
             />
-          </div>
+          </Blueprint>
         </Reveal>
       </section>
 
       {/* Offerings */}
-      <section id="offerings" className="bg-clay border-y border-clay">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <Reveal>
-            <h2 className="font-display text-3xl mb-2 text-center text-cream">What we offer</h2>
-            <p className="text-sand text-center mb-14 max-w-xl mx-auto">
-              Everything you need to buy and manage your lot, without the paperwork runaround.
-            </p>
-          </Reveal>
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            {OFFERINGS.map((f, i) => (
-              <Reveal key={f.title} delay={i * 80}>
-                <h3 className="font-display text-xl mb-2 text-cream">{f.title}</h3>
-                <p className="text-sand text-sm leading-relaxed">{f.body}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured lots */}
-      {featuredLots && featuredLots.length > 0 && (
-        <section className="bg-ink mx-auto max-w-6xl px-6 py-20">
-          <Reveal>
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="font-display text-3xl text-cream">Available now</h2>
-              <Link href="/lots" className="text-marigold font-medium hover:underline text-sm">
-                View all lots →
-              </Link>
-            </div>
-          </Reveal>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredLots.map((lot, i) => (
-              <Reveal key={lot.id} delay={i * 100}>
-                <div className="rounded-2xl border border-clay bg-clay overflow-hidden hover:border-marigold/60 transition">
-                  <div className="relative aspect-[4/3] bg-clay">
-                    {/* /public/images/lot-placeholder.jpg — used as a stand-in until real per-lot photos are uploaded */}
-                    <Image
-                      src="/images/lot-placeholder.jpg"
-                      alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <p className="font-display text-lg mb-1 text-cream">
-                      Block {lot.block_number}, Lot {lot.lot_number}
-                    </p>
-                    <p className="text-sand text-sm mb-3">{lot.area_sqm} sqm</p>
-                    <p className="text-marigold font-semibold text-lg font-data">
-                      {currency}{Number(lot.total_price).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* How it works */}
-      <section id="how-it-works" className="bg-clay text-cream">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <Reveal>
-            <h2 className="font-display text-3xl mb-14 text-center">How it works</h2>
-          </Reveal>
-          <div className="grid gap-10 sm:grid-cols-5">
-            {STEPS.map((step, i) => (
-              <Reveal key={step.title} delay={i * 100}>
-                <p className="font-display text-3xl text-marigold mb-3 font-data">{String(i + 1).padStart(2, "0")}</p>
-                <h3 className="font-medium mb-2">{step.title}</h3>
-                <p className="text-sand text-sm leading-relaxed">{step.body}</p>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why choose us */}
-      <section className="bg-ink mx-auto max-w-6xl px-6 py-20 grid lg:grid-cols-2 gap-14 items-center">
+      <section id="offerings" className="mx-auto max-w-6xl px-6 py-20">
         <Reveal>
-          <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-clay">
-            {/* /public/images/site-entrance.jpg — see image guide below */}
-            <Image
-              src="/images/site-entrance.jpg"
-              alt={`${companyName} subdivision entrance`}
-              fill
-              className="object-cover"
-              sizes="(min-width: 1024px) 576px, 100vw"
-            />
-          </div>
+          <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">03 · What we offer</span>
+          <hr className="border-0 h-px bg-divider mb-9" />
+          <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">What we offer</h2>
+          <p className="text-neutral-600 mb-14 max-w-xl">
+            Everything you need to buy and manage your lot, without the paperwork runaround.
+          </p>
         </Reveal>
-        <div className="grid grid-cols-2 gap-10">
-          {[
-            { label: "Prime location", body: "Well-situated lots across Cagayan Valley." },
-            { label: "Transparent terms", body: "Fixed schedules, no hidden fees." },
-            { label: "Secure payments", body: "PayPal & trusted local e-wallets." },
-            { label: "Real-time availability", body: "Live inventory, always up to date." },
-          ].map((item, i) => (
-            <Reveal key={item.label} delay={i * 80}>
-              <p className="font-display text-lg mb-1 text-cream">{item.label}</p>
-              <p className="text-sand text-sm">{item.body}</p>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {OFFERINGS.map((f, i) => (
+            <Reveal key={f.title} delay={i * 80}>
+              <Blueprint className="p-6 h-full">
+                <h3 className="font-display font-semibold uppercase text-xl mb-2 text-ink">{f.title}</h3>
+                <p className="text-neutral-600 text-sm leading-relaxed">{f.body}</p>
+              </Blueprint>
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="relative">
-        <div className="relative py-28 overflow-hidden">
-          {/* /public/images/cta-background.jpg — see image guide below */}
-          <Image
-            src="/images/cta-background.jpg"
-            alt=""
-            fill
-            className="object-cover"
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-ink/85" />
-          <div className="relative mx-auto max-w-3xl px-6 text-center text-cream">
+      {/* Featured lots */}
+      {featuredLots && featuredLots.length > 0 && (
+        <section className="bg-surface border-y border-divider">
+          <div className="mx-auto max-w-6xl px-6 py-20">
             <Reveal>
-              <h2 className="font-display text-3xl mb-4">Ready to find your lot?</h2>
-              <p className="text-sand mb-8">
-                Browse what&apos;s available today, or create an account if you&apos;ve already reserved a lot with us.
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Link
-                  href="/lots"
-                  className="rounded-full bg-marigold text-ink px-6 py-3 font-semibold hover:opacity-90 transition"
-                >
-                  Browse available lots
+              <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">02 · Available now</span>
+              <hr className="border-0 h-px bg-divider mb-3" />
+              <div className="flex items-baseline justify-between gap-6 mb-10">
+                <h2 className="font-display font-semibold uppercase text-3xl text-ink">Available now</h2>
+                <Link href="/lots" className="text-accent-700 font-medium hover:underline text-sm whitespace-nowrap">
+                  View all lots →
                 </Link>
-                <button
-                  onClick={() => openAuthModal("register")}
-                  className="rounded-full border border-sand/40 px-6 py-3 font-medium hover:bg-cream/5 transition"
-                >
-                  Create an account
-                </button>
               </div>
             </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredLots.map((lot, i) => (
+                <Reveal key={lot.id} delay={i * 100}>
+                  <Blueprint className="p-5 flex flex-col">
+                    <div className="duotone relative aspect-[4/3] mb-5">
+                      <Image
+                        src="/images/lot-placeholder.jpg"
+                        alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      />
+                    </div>
+                    <p className="font-display font-semibold uppercase text-lg mb-1 text-ink">
+                      Block {lot.block_number}, Lot {lot.lot_number}
+                    </p>
+                    <p className="text-neutral-600 text-sm mb-3">{lot.area_sqm} sqm</p>
+                    <p className="text-ink font-semibold text-2xl font-data">
+                      {currency}{Number(lot.total_price).toLocaleString()}
+                    </p>
+                  </Blueprint>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* How it works */}
+      <section id="how-it-works" className="mx-auto max-w-6xl px-6 py-20">
+        <Reveal>
+          <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">04 · How it works</span>
+          <hr className="border-0 h-px bg-divider mb-2" />
+        </Reveal>
+        <div className="grid gap-6 sm:grid-cols-5 mt-8">
+          {STEPS.map((step, i) => (
+            <Reveal key={step.title} delay={i * 100}>
+              <div className="border-t border-divider pt-4">
+                <p className="font-display font-semibold text-4xl text-accent mb-2 font-data">{String(i + 1).padStart(2, "0")}</p>
+                <h3 className="font-display font-semibold uppercase text-lg mb-2 text-ink">{step.title}</h3>
+                <p className="text-neutral-600 text-sm leading-relaxed">{step.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* Why choose us */}
+      <section className="bg-surface border-y border-divider">
+        <div className="mx-auto max-w-6xl px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+          <Reveal>
+            <Blueprint className="duotone relative overflow-hidden aspect-[4/3]" as="figure">
+              <Image
+                src="/images/site-entrance.jpg"
+                alt={`${companyName} subdivision entrance`}
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 576px, 100vw"
+              />
+            </Blueprint>
+          </Reveal>
+          <div>
+            <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">05 · Why buy here</span>
+            <hr className="border-0 h-px bg-divider mb-7" />
+            <div className="grid grid-cols-2 gap-7">
+              {[
+                { label: "Prime location", body: "Well-situated lots across Cagayan Valley." },
+                { label: "Transparent terms", body: "Fixed schedules, no hidden fees." },
+                { label: "Secure payments", body: "PayPal & trusted local e-wallets." },
+                { label: "Real-time availability", body: "Live inventory, always up to date." },
+              ].map((item, i) => (
+                <Reveal key={item.label} delay={i * 80}>
+                  <p className="font-display font-semibold uppercase text-lg mb-1 text-ink">{item.label}</p>
+                  <p className="text-neutral-600 text-sm">{item.body}</p>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <Reveal>
+          <Blueprint className="p-10 sm:p-14 text-center">
+            <h2 className="font-display font-semibold uppercase text-3xl sm:text-4xl mb-4 text-ink">Ready to find your lot?</h2>
+            <p className="text-neutral-600 mb-8 max-w-xl mx-auto">
+              Browse what&apos;s available today, or create an account if you&apos;ve already reserved a lot with us.
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link href="/lots" className="btn btn-primary">
+                Browse available lots
+              </Link>
+              <button onClick={() => openAuthModal("register")} className="btn btn-secondary">
+                Create an account
+              </button>
+            </div>
+          </Blueprint>
+        </Reveal>
       </section>
     </>
   );

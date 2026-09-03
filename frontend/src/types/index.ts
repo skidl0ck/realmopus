@@ -38,10 +38,15 @@ export interface Reservation {
   id: string;
   lot: string;
   lot_display: string;
+  lot_detail?: Lot;
   reservation_fee: string;
   deadline: string;
   status: "pending_payment" | "active" | "converted" | "expired" | "cancelled";
   created_at: string;
+  extension_count: number;
+  dismissed_by_client: boolean;
+  can_extend: boolean;
+  max_extensions: number;
 }
 
 export interface Project {

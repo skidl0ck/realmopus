@@ -39,12 +39,15 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 def site_config(request):
     """Public, unauthenticated — the public site and client portal both need
     the current currency symbol and company name before a user is ever
-    logged in."""
+    logged in. default_reservation_fee is included too, so the frontend can
+    decide (before calling any endpoint) whether reserving a lot needs to go
+    through checkout at all, or can activate immediately when there's no fee."""
     from admin_panel.models import PlatformSettings
     settings_row = PlatformSettings.load()
     return Response({
         "currency_symbol": settings_row.currency_symbol,
         "company_name": settings_row.company_name,
+        "default_reservation_fee": str(settings_row.default_reservation_fee),
     })
 
 

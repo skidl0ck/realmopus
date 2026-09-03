@@ -46,6 +46,11 @@ class PlatformSettings(models.Model):
     default_interest_rate_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     default_reservation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=10000)
     reservation_hold_days = models.PositiveIntegerField(default=3)
+    max_reservation_extensions = models.PositiveIntegerField(
+        default=2,
+        help_text="How many times a client can self-extend a reservation stuck awaiting its fee, "
+                   "before staff intervention is required. Each extension adds one full reservation_hold_days period.",
+    )
     company_name = models.CharField(max_length=200, default="EstateOS")
     currency_symbol = models.CharField(
         max_length=5, default="₱",

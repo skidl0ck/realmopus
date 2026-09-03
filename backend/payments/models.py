@@ -17,16 +17,27 @@ class Payment(models.Model):
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
+        REFUND_NEEDED = "refund_needed", "Refund Needed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # Nullable: a reservation fee is paid before a contract exists at all.
-    # Exactly one of contract/reservation is set, enforced by the
-    # CheckConstraint below — never both, never neither.
+    # Exactly one of contract/reservation/pending_reservation_lot is set,
+    # enforced by the CheckConstraint below — never more than one, never none.
     contract = models.ForeignKey(
         "sales.Contract", on_delete=models.PROTECT, null=True, blank=True, related_name="payments"
     )
     reservation = models.ForeignKey(
         "properties.Reservation", on_delete=models.PROTECT, null=True, blank=True, related_name="payments"
+    )
+    # A reservation-fee checkout no longer creates the Reservation row up
+    # front — it's created only once this payment actually completes (see
+    # payments/views.py paypal_capture / paymongo_confirm). Until then, this
+    # is the only record of which lot and client the payment is for.
+    pending_reservation_lot = models.ForeignKey(
+        "properties.Lot", on_delete=models.SET_NULL, null=True, blank=True, related_name="pending_reservation_payments",
+    )
+    pending_reservation_client = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="pending_reservation_payments",
     )
     installment = models.ForeignKey(
         "sales.Installment", on_delete=models.SET_NULL, null=True, blank=True, related_name="payment_records"
@@ -49,21 +60,30 @@ class Payment(models.Model):
         constraints = [
             models.CheckConstraint(
                 check=(
-                    models.Q(contract__isnull=False, reservation__isnull=True)
-                    | models.Q(contract__isnull=True, reservation__isnull=False)
+                    models.Q(contract__isnull=False, reservation__isnull=True, pending_reservation_lot__isnull=True)
+                    | models.Q(contract__isnull=True, reservation__isnull=False, pending_reservation_lot__isnull=True)
+                    | models.Q(contract__isnull=True, reservation__isnull=True, pending_reservation_lot__isnull=False)
                 ),
-                name="payment_exactly_one_of_contract_or_reservation",
+                name="payment_exactly_one_of_contract_reservation_or_pending_lot",
             )
         ]
 
     def __str__(self):
-        target = self.contract.contract_number if self.contract_id else f"Reservation {self.reservation_id}"
+        if self.contract_id:
+            target = self.contract.contract_number
+        elif self.reservation_id:
+            target = f"Reservation {self.reservation_id}"
+        else:
+            target = f"Pending reservation on lot {self.pending_reservation_lot_id}"
         return f"Payment {self.amount} - {target}"
 
     def clean(self):
         from django.core.exceptions import ValidationError
-        if bool(self.contract_id) == bool(self.reservation_id):
-            raise ValidationError("A payment must be linked to exactly one of contract or reservation, not both or neither.")
+        set_count = sum([bool(self.contract_id), bool(self.reservation_id), bool(self.pending_reservation_lot_id)])
+        if set_count != 1:
+            raise ValidationError(
+                "A payment must be linked to exactly one of contract, reservation, or pending_reservation_lot."
+            )
 
     @property
     def method_detail_display(self) -> str:
@@ -85,27 +105,47 @@ class Payment(models.Model):
     def payer_display(self) -> str:
         """Who this payment came from, whether it's tied to a contract (an
         already-registered client, or the buyer name on file before they
-        have an account) or a reservation (no client account exists yet at
-        that point in the flow — accounts are created from a signed
-        contract, not a reservation)."""
+        have an account), a reservation, or a still-pending reservation
+        checkout (the Reservation doesn't exist yet, so this falls back to
+        the client who started the checkout)."""
         if self.contract_id:
             contract = self.contract
             return (contract.client.get_full_name() or contract.client.username) if contract.client else contract.buyer_full_name
-        return self.reservation.buyer_full_name
+        if self.reservation_id:
+            return self.reservation.buyer_full_name
+        if self.pending_reservation_client_id:
+            client = self.pending_reservation_client
+            return client.get_full_name() or client.username
+        return "—"
 
     @property
     def reference_type_label(self) -> str:
-        return "Contract" if self.contract_id else "Reservation"
+        if self.contract_id:
+            return "Contract"
+        if self.reservation_id:
+            return "Reservation"
+        return "Reservation (pending)"
 
     @property
     def reference_display(self) -> str:
         """The contract number, or a reservation-fee reference if paid
-        before a contract exists yet."""
-        return self.contract.contract_number if self.contract_id else f"Reservation fee — {self.reservation.buyer_full_name}"
+        before a contract (or even a Reservation row) exists yet."""
+        if self.contract_id:
+            return self.contract.contract_number
+        if self.reservation_id:
+            return f"Reservation fee — {self.reservation.buyer_full_name}"
+        return f"Reservation fee — {self.payer_display}"
 
     @property
     def property_display(self) -> str:
-        lot = self.contract.lot if self.contract_id else self.reservation.lot
+        if self.contract_id:
+            lot = self.contract.lot
+        elif self.reservation_id:
+            lot = self.reservation.lot
+        else:
+            lot = self.pending_reservation_lot
+        if lot is None:
+            return "—"
         return f"{lot.project.name} — Block {lot.block_number}, Lot {lot.lot_number}"
 
 

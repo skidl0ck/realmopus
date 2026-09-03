@@ -33,43 +33,43 @@ export default function NotificationsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-2xl text-cream">Notifications</h1>
+        <h1 className="font-display font-semibold uppercase text-2xl text-ink">Notifications</h1>
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="rounded-full border border-clay px-4 py-1.5 text-sm font-medium text-sand hover:bg-clay"
+            className="border border-divider px-4 py-1.5 text-sm font-medium text-neutral-600 hover:bg-surface"
           >
             Mark all read
           </button>
         )}
       </div>
-      <p className="text-sand text-sm mb-8">Updates about your contract and payments.</p>
+      <p className="text-neutral-600 text-sm mb-8">Updates about your contract and payments.</p>
 
-      {isLoading && <p className="text-sand">Loading…</p>}
-      {notifications?.length === 0 && <p className="text-sand">No notifications yet.</p>}
+      {isLoading && <p className="text-neutral-600">Loading…</p>}
+      {notifications?.length === 0 && <p className="text-neutral-600">No notifications yet.</p>}
 
       <div className="space-y-2">
         {notifications?.map((n) => (
           <div
             key={n.id}
-            className={`rounded-xl border bg-clay p-5 ${
-              n.is_read ? "border-clay" : "border-marigold"
+            className={`border bg-surface p-5 ${
+              n.is_read ? "border-divider" : "border-accent"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className={`text-sm ${n.is_read ? "font-medium text-sand" : "font-semibold text-cream"}`}>
+                <p className={`text-sm ${n.is_read ? "font-medium text-neutral-600" : "font-semibold text-ink"}`}>
                   {n.title}
                 </p>
-                <p className="text-sand text-sm mt-1">{n.message}</p>
-                <p className="text-sand/70 text-xs mt-2">
+                <p className="text-neutral-600 text-sm mt-1">{n.message}</p>
+                <p className="text-neutral-600/70 text-xs mt-2">
                   {new Date(n.created_at).toLocaleString()}
                 </p>
               </div>
               {!n.is_read && (
                 <button
                   onClick={() => markRead(n.id)}
-                  className="text-marigold text-sm font-medium hover:underline shrink-0"
+                  className="text-accent text-sm font-medium hover:underline shrink-0"
                 >
                   Mark read
                 </button>

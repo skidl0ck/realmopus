@@ -98,11 +98,32 @@ class SelfServiceReservationSerializer(serializers.ModelSerializer):
     reserved, until that fee is actually paid."""
 
     lot_display = serializers.CharField(source="lot.__str__", read_only=True)
+    lot_detail = LotSerializer(source="lot", read_only=True)
+    can_extend = serializers.SerializerMethodField()
+    max_extensions = serializers.SerializerMethodField()
 
     class Meta:
         model = Reservation
-        fields = ["id", "lot", "lot_display", "reservation_fee", "deadline", "status", "created_at"]
-        read_only_fields = ["id", "reservation_fee", "deadline", "status", "created_at"]
+        fields = [
+            "id", "lot", "lot_display", "lot_detail", "reservation_fee", "deadline", "status", "created_at",
+            "extension_count", "dismissed_by_client", "can_extend", "max_extensions",
+        ]
+        read_only_fields = [
+            "id", "reservation_fee", "deadline", "status", "created_at",
+            "extension_count", "dismissed_by_client",
+        ]
+
+    def get_max_extensions(self, obj):
+        from admin_panel.models import PlatformSettings
+        return PlatformSettings.load().max_reservation_extensions
+
+    def get_can_extend(self, obj):
+        from admin_panel.models import PlatformSettings
+        return (
+            obj.status == Reservation.Status.PENDING_PAYMENT
+            and not obj.dismissed_by_client
+            and obj.extension_count < PlatformSettings.load().max_reservation_extensions
+        )
 
     def validate_lot(self, lot):
         if lot.status != Lot.Status.AVAILABLE:

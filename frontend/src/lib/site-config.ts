@@ -4,6 +4,7 @@ import { apiClient } from "@/lib/api-client";
 interface SiteConfig {
   currency_symbol: string;
   company_name: string;
+  default_reservation_fee: string;
 }
 
 async function fetchSiteConfig(): Promise<SiteConfig> {
@@ -38,4 +39,16 @@ export function useCurrencySymbol(): string {
 export function useCompanyName(): string {
   const { data } = useSiteConfig();
   return data?.company_name ?? "EstateOS";
+}
+
+/**
+ * The current reservation fee, configured in Business Settings. Returns
+ * undefined while still loading or on failure — deliberately NOT a 0
+ * fallback, since callers use this to decide whether reserving a lot needs
+ * to go through checkout at all; a stale/wrong "0" could skip checkout for
+ * a lot that actually has a real fee.
+ */
+export function useDefaultReservationFee(): number | undefined {
+  const { data } = useSiteConfig();
+  return data ? Number(data.default_reservation_fee) : undefined;
 }

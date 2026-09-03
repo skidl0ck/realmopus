@@ -68,7 +68,7 @@ export default function SettingsPage() {
       setTimeout(() => setProfileSaved(false), 2000);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
-      setProfileError(detail ? Object.values(detail).flat().join(" ") : "Couldn't save your profile — please try again.");
+      setProfileError(detail ? Object.values(detail).flat().join(" ") : "Couldn't save your profile - please try again.");
     } finally {
       setSavingProfile(false);
     }
@@ -97,7 +97,7 @@ export default function SettingsPage() {
       setTimeout(() => setPasswordSaved(false), 2000);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
-      setPasswordError(detail ? Object.values(detail).flat().join(" ") : "Couldn't change your password — please try again.");
+      setPasswordError(detail ? Object.values(detail).flat().join(" ") : "Couldn't change your password - please try again.");
     } finally {
       setSavingPassword(false);
     }
@@ -105,128 +105,128 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl mb-1 text-cream">Settings</h1>
-      <p className="text-sand text-sm mb-8">Manage your profile, password, and how we contact you.</p>
+      <h1 className="font-display font-semibold uppercase text-2xl mb-1 text-ink">Settings</h1>
+      <p className="text-neutral-600 text-sm mb-8">Manage your profile, password, and how we contact you.</p>
 
-      {isLoading && <p className="text-sand">Loading…</p>}
+      {isLoading && <p className="text-neutral-600">Loading…</p>}
 
       {user && (
         <div className="space-y-6 max-w-lg">
           {/* Profile */}
-          <form onSubmit={saveProfile} className="rounded-2xl border border-clay bg-clay p-6">
-            <h2 className="font-display text-lg mb-4 text-cream">Profile</h2>
+          <form onSubmit={saveProfile} className="border border-divider p-6">
+            <h2 className="font-display font-semibold uppercase text-lg mb-4 text-ink">Profile</h2>
 
             {profileError && (
-              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-red-800 bg-red-50 border border-red-200 px-3 py-2">
                 {profileError}
               </p>
             )}
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="block text-sm font-medium text-sand mb-1">First name</label>
+                <label className="block text-sm font-medium text-neutral-600 mb-1">First name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                  className="input"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-sand mb-1">Last name</label>
+                <label className="block text-sm font-medium text-neutral-600 mb-1">Last name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+                  className="input"
                 />
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-sand mb-1">Email</label>
+            <label className="block text-sm font-medium text-neutral-600 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="input mb-4"
             />
 
-            <label className="block text-sm font-medium text-sand mb-1">Phone number</label>
+            <label className="block text-sm font-medium text-neutral-600 mb-1">Phone number</label>
             <input
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="input mb-4"
             />
 
             <button
               type="submit"
               disabled={savingProfile}
-              className="rounded-full bg-marigold text-ink text-sm font-semibold px-5 py-2 hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+              className="btn btn-primary"
             >
               {savingProfile ? "Saving…" : "Save profile"}
             </button>
-            {profileSaved && <p className="text-sage text-sm mt-3">Saved.</p>}
+            {profileSaved && <p className="text-green-800 text-sm mt-3">Saved.</p>}
           </form>
 
           {/* Password */}
-          <form onSubmit={changePassword} className="rounded-2xl border border-clay bg-clay p-6">
-            <h2 className="font-display text-lg mb-4 text-cream">Change Password</h2>
+          <form onSubmit={changePassword} className="border border-divider p-6">
+            <h2 className="font-display font-semibold uppercase text-lg mb-4 text-ink">Change Password</h2>
 
             {passwordError && (
-              <p className="mb-4 text-sm text-rust bg-rust/10 border border-rust/30 rounded-lg px-3 py-2">
+              <p className="mb-4 text-sm text-red-800 bg-red-50 border border-red-200 px-3 py-2">
                 {passwordError}
               </p>
             )}
 
-            <label className="block text-sm font-medium text-sand mb-1">Current password</label>
+            <label className="block text-sm font-medium text-neutral-600 mb-1">Current password</label>
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="input mb-4"
             />
 
-            <label className="block text-sm font-medium text-sand mb-1">New password</label>
+            <label className="block text-sm font-medium text-neutral-600 mb-1">New password</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              className="w-full mb-4 rounded-lg border border-clay bg-ink text-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="input mb-4"
             />
 
             <button
               type="submit"
               disabled={savingPassword}
-              className="rounded-full bg-marigold text-ink text-sm font-semibold px-5 py-2 hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+              className="btn btn-primary"
             >
               {savingPassword ? "Changing…" : "Change password"}
             </button>
-            {passwordSaved && <p className="text-sage text-sm mt-3">Password changed.</p>}
+            {passwordSaved && <p className="text-green-800 text-sm mt-3">Password changed.</p>}
           </form>
 
           {/* Email notifications (existing) */}
-          <div className="rounded-2xl border border-clay bg-clay p-6">
-            <h2 className="font-display text-lg mb-4 text-cream">Email Notifications</h2>
+          <div className="border border-divider p-6">
+            <h2 className="font-display font-semibold uppercase text-lg mb-4 text-ink">Email Notifications</h2>
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={user.email_notifications_enabled}
                 onChange={(e) => toggleEmailNotifications(e.target.checked)}
                 disabled={savingNotif}
-                className="mt-1 rounded border-clay text-marigold focus:ring-marigold"
+                className="mt-1 border-divider text-accent"
               />
-              <span className="text-sm text-sand">
-                Email me about my account and payments — payment confirmations, overdue
+              <span className="text-sm text-neutral-600">
+                Email me about my account and payments - payment confirmations, overdue
                 reminders, and contract updates.
               </span>
             </label>
-            {savedNotif && <p className="text-sage text-sm mt-3">Saved.</p>}
+            {savedNotif && <p className="text-green-800 text-sm mt-3">Saved.</p>}
           </div>
         </div>
       )}

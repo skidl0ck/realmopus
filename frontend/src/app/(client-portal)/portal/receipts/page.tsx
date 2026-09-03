@@ -72,7 +72,7 @@ export default function ReceiptsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      setDownloadError("Couldn't download receipts for this contract — try again in a moment.");
+      setDownloadError("Couldn't download receipts for this contract - try again in a moment.");
     } finally {
       setDownloadingId(null);
     }
@@ -82,29 +82,29 @@ export default function ReceiptsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl mb-1 text-cream">Receipts</h1>
-      <p className="text-sand text-sm mb-8">Official receipts for each completed payment.</p>
+      <h1 className="font-display font-semibold uppercase text-2xl mb-1 text-ink">Receipts</h1>
+      <p className="text-neutral-600 text-sm mb-8">Official receipts for each completed payment.</p>
 
-      {isLoading && <p className="text-sand">Loading…</p>}
-      {!isLoading && groups.length === 0 && <p className="text-sand">No receipts yet.</p>}
-      {downloadError && <p className="text-rust text-sm mb-4">{downloadError}</p>}
+      {isLoading && <p className="text-neutral-600">Loading…</p>}
+      {!isLoading && groups.length === 0 && <p className="text-neutral-600">No receipts yet.</p>}
+      {downloadError && <p className="text-red-800 text-sm mb-4">{downloadError}</p>}
 
       <div className="space-y-4">
         {groups.map((group) => {
           const isOpen = !collapsedIds.has(group.contract);
           return (
-            <div key={group.contract} className="rounded-2xl border border-clay bg-clay overflow-hidden">
+            <div key={group.contract} className="border border-divider overflow-hidden">
               <div className="w-full flex items-center justify-between gap-3 px-5 py-4">
                 <button
                   onClick={() => toggle(group.contract)}
                   className="flex-1 min-w-0 text-left"
                   aria-expanded={isOpen}
                 >
-                  <p className="font-medium text-cream truncate">
+                  <p className="font-medium text-ink truncate">
                     {group.contractNumber}
-                    {group.lotDisplay && <span className="text-sand font-normal"> — {group.lotDisplay}</span>}
+                    {group.lotDisplay && <span className="text-neutral-600 font-normal"> - {group.lotDisplay}</span>}
                   </p>
-                  <p className="text-sand/70 text-sm">
+                  <p className="text-neutral-600/70 text-sm">
                     {group.receipts.length} receipt{group.receipts.length !== 1 ? "s" : ""}
                   </p>
                 </button>
@@ -112,11 +112,11 @@ export default function ReceiptsPage() {
                   <button
                     onClick={() => downloadZip(group.contract, group.contractNumber)}
                     disabled={downloadingId === group.contract}
-                    className="text-sm text-marigold font-medium hover:underline disabled:opacity-50"
+                    className="text-sm text-accent font-medium hover:underline disabled:opacity-50"
                   >
                     {downloadingId === group.contract ? "Zipping…" : "Download all"}
                   </button>
-                  <button onClick={() => toggle(group.contract)} className="text-sand text-lg">
+                  <button onClick={() => toggle(group.contract)} className="text-neutral-600 text-lg">
                     {isOpen ? "\u2212" : "+"}
                   </button>
                 </div>
@@ -130,17 +130,17 @@ export default function ReceiptsPage() {
                       className="px-5 py-3 flex items-center justify-between border-t border-ink first:border-t-0"
                     >
                       <div>
-                        <p className="text-cream text-sm">{receipt.receipt_number}</p>
-                        <p className="text-sand/70 text-xs">
+                        <p className="text-ink text-sm">{receipt.receipt_number}</p>
+                        <p className="text-neutral-600/70 text-xs">
                           Issued {new Date(receipt.issued_at).toLocaleDateString()}
                         </p>
                       </div>
                       {receipt.pdf_file ? (
-                        <a href={receipt.pdf_file} className="text-sm text-marigold font-medium hover:underline">
+                        <a href={receipt.pdf_file} className="text-sm text-accent font-medium hover:underline">
                           Download PDF
                         </a>
                       ) : (
-                        <span className="text-sm text-sand/70">PDF pending</span>
+                        <span className="text-sm text-neutral-600/70">PDF pending</span>
                       )}
                     </div>
                   ))}

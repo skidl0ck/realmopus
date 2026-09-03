@@ -12,11 +12,11 @@ async function fetchMyContracts(): Promise<Contract[]> {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  draft: "bg-sand/20 text-sand",
-  active: "bg-sage/20 text-sage",
-  completed: "bg-marigold/20 text-marigold",
-  cancelled: "bg-rust/20 text-rust",
-  defaulted: "bg-rust/20 text-rust",
+  draft: "bg-neutral-100 text-neutral-600",
+  active: "bg-green-100 text-green-800",
+  completed: "bg-accent-100 text-accent-800",
+  cancelled: "bg-red-100 text-red-800",
+  defaulted: "bg-red-100 text-red-800",
 };
 
 export default function PortalOverviewPage() {
@@ -28,30 +28,30 @@ export default function PortalOverviewPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl mb-1 text-cream">My Contract</h1>
-      <p className="text-sand text-sm mb-8">
+      <h1 className="font-display font-semibold uppercase text-2xl mb-1 text-ink">My Contract</h1>
+      <p className="text-neutral-600 text-sm mb-8">
         Overview of your lot purchase and current balance.
       </p>
 
-      {isLoading && <p className="text-sand">Loading…</p>}
-      {isError && <p className="text-rust">Couldn&apos;t load your contract right now.</p>}
+      {isLoading && <p className="text-neutral-600">Loading…</p>}
+      {isError && <p className="text-red-800">Couldn&apos;t load your contract right now.</p>}
       {contracts?.length === 0 && (
-        <p className="text-sand">You don&apos;t have any contracts yet.</p>
+        <p className="text-neutral-600">You don&apos;t have any contracts yet.</p>
       )}
 
       <div className="space-y-6">
         {contracts?.map((contract) => (
           <div
             key={contract.id}
-            className="rounded-2xl border border-clay bg-clay p-6"
+            className="border border-divider p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="font-display text-lg text-cream">{contract.contract_number}</p>
-                <p className="text-sand text-sm">{contract.lot_display}</p>
+                <p className="font-display font-semibold uppercase text-lg text-ink">{contract.contract_number}</p>
+                <p className="text-neutral-600 text-sm">{contract.lot_display}</p>
               </div>
               <span
-                className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_STYLES[contract.status]}`}
+                className={`tag ${STATUS_STYLES[contract.status]}`}
               >
                 {contract.status}
               </span>
@@ -59,24 +59,24 @@ export default function PortalOverviewPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4">
               <div>
-                <p className="text-sand/70">Total price</p>
-                <p className="font-medium text-cream font-data">
+                <p className="text-neutral-600/70">Total price</p>
+                <p className="font-medium text-ink font-data">
                   {currency}{Number(contract.total_contract_price).toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-sand/70">Down payment</p>
-                <p className="font-medium text-cream font-data">{currency}{Number(contract.down_payment).toLocaleString()}</p>
+                <p className="text-neutral-600/70">Down payment</p>
+                <p className="font-medium text-ink font-data">{currency}{Number(contract.down_payment).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-sand/70">Total paid</p>
-                <p className="font-medium text-cream font-data">
+                <p className="text-neutral-600/70">Total paid</p>
+                <p className="font-medium text-ink font-data">
                   {currency}{Number(contract.total_paid ?? 0).toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-sand/70">Balance</p>
-                <p className="font-medium text-marigold font-data">
+                <p className="text-neutral-600/70">Balance</p>
+                <p className="font-medium text-accent font-data">
                   {currency}{Number(contract.outstanding_balance ?? 0).toLocaleString()}
                 </p>
               </div>
@@ -85,11 +85,11 @@ export default function PortalOverviewPage() {
             <div className="flex gap-3">
               <Link
                 href="/portal/schedule"
-                className="text-sm text-marigold font-medium hover:underline"
+                className="text-sm text-accent font-medium hover:underline"
               >
                 View payment schedule →
               </Link>
-              <Link href="/portal/pay" className="text-sm text-marigold font-medium hover:underline">
+              <Link href="/portal/pay" className="text-sm text-accent font-medium hover:underline">
                 Make a payment →
               </Link>
             </div>
