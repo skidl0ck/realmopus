@@ -55,8 +55,12 @@ class UserViewSet(viewsets.ModelViewSet):
     def change_password(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": "Password changed."})
+        user = serializer.save()
+        # save() blacklists every outstanding token for this user, including
+        # the one this very request authenticated with -- issue a fresh pair
+        # so the caller's own session continues seamlessly instead of being
+        # forced into an immediate re-login right after proving who they are.
+        return Response({"detail": "Password changed.", **_tokens_for(user)})
 
 
 class SalesAgentProfileViewSet(viewsets.ModelViewSet):

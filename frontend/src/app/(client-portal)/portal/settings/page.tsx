@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { updateStoredTokens } from "@/lib/auth";
 import type { User } from "@/types";
 
 async function fetchMe(): Promise<User> {
@@ -87,10 +88,15 @@ export default function SettingsPage() {
     setPasswordSaved(false);
     setSavingPassword(true);
     try {
-      await apiClient.post("/accounts/users/change_password/", {
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
+      const { data } = await apiClient.post<{ access: string; refresh: string }>(
+        "/accounts/users/change_password/",
+        { current_password: currentPassword, new_password: newPassword }
+      );
+      // The backend blacklists every previously issued token on a password
+      // change (including the one this very request authenticated with) --
+      // store the fresh pair it hands back so this session keeps working,
+      // instead of silently breaking the next time the access token expires.
+      updateStoredTokens(data.access, data.refresh);
       setCurrentPassword("");
       setNewPassword("");
       setPasswordSaved(true);

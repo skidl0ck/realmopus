@@ -1,0 +1,22 @@
+# Dependabot watches the pinned versions in requirements.txt and
+# package.json and opens a PR whenever a newer release is available --
+# security fixes especially. This is the other half of the pinning
+# decision: pinned versions stop applying patches silently on a fresh
+# install, so this is what makes sure patches still surface promptly --
+# as a reviewable PR/diff, not an invisible change.
+#
+# Paths below assume a monorepo layout with /backend and /frontend as
+# top-level directories — adjust if your actual repo structure differs.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10

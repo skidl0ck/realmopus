@@ -1,15 +1,30 @@
-Django>=5.0,<6.0
-djangorestframework>=3.15
-djangorestframework-simplejwt>=5.3
-django-filter>=24.0
-django-cors-headers>=4.4
-python-decouple>=3.8
-python-dateutil>=2.9
-psycopg2-binary>=2.9
-Pillow>=10.0
-celery>=5.4
-redis>=5.0
-xhtml2pdf>=0.2.16
-google-genai>=1.0
-gunicorn>=22.0
-whitenoise>=6.7
+# Pinned to exact, already-tested versions rather than open ranges (>=) --
+# a security audit found ranges meant a fresh install on a new machine could
+# silently resolve to whatever's newest at that moment, including a future
+# release nobody here has actually run against this codebase. Concretely
+# relevant given axios (a frontend dependency) had two malicious versions
+# published in March 2026 via a compromised maintainer account -- a pinned
+# version can't pull in a release like that without someone deliberately
+# bumping the pin first.
+#
+# Security patches now require a deliberate version bump instead of applying
+# automatically -- Dependabot (.github/dependabot.yml) is configured to open
+# a PR whenever a pinned version here has a newer release, especially ones
+# with a security advisory, so patches still surface promptly; they're just
+# reviewed as a diff rather than silently applied on the next install.
+Django==5.2.17
+djangorestframework==3.18.0
+djangorestframework-simplejwt==5.5.1
+django-filter==26.1
+django-cors-headers==4.9.0
+python-decouple==3.8
+python-dateutil==2.9.0.post0
+psycopg2-binary==2.9.12
+Pillow==12.3.0
+celery==5.6.3
+redis==8.1.0
+xhtml2pdf==0.2.17
+google-genai==2.19.0
+gunicorn==26.0.0
+whitenoise==6.12.0
+django-storages[s3]==1.14.6

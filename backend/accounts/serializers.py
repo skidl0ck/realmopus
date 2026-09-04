@@ -65,7 +65,16 @@ class SelfProfileSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     """Self-service password change — requires the current password to
     confirm it's genuinely the account owner making the change, not just
-    someone with a stolen/still-logged-in session."""
+    someone with a stolen/still-logged-in session.
+
+    A security audit found that changing a password left every previously
+    issued token still valid — the standard "change your password" advice
+    for a suspected compromise did nothing to lock an attacker out. save()
+    now blacklists every outstanding refresh token for this user, so a
+    stolen token stops working the moment the real owner changes their
+    password, rather than remaining valid for up to its full 7-day
+    lifetime. The view then hands the legitimate caller a fresh pair in
+    the same response, so their own session isn't disrupted."""
 
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -77,9 +86,15 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
     def save(self):
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save(update_fields=["password"])
+
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
+
         return user
 
 

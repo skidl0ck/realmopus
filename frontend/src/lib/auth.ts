@@ -20,6 +20,15 @@ function storeSession(user: User, access: string, refresh: string) {
   localStorage.setItem("user", JSON.stringify(user));
 }
 
+/** Updates just the token pair, leaving the stored user untouched — for
+ * endpoints like change_password that reissue fresh tokens (since changing
+ * a password now blacklists every previously issued one, including the
+ * one the current session was using) without the user's own data changing. */
+export function updateStoredTokens(access: string, refresh: string) {
+  localStorage.setItem("access_token", access);
+  localStorage.setItem("refresh_token", refresh);
+}
+
 export async function login(username: string, password: string): Promise<User> {
   try {
     const { data } = await apiClient.post<LoginResponse>("/auth/login/", { username, password });
