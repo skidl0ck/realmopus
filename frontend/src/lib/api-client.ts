@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/lib/auth-store";
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
@@ -27,6 +28,19 @@ apiClient.interceptors.response.use(
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
+        // Clearing localStorage alone left the header stale until a full
+        // reload — it reads from this in-memory store, not localStorage
+        // directly, so the store has to be cleared too for it to update
+        // immediately rather than only on next navigation.
+        useAuthStore.getState().setUser(null);
+        // Only force visitors off a page that actually required being
+        // logged in — a stale token can 401 on a public page's optional,
+        // logged-in-only API call too (per the comment above), and forcing
+        // a redirect away from a page they're allowed to be on anyway would
+        // be more disruptive than just showing them as logged out.
+        if (window.location.pathname.startsWith("/portal")) {
+          window.location.href = "/";
+        }
         const retryConfig = { ...error.config };
         delete retryConfig.headers?.Authorization;
         return apiClient(retryConfig);

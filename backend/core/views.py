@@ -57,10 +57,10 @@ CHAT_RATE_WINDOW = 60      # seconds
 
 def _chat_rate_limited(request) -> bool:
     """Simple per-IP throttle so an unauthenticated public endpoint calling a
-    paid API can't be trivially abused. Uses Django's default cache — fine
-    for a single-process deployment; a real production setup behind multiple
-    workers would want a shared cache (Redis) for this to work correctly
-    across processes."""
+    paid API can't be trivially abused. Uses Django's default cache, which
+    is Redis-backed (see CACHES in settings.py) specifically so this stays
+    correct across multiple gunicorn workers in production, not just in a
+    single dev process."""
     from django.core.cache import cache
     from core.utils import get_client_ip
     ip = get_client_ip(request)

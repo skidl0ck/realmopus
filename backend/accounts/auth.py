@@ -2,7 +2,7 @@
 import logging
 
 from rest_framework.exceptions import APIException, AuthenticationFailed
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -45,6 +45,20 @@ class LoginRateThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
 
+class RegistrationRateThrottle(AnonRateThrottle):
+    """A security audit found registration had no rate limiting at all,
+    just like login did before LoginRateThrottle above. IP-keyed rather
+    than username-keyed (unlike login) since there's no target account to
+    key against here -- the account doesn't exist until this request
+    succeeds. Bounds scripted mass account creation and reduces how
+    quickly someone could enumerate which usernames/emails are already
+    taken by watching which registration attempts get rejected as
+    duplicates.
+    """
+    scope = "registration"
+    rate = "5/hour"
+
+
 class ClientAwareTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         # Django's default auth backend silently returns None for a correct
@@ -66,6 +80,15 @@ class ClientAwareTokenObtainPairSerializer(TokenObtainPairSerializer):
             security_logger.info("Failed login attempt for username: %r", username)
             raise
         security_logger.info("Successful login for username: %r", username)
+
+        # Only after the password is actually confirmed correct -- resetting
+        # on a failed attempt would let anyone grief an in-progress demo
+        # session just by repeatedly POSTing wrong passwords for the known
+        # public demo username.
+        if user.is_demo_account:
+            from core.demo import reset_demo_client_data
+            reset_demo_client_data(user)
+
         return result
 
 

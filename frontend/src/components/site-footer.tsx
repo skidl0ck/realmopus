@@ -52,7 +52,7 @@ export function SiteFooter() {
       <div className="border-t border-neutral-700/50">
         <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-neutral-400">
           <p>© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
-          <p>Built on EstateOS — a real estate sales &amp; operations platform.</p>
+          <p>Built on RealmOpus — a real estate sales &amp; operations platform.</p>
         </div>
       </div>
     </footer>

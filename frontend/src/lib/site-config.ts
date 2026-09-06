@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
@@ -7,17 +8,59 @@ interface SiteConfig {
   default_reservation_fee: string;
 }
 
+const CACHE_KEY = "site-config-cache";
+
 async function fetchSiteConfig(): Promise<SiteConfig> {
   const { data } = await apiClient.get("/site-config/");
   return data;
 }
 
+/** Reads whatever site config was last successfully fetched, if anything --
+ * used as placeholderData below so a page refresh shows last time's real
+ * company name/currency immediately, instead of the generic fallback
+ * flashing on screen for the moment before the fresh fetch resolves. */
+function readCachedSiteConfig(): SiteConfig | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function useSiteConfig() {
-  return useQuery({
+  // Server-side rendering has no localStorage at all, so the server's HTML
+  // is always generated with no cached placeholder -- if the client's very
+  // first render (during hydration) went and read localStorage right away,
+  // it could produce different output than that server HTML in the same
+  // pass, and React throws a hydration-mismatch error over the difference.
+  // hydrated starts false (matching the server, which has no concept of it
+  // at all) and only flips true inside an effect -- guaranteed to run after
+  // hydration has already committed, never during it -- so the client's
+  // first render is always identical to the server's, and the cached value
+  // only takes over in the very next render right after, not the same one.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+
+  const query = useQuery({
     queryKey: ["site-config"],
     queryFn: fetchSiteConfig,
     staleTime: 5 * 60 * 1000,
+    placeholderData: hydrated ? readCachedSiteConfig() : undefined,
   });
+
+  useEffect(() => {
+    if (!query.data || typeof window === "undefined") return;
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(query.data));
+    } catch {
+      // Storage unavailable (private browsing, quota, disabled) -- caching
+      // is a nice-to-have here, not something worth surfacing an error for.
+    }
+  }, [query.data]);
+
+  return query;
 }
 
 /**
@@ -34,11 +77,14 @@ export function useCurrencySymbol(): string {
 /**
  * The company name, configured in Business Settings — the single source of
  * truth so this never drifts out of sync with what's hardcoded in the UI.
- * Falls back to "EstateOS" while loading or if the request fails.
+ * Falls back to "RealmOpus" while loading or if the request fails -- in
+ * practice this only shows up on someone's very first visit ever, before
+ * anything's been cached locally; every visit after that shows last time's
+ * real value immediately, via useSiteConfig's placeholderData above.
  */
 export function useCompanyName(): string {
   const { data } = useSiteConfig();
-  return data?.company_name ?? "EstateOS";
+  return data?.company_name ?? "RealmOpus";
 }
 
 /**

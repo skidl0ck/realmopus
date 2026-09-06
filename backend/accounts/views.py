@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.permissions import IsAdmin
 from .models import User, SalesAgentProfile, ClientProfile
+from .auth import RegistrationRateThrottle
 from .serializers import (
     UserSerializer, UserCreateSerializer, SalesAgentProfileSerializer, ClientProfileSerializer,
     ClientRegistrationSerializer, SelfProfileSerializer, ChangePasswordSerializer,
@@ -21,6 +22,7 @@ class ClientRegisterView(generics.GenericAPIView):
 
     serializer_class = ClientRegistrationSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegistrationRateThrottle]
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -43,9 +45,20 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserCreateSerializer
         return UserSerializer
 
+    # Identity fields a demo visitor changing would mean the next visitor
+    # sees whatever the last one typed in, or a changed email that can't be
+    # told apart from a real one. email_notifications_enabled is a harmless
+    # preference toggle, not an identity field -- no reason to block it too.
+    DEMO_BLOCKED_PROFILE_FIELDS = {"first_name", "last_name", "email", "phone_number"}
+
     @action(detail=False, methods=["get", "patch"], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         if request.method == "PATCH":
+            if request.user.is_demo_account and self.DEMO_BLOCKED_PROFILE_FIELDS & set(request.data):
+                return Response(
+                    {"detail": "This is a shared demo account — profile changes aren't allowed."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             serializer = SelfProfileSerializer(request.user, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -53,6 +66,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def change_password(self, request):
+        if request.user.is_demo_account:
+            # Same reasoning as above, but more critical here specifically --
+            # a changed password would lock out every subsequent visitor who
+            # only knows the originally published demo credentials, not just
+            # cosmetically alter what they see.
+            return Response(
+                {"detail": "This is a shared demo account — the password can't be changed."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

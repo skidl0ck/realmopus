@@ -23,7 +23,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   content: "Hi! I can answer questions about our available lots, pricing, and the buying process. What would you like to know?",
 };
 
-const SESSION_ID_KEY = "estateos_chat_session_id";
+const SESSION_ID_KEY = "realmopus_chat_session_id";
 
 /** A stable, opaque ID for this visitor's chat session — generated once and
  * kept in localStorage so returning to the site (even after a refresh)

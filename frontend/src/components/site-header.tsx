@@ -19,9 +19,15 @@ export function SiteHeader() {
   // The public site never redirects an unauthenticated visitor away (unlike
   // the portal/dashboard layouts), so this only rehydrates the shared store
   // from a token that's already there — it doesn't gate access to anything.
+  //
+  // Always syncs to the actual current storage state, not just when a user
+  // IS found — the store persists in memory across client-side navigations
+  // (a router.push doesn't reset it), so a stale user object left over from
+  // before a sign-out elsewhere would otherwise never get cleared here,
+  // leaving the header showing someone as logged in after they signed out.
   useEffect(() => {
     const stored = getStoredUser();
-    if (stored) setUser(stored);
+    setUser(stored ?? null);
     setAuthLoading(false);
   }, [setUser]);
 

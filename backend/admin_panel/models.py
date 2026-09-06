@@ -51,7 +51,7 @@ class PlatformSettings(models.Model):
         help_text="How many times a client can self-extend a reservation stuck awaiting its fee, "
                    "before staff intervention is required. Each extension adds one full reservation_hold_days period.",
     )
-    company_name = models.CharField(max_length=200, default="EstateOS")
+    company_name = models.CharField(max_length=200, default="RealmOpus")
     currency_symbol = models.CharField(
         max_length=5, default="₱",
         help_text="Displayed throughout the site and on all documents. Purely a display label — no conversion is ever applied.",

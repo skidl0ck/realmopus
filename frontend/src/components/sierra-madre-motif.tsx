@@ -1,5 +1,5 @@
 /**
- * The Sierra Madre horizon - EstateOS's one signature visual motif (see
+ * The Sierra Madre horizon - RealmOpus's one signature visual motif (see
  * docs/design.md section 5). Deliberately a long, layered, asymmetric
  * ridgeline rather than a symmetrical triangle-peak icon, so it reads as an
  * actual place rather than generic "mountain" clipart. Three layers create

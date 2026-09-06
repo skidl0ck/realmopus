@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
+import { reportPaymentResultAndClose, isPaymentPopup } from "@/lib/payment-popup";
 
 type ResultState = "checking" | "success" | "error";
 
@@ -29,7 +30,10 @@ function PaymongoReturnInner() {
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
           await apiClient.post("/payments/payments/paymongo_confirm/", { payment_intent_id: intentId });
-          if (!cancelled) setState("success");
+          if (!cancelled) {
+            setState("success");
+            reportPaymentResultAndClose({ success: true });
+          }
           return;
         } catch (err: unknown) {
           const response = (err as { response?: { status?: number; data?: { detail?: string } } })?.response;
@@ -41,6 +45,7 @@ function PaymongoReturnInner() {
           if (!cancelled) {
             setState("error");
             setMessage(response?.data?.detail || "We couldn't confirm this payment. If you were charged, please contact us.");
+            reportPaymentResultAndClose({ success: false, detail: response?.data?.detail || "We couldn't confirm this payment. If you were charged, please contact us." });
           }
           return;
         }
@@ -73,9 +78,13 @@ function PaymongoReturnInner() {
         </div>
       )}
 
-      <Link href="/portal/reservations" className="inline-block mt-6 text-accent font-medium hover:underline">
-        Back to My Reservations
-      </Link>
+      {isPaymentPopup() ? (
+        <p className="mt-6 text-sm text-neutral-500">This window will close automatically…</p>
+      ) : (
+        <Link href="/portal/reservations" className="inline-block mt-6 text-accent font-medium hover:underline">
+          Back to My Reservations
+        </Link>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useCurrencySymbol } from "@/lib/currency";
 import { payWithPaymongo, type PaymongoMethodType } from "@/lib/paymongo";
+import { openPaymentPopup, waitForPaymentPopup, type PopupPaymentResult } from "@/lib/payment-popup";
 import type { Reservation } from "@/types";
 
 async function fetchReservation(id: string): Promise<Reservation> {
@@ -56,7 +57,7 @@ export default function ReservationCheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handlePayPal() {
+  async function handlePayPal(popup: Window | null) {
     if (!reservation) return;
     setSubmitting(true);
     setError(null);
@@ -68,14 +69,22 @@ export default function ReservationCheckoutPage() {
         return_url: returnUrl,
         cancel_url: cancelUrl,
       });
-      window.location.href = data.approve_url;
+      if (popup && !popup.closed) {
+        popup.location.href = data.approve_url;
+        handlePopupResult(await waitForPaymentPopup(popup));
+      } else {
+        // Popup was blocked (or unsupported) -- fall back to the original
+        // full-page redirect rather than leaving the user stuck.
+        window.location.href = data.approve_url;
+      }
     } catch (err: unknown) {
       setError(checkoutErrorMessage(err));
       setSubmitting(false);
+      popup?.close();
     }
   }
 
-  async function handlePaymongo(type: PaymongoMethodType) {
+  async function handlePaymongo(type: PaymongoMethodType, popup: Window | null) {
     if (!reservation) return;
     setSubmitting(true);
     setError(null);
@@ -89,23 +98,50 @@ export default function ReservationCheckoutPage() {
       const result = await payWithPaymongo(intent.id, intent.client_key, type, returnUrl, card);
 
       if (result.redirectUrl) {
-        window.location.href = result.redirectUrl;
+        if (popup && !popup.closed) {
+          popup.location.href = result.redirectUrl;
+          handlePopupResult(await waitForPaymentPopup(popup));
+        } else {
+          window.location.href = result.redirectUrl;
+        }
         return;
       }
+      // No redirect needed (card payments without 3DS confirm immediately) --
+      // the popup opened speculatively before this resolved was never used.
+      popup?.close();
       await apiClient.post("/payments/payments/paymongo_confirm/", { payment_intent_id: intent.id });
-      router.push(`/portal/reservations/${reservation.id}/checkout/paymongo-return`);
+      handlePopupResult({ success: true });
     } catch (err: unknown) {
       setError(checkoutErrorMessage(err));
-    } finally {
       setSubmitting(false);
+      popup?.close();
     }
   }
 
+  function handlePopupResult(result: PopupPaymentResult) {
+    setSubmitting(false);
+    if (result.success) {
+      router.push("/portal/reservations");
+      return;
+    }
+    if (result.unknown) {
+      setError("We couldn't tell whether that payment went through — check My Reservations, or try again.");
+      return;
+    }
+    setError(result.detail || "We couldn't confirm this payment.");
+  }
+
   function handlePay() {
+    // Opened synchronously, right here in the click handler -- this is
+    // what keeps a popup from being blocked, since browsers only allow
+    // window.open() without a block when it's tied directly to a user
+    // gesture, not after the async calls the handlers below make. Points
+    // at a blank page until the real gateway URL is known.
+    const popup = openPaymentPopup();
     if (method === "paypal") {
-      handlePayPal();
+      handlePayPal(popup);
     } else {
-      handlePaymongo(method);
+      handlePaymongo(method, popup);
     }
   }
 

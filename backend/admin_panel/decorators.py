@@ -21,6 +21,14 @@ def staff_required(view_func=None, roles=STAFF_ROLES):
     """
     Restricts a view to authenticated users with one of the given roles.
     Usage: @staff_required or @staff_required(roles=("admin",))
+
+    Also blocks any write request (anything but GET/HEAD) from an
+    is_demo_account user, regardless of role — this decorator has no
+    view/edit action distinction of its own (unlike dynamic_permission
+    below), so the safe-method check is the only lever available here.
+    Covers admin_panel's own "change my password" page specifically: a
+    public demo staff account changing its own password would lock out
+    the next visitor who only knows the originally published credentials.
     """
 
     def decorator(func):
@@ -41,6 +49,9 @@ def staff_required(view_func=None, roles=STAFF_ROLES):
                 # (e.g. a sales agent hitting an admin-only page). Safe to send them
                 # to the dashboard — it accepts any staff role, so this terminates.
                 messages.error(request, "You don't have permission to access that page.")
+                return redirect("admin_panel:dashboard")
+            if getattr(request.user, "is_demo_account", False) and request.method not in ("GET", "HEAD"):
+                messages.error(request, "This is a read-only demo account.")
                 return redirect("admin_panel:dashboard")
             return func(request, *args, **kwargs)
 
@@ -77,6 +88,20 @@ def dynamic_permission(section: str, action: str):
                 django_logout(request)
                 messages.error(request, "That account doesn't have permission for this area.")
                 return redirect(login_url)
+            # Checked before the admin bypass below, deliberately — this way a
+            # demo account stays view-only even if it were ever (mis)configured
+            # with role=admin, rather than relying on the demo account always
+            # being a lesser role. Unconditionally allowed for "view" rather
+            # than deferring to RolePermission for it, same as the admin
+            # bypass just below — otherwise seeding this demo account would
+            # mean also seeding "view" RolePermission rows for its role, which
+            # would then silently apply to any *real* future account sharing
+            # that role too (RolePermission is keyed by role, not by user).
+            if getattr(request.user, "is_demo_account", False):
+                if action == "view":
+                    return view_func(request, *args, **kwargs)
+                messages.error(request, "This is a read-only demo account.")
+                return redirect("admin_panel:dashboard")
             if request.user.role == "admin":
                 return view_func(request, *args, **kwargs)
 

@@ -19,6 +19,19 @@ class User(AbstractUser):
         default=False,
         help_text="Client opt-in for email notifications about their account/payments. Staff are always emailed.",
     )
+    is_demo_account = models.BooleanField(
+        default=False,
+        help_text=(
+            "Marks a shared, public-facing demo login (client or staff). Two things "
+            "hinge on this flag, independent of the account's role: (1) profile/"
+            "password-change endpoints refuse to modify it, since a demo visitor "
+            "changing the password would lock out the next person who only knows "
+            "the originally published credentials; (2) for a demo STAFF account "
+            "specifically, admin_panel's permission decorators force every action "
+            "to view-only regardless of what its role's RolePermission table "
+            "grants — see admin_panel/decorators.py."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

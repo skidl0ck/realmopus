@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
+import { reportPaymentResultAndClose, isPaymentPopup } from "@/lib/payment-popup";
 
 type ResultState = "checking" | "success" | "error";
 
@@ -24,11 +25,15 @@ function PaypalReturnInner() {
 
     apiClient
       .post("/payments/payments/paypal_capture/", { order_id: orderId })
-      .then(() => setState("success"))
+      .then(() => {
+        setState("success");
+        reportPaymentResultAndClose({ success: true });
+      })
       .catch((err: unknown) => {
         const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
         setState("error");
         setMessage(detail || "We couldn't confirm this payment. If you were charged, please contact us.");
+        reportPaymentResultAndClose({ success: false, detail: detail || "We couldn't confirm this payment. If you were charged, please contact us." });
       });
   }, [searchParams]);
 
@@ -52,9 +57,13 @@ function PaypalReturnInner() {
         </div>
       )}
 
-      <Link href="/portal/pay" className="inline-block mt-6 text-accent font-medium hover:underline">
-        Back to Make a Payment
-      </Link>
+      {isPaymentPopup() ? (
+        <p className="mt-6 text-sm text-neutral-500">This window will close automatically…</p>
+      ) : (
+        <Link href="/portal/pay" className="inline-block mt-6 text-accent font-medium hover:underline">
+          Back to Make a Payment
+        </Link>
+      )}
     </div>
   );
 }

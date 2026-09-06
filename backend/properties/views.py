@@ -4,6 +4,7 @@ import io
 import django_filters
 from django.core.exceptions import ValidationError
 from django.db.models import F
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, filters, generics, serializers as drf_serializers, status
 from rest_framework.decorators import action
@@ -238,42 +239,62 @@ class ExtendReservationView(generics.GenericAPIView):
 
     def post(self, request, pk):
         from datetime import timedelta
+        from django.db import transaction
         from django.utils import timezone
         from admin_panel.models import PlatformSettings
 
-        reservation = self.get_object()
-
-        if reservation.status != Reservation.Status.PENDING_PAYMENT:
-            return Response(
-                {"detail": "This reservation can no longer be extended."}, status=status.HTTP_400_BAD_REQUEST
-            )
-        if reservation.dismissed_by_client:
-            return Response(
-                {"detail": "This reservation was dismissed and can no longer be extended."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        settings_row = PlatformSettings.load()
-        if reservation.extension_count >= settings_row.max_reservation_extensions:
-            return Response(
-                {"detail": "This reservation has already been extended the maximum number of times. "
-                            "Please contact us for help."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        # The lot might have already been released by staff-facing lazy
-        # cleanup in the meantime -- re-check right before committing to the
-        # extension, not just at page-load time.
-        if reservation.lot.status != Lot.Status.ON_HOLD:
-            return Response(
-                {"detail": "This lot is no longer being held for you — it may have been released. "
-                            "Please reserve it again if it's still available."},
-                status=status.HTTP_409_CONFLICT,
+        with transaction.atomic():
+            # of=("self",) locks only the Reservation row -- Reservation.client
+            # is nullable (on_delete=SET_NULL), and Postgres refuses SELECT FOR
+            # UPDATE across a nullable outer join outright if a select_related
+            # on it were ever added here later (see payments/views.py's
+            # _get_pending_payment_for_confirmation for the same reasoning,
+            # found the hard way when a payment-confirmation race turned up
+            # this exact error against real Postgres).
+            reservation = get_object_or_404(
+                Reservation.objects.select_for_update(of=("self",)).select_related("lot"),
+                pk=pk, client=request.user,
             )
 
-        reservation.deadline = timezone.now().date() + timedelta(days=settings_row.reservation_hold_days)
-        reservation.extension_count += 1
-        reservation.save(update_fields=["deadline", "extension_count"])
-        return Response(self.get_serializer(reservation).data)
+            if reservation.status != Reservation.Status.PENDING_PAYMENT:
+                return Response(
+                    {"detail": "This reservation can no longer be extended."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            if reservation.dismissed_by_client:
+                return Response(
+                    {"detail": "This reservation was dismissed and can no longer be extended."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            settings_row = PlatformSettings.load()
+            # A security audit found this had the same shape as a payment race
+            # found earlier: two near-simultaneous extend requests could both
+            # read extension_count below the cap before either committed,
+            # letting the reservation be extended one time past the admin-
+            # configured limit. Lower stakes than the payment bug (an extra
+            # hold period, not a financial loss) but the same fix applies --
+            # the row lock above means a concurrent duplicate now blocks here
+            # until the first commits, then correctly sees the updated count.
+            if reservation.extension_count >= settings_row.max_reservation_extensions:
+                return Response(
+                    {"detail": "This reservation has already been extended the maximum number of times. "
+                                "Please contact us for help."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # The lot might have already been released by staff-facing lazy
+            # cleanup in the meantime -- re-check right before committing to
+            # the extension, not just at page-load time.
+            if reservation.lot.status != Lot.Status.ON_HOLD:
+                return Response(
+                    {"detail": "This lot is no longer being held for you — it may have been released. "
+                                "Please reserve it again if it's still available."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            reservation.deadline = timezone.now().date() + timedelta(days=settings_row.reservation_hold_days)
+            reservation.extension_count += 1
+            reservation.save(update_fields=["deadline", "extension_count"])
+            return Response(self.get_serializer(reservation).data)
 
 
 class DismissReservationView(generics.GenericAPIView):

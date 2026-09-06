@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
@@ -168,9 +169,30 @@ class PaymentViewSet(viewsets.ModelViewSet):
         not-yet-reserved lot) pending_reservation_client carries the client
         link. Returns (payment, None) — the already-COMPLETED case is
         handled by the caller so it can respond with the serialized payment
-        (idempotent success), not an error."""
+        (idempotent success), not an error.
+
+        select_for_update() here is what actually makes that idempotency
+        check race-safe. A frontend bug report traced back to this: two
+        near-simultaneous confirm/capture calls for the same payment (an
+        unguarded useEffect double-firing) both read status=PENDING before
+        either had committed its update, so both proceeded — PayPal's own
+        API rejected the second capture attempt with a raw
+        ORDER_ALREADY_CAPTURED error surfaced straight to the user, and
+        PayMongo's confirm has no equivalent gateway-side rejection for a
+        second read, so it actually double-applied the payment. Must be
+        called inside a transaction.atomic() block in the caller — the lock
+        this takes needs to stay held until that transaction commits.
+
+        of=("self",) locks only the Payment row itself, not whichever
+        related row the select_related() joins bring in — reservation,
+        contract, pending_reservation_lot, and pending_reservation_client
+        are all nullable (exactly one is ever set per payment), and Postgres
+        refuses SELECT FOR UPDATE across a nullable outer join outright
+        (NotSupportedError, not just a warning) unless scoped this way.
+        """
         payment = (
-            Payment.objects.filter(gateway_reference=gateway_reference, method=method)
+            Payment.objects.select_for_update(of=("self",))
+            .filter(gateway_reference=gateway_reference, method=method)
             .select_related(
                 "reservation", "reservation__client", "contract", "contract__client",
                 "pending_reservation_lot", "pending_reservation_client",
@@ -292,27 +314,36 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """Confirms and finalizes a PayPal order after the client approves
         and returns from PayPal's site. Always re-verifies with PayPal
         itself before treating anything as paid — the order_id alone isn't
-        proof of payment, only PayPal's own capture response is."""
+        proof of payment, only PayPal's own capture response is.
+
+        Wrapped in a transaction so the row lock taken by
+        _get_pending_payment_for_confirmation is held for the whole
+        check-then-act sequence, including the external PayPal call — a
+        concurrent duplicate request blocks here until this one commits,
+        then correctly sees status=COMPLETED and short-circuits, instead of
+        both racing past the idempotency check and both hitting PayPal.
+        """
         order_id = request.data.get("order_id")
-        payment, error_response = self._get_pending_payment_for_confirmation(request, order_id, Payment.Method.PAYPAL)
-        if error_response:
-            return error_response
-        if payment.status == Payment.Status.COMPLETED:
-            return Response(PaymentSerializer(payment).data)  # idempotent — a repeat call is a no-op, not an error
+        with transaction.atomic():
+            payment, error_response = self._get_pending_payment_for_confirmation(request, order_id, Payment.Method.PAYPAL)
+            if error_response:
+                return error_response
+            if payment.status == Payment.Status.COMPLETED:
+                return Response(PaymentSerializer(payment).data)  # idempotent — a repeat call is a no-op, not an error
 
-        try:
-            gateways.capture_paypal_order(order_id)
-        except gateways.GatewayError as exc:
-            payment.status = Payment.Status.FAILED
-            payment.save(update_fields=["status"])
-            return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
+            try:
+                gateways.capture_paypal_order(order_id)
+            except gateways.GatewayError as exc:
+                payment.status = Payment.Status.FAILED
+                payment.save(update_fields=["status"])
+                return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
 
-        payment.paid_at = timezone.now()
-        payment.save(update_fields=["paid_at"])
-        error_response = self._finalize_payment(payment)
-        if error_response:
-            return error_response
-        return Response(PaymentSerializer(payment).data)
+            payment.paid_at = timezone.now()
+            payment.save(update_fields=["paid_at"])
+            error_response = self._finalize_payment(payment)
+            if error_response:
+                return error_response
+            return Response(PaymentSerializer(payment).data)
 
     @action(detail=False, methods=["post"], permission_classes=[IsOwnerClientOrStaff])
     def paymongo_checkout(self, request):
@@ -347,31 +378,37 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """Server-side verification after the client's checkout redirect
         returns — never trusts the client's own claim that payment
         succeeded, always re-checks the intent's actual status against
-        PayMongo directly using the secret key before marking anything paid."""
+        PayMongo directly using the secret key before marking anything paid.
+
+        Same race-safety reasoning as paypal_capture above — see
+        _get_pending_payment_for_confirmation's docstring for the bug this
+        traced back to.
+        """
         intent_id = request.data.get("payment_intent_id")
-        payment, error_response = self._get_pending_payment_for_confirmation(request, intent_id, Payment.Method.PH_EWALLET)
-        if error_response:
-            return error_response
-        if payment.status == Payment.Status.COMPLETED:
+        with transaction.atomic():
+            payment, error_response = self._get_pending_payment_for_confirmation(request, intent_id, Payment.Method.PH_EWALLET)
+            if error_response:
+                return error_response
+            if payment.status == Payment.Status.COMPLETED:
+                return Response(PaymentSerializer(payment).data)
+
+            try:
+                intent = gateways.get_paymongo_payment_intent(intent_id)
+            except gateways.GatewayError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+            if intent["status"] != "succeeded":
+                return Response(
+                    {"detail": f"Payment not yet completed (status: {intent['status']}).", "status": intent["status"]},
+                    status=status.HTTP_402_PAYMENT_REQUIRED,
+                )
+
+            payment.paid_at = timezone.now()
+            payment.save(update_fields=["paid_at"])
+            error_response = self._finalize_payment(payment)
+            if error_response:
+                return error_response
             return Response(PaymentSerializer(payment).data)
-
-        try:
-            intent = gateways.get_paymongo_payment_intent(intent_id)
-        except gateways.GatewayError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
-
-        if intent["status"] != "succeeded":
-            return Response(
-                {"detail": f"Payment not yet completed (status: {intent['status']}).", "status": intent["status"]},
-                status=status.HTTP_402_PAYMENT_REQUIRED,
-            )
-
-        payment.paid_at = timezone.now()
-        payment.save(update_fields=["paid_at"])
-        error_response = self._finalize_payment(payment)
-        if error_response:
-            return error_response
-        return Response(PaymentSerializer(payment).data)
 
 
 class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):

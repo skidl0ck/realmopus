@@ -13,6 +13,13 @@ import { useAuthModalStore } from "@/lib/auth-modal-store";
 
 type Panel = "login" | "register";
 
+// Mirrors accounts/management/commands/seed_demo_accounts.py's defaults --
+// override both together via env vars if the backend's demo password is
+// ever changed at deploy time, so this button doesn't quietly drift out of
+// sync with what actually authenticates.
+const DEMO_USERNAME = process.env.NEXT_PUBLIC_DEMO_CLIENT_USERNAME || "demo_client";
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_CLIENT_PASSWORD || "DemoClient2026!";
+
 export function AuthModal() {
   const router = useRouter();
   const setUser = useAuthStore((s) => s.setUser);
@@ -27,6 +34,7 @@ export function AuthModal() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   // Reset form state each time the modal is (re)opened, and honor the mode it was opened in.
   useEffect(() => {
@@ -48,6 +56,19 @@ export function AuthModal() {
     setUser(user as never);
     close();
     router.push(nextPath || dashboardPathForRole(user.role));
+  }
+
+  async function handleDemoLogin() {
+    setError(null);
+    setDemoLoading(true);
+    try {
+      const user = await login(DEMO_USERNAME, DEMO_PASSWORD);
+      finishAuth(user);
+    } catch {
+      setError("Couldn't reach the demo account right now — please try again.");
+    } finally {
+      setDemoLoading(false);
+    }
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -137,6 +158,21 @@ export function AuthModal() {
 
             <button type="submit" disabled={loading} className="btn btn-primary btn-block w-full">
               {loading ? "Signing in…" : "Sign in"}
+            </button>
+
+            <div className="my-4 flex items-center gap-3 text-xs text-neutral-500 uppercase tracking-wide">
+              <span className="h-px flex-1 bg-divider" />
+              or
+              <span className="h-px flex-1 bg-divider" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={demoLoading}
+              className="btn btn-secondary btn-block w-full"
+            >
+              {demoLoading ? "Loading demo…" : "Try the demo — no signup needed"}
             </button>
 
             <p className="mt-5 text-center text-sm text-neutral-600">
