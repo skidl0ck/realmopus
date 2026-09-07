@@ -97,12 +97,13 @@ def _create_sample_contract(user):
 @transaction.atomic
 def reset_demo_client_data(user):
     """Wipes whatever the demo client account accumulated on its own
-    (reservations it made, and any leftover payments from those or from an
-    abandoned checkout), then re-seeds the one fixed sample contract fresh.
-    Every lot released by the wipe goes back to AVAILABLE except the
-    sample contract's own lot, which goes straight back to sold via the
-    reseed -- never actually available for someone else to grab in between,
-    since this whole function runs in one transaction.
+    (reservations it made, any leftover payments from those or from an
+    abandoned checkout, and any notifications generated along the way),
+    then re-seeds the one fixed sample contract fresh. Every lot released
+    by the wipe goes back to AVAILABLE except the sample contract's own
+    lot, which goes straight back to sold via the reseed -- never actually
+    available for someone else to grab in between, since this whole
+    function runs in one transaction.
 
     Deletion order matters: Payment.contract and Payment.reservation are
     both on_delete=PROTECT (deliberately, so a real payment can never be
@@ -118,6 +119,7 @@ def reset_demo_client_data(user):
     from properties.models import Lot, Reservation
     from sales.models import Contract
     from payments.models import Payment
+    from core.models import Notification
 
     released_lot_ids = set()
 
@@ -133,6 +135,15 @@ def reset_demo_client_data(user):
         # Cascades to Fee, Installment, Commission, PaymentReminder
         # automatically (all on_delete=CASCADE from Contract).
         existing_contract.delete()
+
+    # A found bug: apply_payment() below (via _create_sample_contract)
+    # creates real Notification rows as a normal, realistic side effect --
+    # correct for a one-off demo, but since this whole function re-runs on
+    # every single login to this shared account, those notifications
+    # stacked up forever without this line, growing by 3 more every time
+    # anyone tried the demo. Wiped here alongside everything else this
+    # account accumulates on its own.
+    Notification.objects.filter(recipient=user).delete()
 
     # Checkout attempts that never actually completed -- no Reservation/
     # Contract was ever created for these (see the "no entry until paid"
