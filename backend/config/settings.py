@@ -274,6 +274,15 @@ LOGGING = {
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS', default='http://localhost:3000', cast=Csv()
 )
+# Retry-After isn't one of the handful of response headers browsers expose
+# to cross-origin JavaScript by default (fetch/XHR only surface a small
+# CORS-safelisted set unless a server explicitly opts a header in) -- DRF
+# already sends this correctly on every 429 response, but without this,
+# the frontend's own code asking for it back gets undefined every time,
+# silently falling back to a generic "try again" message instead of a
+# specific "try again in 45 seconds" one, even though the real value was
+# sent the whole time.
+CORS_EXPOSE_HEADERS = ['Retry-After']
 
 # Payment gateways (set real keys via environment variables / .env, never commit them)
 PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='')

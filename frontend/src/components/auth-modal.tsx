@@ -20,6 +20,25 @@ type Panel = "login" | "register";
 const DEMO_USERNAME = process.env.NEXT_PUBLIC_DEMO_CLIENT_USERNAME || "demo_client";
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_CLIENT_PASSWORD || "DemoClient2026!";
 
+/** DRF's throttle responses always carry a Retry-After header (seconds,
+ * per RFC 7231) on top of the human-readable "detail" message in the body
+ * -- the header is the more reliable of the two to build a UI message
+ * from, since it's a plain number rather than something that'd need
+ * parsing out of a sentence. Returns null for anything that isn't
+ * actually a 429, so callers can tell "this wasn't a rate limit" apart
+ * from "it was, but the wait time couldn't be read". */
+function rateLimitMessage(err: unknown): string | null {
+  const response = (err as { response?: { status?: number; headers?: Record<string, string> } })?.response;
+  if (response?.status !== 429) return null;
+  const waitSeconds = Number(response.headers?.["retry-after"]);
+  if (!(waitSeconds > 0)) return "Too many attempts. Please wait a moment and try again.";
+  const wait =
+    waitSeconds >= 60
+      ? `${Math.ceil(waitSeconds / 60)} minute${Math.ceil(waitSeconds / 60) === 1 ? "" : "s"}`
+      : `${waitSeconds} second${waitSeconds === 1 ? "" : "s"}`;
+  return `Too many attempts. Please try again in ${wait}.`;
+}
+
 export function AuthModal() {
   const router = useRouter();
   const setUser = useAuthStore((s) => s.setUser);
@@ -82,7 +101,7 @@ export function AuthModal() {
       if (err instanceof AccountDeactivatedError) {
         setError("This account has been deactivated. Please contact support.");
       } else {
-        setError("Invalid username or password.");
+        setError(rateLimitMessage(err) ?? "Invalid username or password.");
       }
     } finally {
       setLoading(false);
@@ -97,8 +116,9 @@ export function AuthModal() {
       const user = await register({ firstName, lastName, email, phoneNumber, username, password });
       finishAuth(user);
     } catch (err: unknown) {
+      const rateLimit = rateLimitMessage(err);
       const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
-      setError(detail ? Object.values(detail).flat().join(" ") : "Couldn't create your account. Please try again.");
+      setError(rateLimit ?? (detail ? Object.values(detail).flat().join(" ") : "Couldn't create your account. Please try again."));
     } finally {
       setLoading(false);
     }
