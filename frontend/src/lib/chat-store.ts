@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { hasFunctionalConsent } from "@/lib/cookie-consent";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -25,11 +26,24 @@ const WELCOME_MESSAGE: ChatMessage = {
 
 const SESSION_ID_KEY = "realmopus_chat_session_id";
 
+// Used only when functional consent is declined -- keeps the session ID
+// stable for the lifetime of this page load (without this, every call
+// would mint a fresh random ID, and the backend would see each message as
+// a brand new anonymous conversation even within a single visit).
+let inMemorySessionId: string | null = null;
+
 /** A stable, opaque ID for this visitor's chat session — generated once and
  * kept in localStorage so returning to the site (even after a refresh)
- * reconnects to the same conversation instead of starting a new one. */
+ * reconnects to the same conversation instead of starting a new one.
+ * Gated behind functional consent: without it, still returns a consistent
+ * ID for this page load (so the chat itself keeps working), it just won't
+ * be remembered on a future visit. */
 export function getOrCreateChatSessionId(): string {
   if (typeof window === "undefined") return "";
+  if (!hasFunctionalConsent()) {
+    if (!inMemorySessionId) inMemorySessionId = crypto.randomUUID();
+    return inMemorySessionId;
+  }
   let id = window.localStorage.getItem(SESSION_ID_KEY);
   if (!id) {
     id = crypto.randomUUID();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { hasFunctionalConsent } from "@/lib/cookie-consent";
 
 interface SiteConfig {
   currency_symbol: string;
@@ -18,9 +19,14 @@ async function fetchSiteConfig(): Promise<SiteConfig> {
 /** Reads whatever site config was last successfully fetched, if anything --
  * used as placeholderData below so a page refresh shows last time's real
  * company name/currency immediately, instead of the generic fallback
- * flashing on screen for the moment before the fresh fetch resolves. */
+ * flashing on screen for the moment before the fresh fetch resolves.
+ * Gated behind functional consent -- this cache is exactly the kind of
+ * "not strictly necessary" storage the cookie settings panel lets a
+ * visitor decline; if they have, this simply behaves as if nothing were
+ * ever cached, same as a first-ever visit. */
 function readCachedSiteConfig(): SiteConfig | undefined {
   if (typeof window === "undefined") return undefined;
+  if (!hasFunctionalConsent()) return undefined;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : undefined;
@@ -51,13 +57,25 @@ function useSiteConfig() {
   });
 
   useEffect(() => {
-    if (!query.data || typeof window === "undefined") return;
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(query.data));
-    } catch {
-      // Storage unavailable (private browsing, quota, disabled) -- caching
-      // is a nice-to-have here, not something worth surfacing an error for.
+    function writeIfConsented() {
+      if (!query.data || typeof window === "undefined") return;
+      if (!hasFunctionalConsent()) return;
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(query.data));
+      } catch {
+        // Storage unavailable (private browsing, quota, disabled) -- caching
+        // is a nice-to-have here, not something worth surfacing an error for.
+      }
     }
+    // Covers the normal case (data just arrived) directly, and also
+    // re-attempts the write when consent itself changes -- accepting
+    // functional cookies doesn't change query.data at all (the site config
+    // was already fetched before the visitor made a choice), so without
+    // this listener, granting consent would silently do nothing until some
+    // unrelated data change happened to fire this effect again.
+    writeIfConsented();
+    window.addEventListener("cookie-consent-changed", writeIfConsented);
+    return () => window.removeEventListener("cookie-consent-changed", writeIfConsented);
   }, [query.data]);
 
   return query;

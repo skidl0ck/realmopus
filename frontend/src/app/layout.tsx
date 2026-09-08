@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { AuthModal } from "@/components/auth-modal";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Providers>
           {children}
           <AuthModal />
+          <CookieConsentBanner />
         </Providers>
       </body>
     </html>
