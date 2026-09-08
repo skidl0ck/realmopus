@@ -1,75 +1,60 @@
-# Greenview Estates — Real Estate Sales & Property Management Platform
+# RealmOpus
 
-A full-stack real estate sales management system: lot inventory, reservations,
-installment contracts with amortization + penalties, online payments (PayPal +
-PH e-wallet), sales agent commissions, expense tracking, and a cash flow
-dashboard. Stack mirrors the Sikaty platform.
+A real estate sales & operations platform - reservation-to-contract-to-installment-payments,
+end to end, for a real estate firm still running on spreadsheets and manual paperwork.
 
-## Stack
+**Live demo:** https://main.d28tjv1ja32pvs.amplifyapp.com
+Click **"Try the demo - no signup needed"** on the login screen. It logs you straight into a
+populated client account (a real contract, a partial payment history, live receipts) - no
+account creation needed, and every visitor gets a fresh, reset slate.
 
-- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS, React Query, Zustand
-- **Backend:** Django REST Framework, SimpleJWT auth, django-cors-headers
-- **Database:** SQLite locally, Postgres (RDS free tier) in production
-- **Payments:** PayPal + PayMongo (GCash/Maya/cards) — sandbox keys for demo
-- **Deployment target:** AWS free tier (EC2/Elastic Beanstalk + RDS + S3/CloudFront)
+**Want the story behind how this got built** - the security audit, a real production race
+condition found and fixed, a name change forced by a trademark collision, the actual AWS
+deployment - rather than just a feature list? See [`CASE_STUDY.md`](CASE_STUDY.md).
 
-## Roles
+## What it does
 
-Admin · Sales Agent · Accountant/Finance · Client (portal)
+- **Public site** - browse available lots across a project, filterable inventory, an AI chat
+  widget that answers questions about pricing and the buying process.
+- **Client portal** - reserve a lot, pay online (PayPal or local e-wallets via PayMongo),
+  track a payment schedule, download receipts and contract PDFs, get notified on upcoming
+  due dates.
+- **Staff admin panel** - manage projects/lots/clients/contracts, record payments, generate
+  reports (aging, cash flow, commissions), role-based permissions, a full audit log.
+- **Background processing** - automated late-payment penalties, payment reminders, and
+  report generation via Celery.
 
-## Project structure
+## Tech stack
 
-```
-backend/
-  accounts/     custom User model, roles, agent/client profiles, audit log
-  properties/   Project, Lot, Reservation
-  sales/        Contract, Fee, Installment, Commission, amortization engine
-  payments/     Payment, Receipt
-  expenses/     Expense, ExpenseCategory
-  core/         Notification, shared concerns
-frontend/
-  src/app/(public)/       marketing site + public lot browsing
-  src/app/(dashboard)/    admin / agent / accountant views
-  src/app/(client-portal)/ client-facing portal
-  src/lib/                API client, React Query provider, auth store
-  src/types/              shared TypeScript types
-```
+**Backend:** Django 5.2 + Django REST Framework, PostgreSQL, Redis (cache + Celery broker),
+Celery (background tasks), S3-compatible storage for uploaded/generated files.
 
-## Local setup
+**Frontend:** Next.js 16 (App Router) + React 19 + TypeScript, Tailwind CSS, React Query.
 
-### Backend
-```bash
-cd backend
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
+**Infrastructure:** AWS - EC2 (backend, behind nginx + gunicorn), RDS (PostgreSQL),
+ElastiCache (Redis), S3 (file storage), Amplify Hosting (frontend), with a genuine
+Let's Encrypt TLS certificate and HSTS enforced in production.
 
-### Frontend
-```bash
-cd frontend
-npm install
-cp .env.local.example .env.local
-npm run dev
-```
+**CI/CD:** GitHub Actions - automated checks (Django system check, migration-drift
+detection, a real production frontend build) on every pull request; a manually-triggered,
+access-restricted deploy workflow for the backend, with the frontend auto-deploying via
+Amplify on merge to `main`.
 
-## Core business logic
+## Documentation
 
-`sales/services.py` contains:
-- `generate_amortization_schedule(contract)` — builds fixed monthly installments
-  from down payment, term, flat annual interest, and recurring fees.
-- `apply_late_penalties(as_of=None)` — meant to run daily (cron or Celery beat),
-  applies each contract's penalty rate to overdue installment balances.
+- [`CASE_STUDY.md`](CASE_STUDY.md) - the story behind this project, told as a narrative
+- [`docs/SETUP.md`](docs/SETUP.md) - running this locally
+- [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md) - every configuration
+  value the app reads, what it's for, and whether it's required
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) - the full production infrastructure setup,
+  as an actual runbook
 
-## Roadmap
+## A note on security
 
-1. ✅ Repo scaffold + core Django models
-2. Admin & inventory management (project/lot CRUD, role permissions)
-3. ✅ Contracts & amortization engine
-4. Payments module (manual + PayPal/PayMongo integration)
-5. Client portal (browse lots, view schedule, pay online)
-6. Expenses & cash flow dashboard
-7. Deploy to AWS free tier
+This project went through a real, methodical security audit - dependency pinning, an
+OWASP-2025-mapped review, IDOR/injection/auth testing, STRIDE threat modeling, and an
+adversarial "how would an attacker approach this" walkthrough - not just a cursory pass.
+Concrete outcomes include rate limiting (verified against real repeated requests), a
+payment-double-charge race condition found and fixed (verified against real concurrent
+threads on Postgres, not just reasoned about), and scoped IAM credentials throughout
+rather than broad or root-level access anywhere in the infrastructure.
