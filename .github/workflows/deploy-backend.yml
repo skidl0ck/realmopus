@@ -1,0 +1,44 @@
+name: Deploy Backend
+
+# Manual trigger only, by design -- this touches production and runs
+# database migrations, so a deploy happens only when explicitly decided
+# from the Actions tab, never automatically on a push.
+#
+# "on" is quoted here deliberately -- plain YAML treats the bare word on
+# (and off/yes/no) as a boolean rather than a string, which is exactly the
+# keyword GitHub Actions uses for its trigger key. GitHub's own workflow
+# parser handles the unquoted form correctly regardless, but quoting it
+# avoids any ambiguity for other tools that might read this file.
+"on":
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up the deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pins the server's host key for this run rather than blindly
+          # trusting anything (StrictHostKeyChecking=no) -- each GitHub-hosted
+          # runner starts with an empty known_hosts, so this is what avoids
+          # the interactive "are you sure you want to continue connecting?"
+          # prompt hanging a non-interactive CI run.
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Trigger the deployment
+        # The command sent here doesn't actually matter -- the server's
+        # authorized_keys entry for this specific key forces it to run
+        # deploy.sh regardless of whatever is requested, so simply
+        # connecting with this key is what triggers the full deploy (git
+        # pull, install dependencies, migrate, collectstatic, restart
+        # gunicorn/celery-worker/celery-beat). The text below exists purely
+        # to make that intent readable in this file, not because the server
+        # actually acts on it.
+        run: ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "trigger deploy"
+
+      - name: Clean up the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

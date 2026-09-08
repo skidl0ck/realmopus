@@ -1,0 +1,76 @@
+name: CI
+
+# Runs on every pull request targeting main -- this is a check gate, not a
+# deploy. Nothing here touches EC2, RDS, or any real infrastructure; it only
+# verifies the code itself is in a mergeable state before a human merges it.
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Django system check
+        # DEBUG=True is enough on its own here -- it's what the app's own
+        # fail-loud startup checks key off of (a missing SECRET_KEY or a
+        # default-only ALLOWED_HOSTS only raise when DEBUG=False), and
+        # DB_ENGINE already defaults to SQLite when unset, so this needs no
+        # real database, no real secrets, and no other env vars at all.
+        env:
+          DEBUG: "True"
+        run: python manage.py check
+
+      - name: Check for missing migrations
+        # Catches a genuinely common real mistake: changing a model but
+        # forgetting to run makemigrations before committing. --dry-run
+        # means this only checks and reports; it never writes a file.
+        env:
+          DEBUG: "True"
+        run: python manage.py makemigrations --check --dry-run
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        # npm ci, not npm install -- strict, exact-match install against
+        # package-lock.json. This is deliberately the same stricter command
+        # Amplify itself uses, so a lock-file drift like the one that broke
+        # the very first Amplify deploy gets caught here, on every PR,
+        # rather than only when an actual deploy is attempted.
+        run: npm ci
+
+      - name: Build
+        # Placeholder values -- this only needs to prove the app actually
+        # compiles cleanly (catches TypeScript errors, broken imports,
+        # anything that would fail to build), not to produce a real,
+        # deployable artifact. No real secrets belong here.
+        env:
+          NEXT_PUBLIC_API_URL: "https://api.realmopus.online/api"
+          NEXT_PUBLIC_PAYMONGO_PUBLIC_KEY: "pk_test_ci_placeholder"
+        run: npm run build
