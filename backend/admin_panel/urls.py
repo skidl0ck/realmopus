@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views, permissions_views, chatbot_views, collections_views
+from . import views, project_views, lots_views, sales_views, payments_views, expenses_views, reservations_views, settings_views, staff_views, commissions_views, notifications_views, audit_views, reports_views, account_views, clients_views, permissions_views, chatbot_views, collections_views, testimonials_views, inquiries_views, blogs_views
 
 app_name = "admin_panel"
 
@@ -11,6 +11,21 @@ urlpatterns = [
     path('projects/', project_views.project_list, name='project_list'),
     path('projects/new/', project_views.project_create, name='project_create'),
     path('projects/<uuid:pk>/edit/', project_views.project_edit, name='project_edit'),
+
+    path('testimonials/', testimonials_views.testimonial_list, name='testimonial_list'),
+    path('testimonials/new/', testimonials_views.testimonial_create, name='testimonial_create'),
+    path('testimonials/<uuid:pk>/edit/', testimonials_views.testimonial_edit, name='testimonial_edit'),
+    path('testimonials/<uuid:pk>/delete/', testimonials_views.testimonial_delete, name='testimonial_delete'),
+
+    path('inquiries/', inquiries_views.inquiry_list, name='inquiry_list'),
+    path('inquiries/<uuid:pk>/', inquiries_views.inquiry_detail, name='inquiry_detail'),
+    path('inquiries/<uuid:pk>/status/', inquiries_views.inquiry_set_status, name='inquiry_set_status'),
+
+    path('blogs/', blogs_views.blog_list, name='blog_list'),
+    path('blogs/upload-image/', blogs_views.blog_upload_image, name='blog_upload_image'),
+    path('blogs/new/', blogs_views.blog_create, name='blog_create'),
+    path('blogs/<uuid:pk>/edit/', blogs_views.blog_edit, name='blog_edit'),
+    path('blogs/<uuid:pk>/delete/', blogs_views.blog_delete, name='blog_delete'),
 
     path('lots/', lots_views.lot_list, name='lot_list'),
     path('lots/new/', lots_views.lot_create, name='lot_create'),

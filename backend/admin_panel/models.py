@@ -133,6 +133,9 @@ class RolePermission(models.Model):
         REPORTS = "reports", "Reports"
         CLIENTS = "clients", "Clients"
         CHATBOT = "chatbot", "AI Chatbot"
+        TESTIMONIALS = "testimonials", "Testimonials"
+        INQUIRIES = "inquiries", "Inquiries"
+        BLOGS = "blogs", "Blogs"
 
     class Action(models.TextChoices):
         VIEW = "view", "View"
@@ -166,4 +169,7 @@ SECTION_ACTIONS = {
     RolePermission.Section.REPORTS: [RolePermission.Action.VIEW],
     RolePermission.Section.CLIENTS: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
     RolePermission.Section.CHATBOT: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
+    RolePermission.Section.TESTIMONIALS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
+    RolePermission.Section.INQUIRIES: [RolePermission.Action.VIEW, RolePermission.Action.EDIT],
+    RolePermission.Section.BLOGS: [RolePermission.Action.VIEW, RolePermission.Action.CREATE, RolePermission.Action.EDIT],
 }

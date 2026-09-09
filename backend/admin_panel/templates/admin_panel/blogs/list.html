@@ -1,0 +1,52 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Blogs — RealmOpus Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Blogs</h1>
+    <p class="eo-subtitle">Posts shown on the public blog page.</p>
+  </div>
+  <a href="{% url 'admin_panel:blog_create' %}" class="eo-btn-primary">New Blog Post</a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <div class="eo-table-scroll"><table class="eo-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Published</th>
+        <th>Featured</th>
+        <th class="hidden sm:table-cell">Date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for blog in blogs %}
+      <tr>
+        <td>{{ blog.title }}</td>
+        <td>
+          {% if blog.is_published %}
+            <span class="eo-stamp eo-stamp--green">Published</span>
+          {% else %}
+            <span class="eo-stamp eo-stamp--gray">Draft</span>
+          {% endif %}
+        </td>
+        <td>{% if blog.is_featured %}★{% endif %}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ blog.published_at|date:"Y-m-d"|default:"—" }}</td>
+        <td class="text-right space-x-3">
+          <a href="{% url 'admin_panel:blog_edit' blog.id %}" class="eo-link">Edit</a>
+          <form method="post" action="{% url 'admin_panel:blog_delete' blog.id %}"
+                class="inline" onsubmit="return confirm('Delete this blog post? This can\'t be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="eo-link" style="color: var(--stamp);">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">No blog posts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% include "admin_panel/_pagination.html" with page_obj=blogs per_page=per_page %}
+{% endblock %}

@@ -7,6 +7,10 @@ interface SiteConfig {
   currency_symbol: string;
   company_name: string;
   default_reservation_fee: string;
+  default_penalty_rate_percent: string;
+  default_interest_rate_percent: string;
+  reservation_hold_days: number;
+  max_reservation_extensions: number;
 }
 
 const CACHE_KEY = "site-config-cache";
@@ -90,6 +94,10 @@ function useSiteConfig() {
 export function useCurrencySymbol(): string {
   const { data } = useSiteConfig();
   return data?.currency_symbol ?? "₱";
+}
+
+export function useSiteConfigQuery() {
+  return useSiteConfig();
 }
 
 /**

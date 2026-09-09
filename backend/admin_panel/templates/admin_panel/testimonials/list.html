@@ -1,0 +1,58 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Testimonials — RealmOpus Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">Testimonials</h1>
+    <p class="eo-subtitle">Customer quotes shown in the landing page's testimonials section.</p>
+  </div>
+  <a href="{% url 'admin_panel:testimonial_create' %}"
+     class="eo-btn-primary">
+    New Testimonial
+  </a>
+</div>
+
+<div class="eo-card overflow-hidden">
+  <div class="eo-table-scroll"><table class="eo-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Quote</th>
+        <th>Order</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for testimonial in testimonials %}
+      <tr>
+        <td>
+          {{ testimonial.name }}
+          {% if testimonial.role %}<div class="eo-subtitle">{{ testimonial.role }}</div>{% endif %}
+        </td>
+        <td class="eo-subtitle">{{ testimonial.quote|truncatechars:80 }}</td>
+        <td>{{ testimonial.display_order }}</td>
+        <td>
+          {% if testimonial.is_active %}
+            <span class="eo-stamp eo-stamp--green">Active</span>
+          {% else %}
+            <span class="eo-stamp eo-stamp--gray">Hidden</span>
+          {% endif %}
+        </td>
+        <td class="text-right space-x-3">
+          <a href="{% url 'admin_panel:testimonial_edit' testimonial.id %}" class="eo-link">Edit</a>
+          <form method="post" action="{% url 'admin_panel:testimonial_delete' testimonial.id %}"
+                class="inline" onsubmit="return confirm('Delete this testimonial? This can\'t be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="eo-link" style="color: var(--stamp);">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center eo-subtitle py-6">No testimonials yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% include "admin_panel/_pagination.html" with page_obj=testimonials per_page=per_page %}
+{% endblock %}

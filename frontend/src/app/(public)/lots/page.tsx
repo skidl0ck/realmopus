@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -290,19 +291,21 @@ export default function LotsPage() {
 
           return (
             <Blueprint key={lot.id} className="p-5 hover:border-accent transition">
-              <LotThumbnail lot={lot} />
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-display font-semibold uppercase text-lg text-ink">
-                  Block {lot.block_number}, Lot {lot.lot_number}
-                </span>
-                <span className={`tag ${STATUS_STYLES[lot.status]}`}>
-                  {lot.status.replace("_", " ")}
-                </span>
-              </div>
-              <p className="text-neutral-600 text-sm mb-1">{lot.area_sqm} sqm</p>
-              <p className="text-ink font-semibold text-xl font-data mb-4">
-                {currency}{Number(lot.total_price).toLocaleString()}
-              </p>
+              <Link href={`/lots/${lot.id}`}>
+                <LotThumbnail lot={lot} />
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display font-semibold uppercase text-lg text-ink">
+                    Block {lot.block_number}, Lot {lot.lot_number}
+                  </span>
+                  <span className={`tag ${STATUS_STYLES[lot.status]}`}>
+                    {lot.status.replace("_", " ")}
+                  </span>
+                </div>
+                <p className="text-neutral-600 text-sm mb-1">{lot.area_sqm} sqm</p>
+                <p className="text-ink font-semibold text-xl font-data mb-4">
+                  {currency}{Number(lot.total_price).toLocaleString()}
+                </p>
+              </Link>
 
               {isAvailable && (
                 <button

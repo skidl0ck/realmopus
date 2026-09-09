@@ -1,9 +1,68 @@
 from decimal import Decimal
 
+import bleach
 from django import forms
 from properties.models import Project, Lot
+from core.models import Testimonial, Blog
 
 INPUT_CLASSES = "eo-input"
+
+# What the rich-text editor's output is allowed to contain once sanitized.
+# Deliberately no "style" or "class" attributes anywhere -- those are a
+# CSS-injection surface, and this app controls presentation entirely
+# through its own stylesheet, not per-post inline styles. This runs even
+# though blog content is staff-authored, not public-submitted -- defense
+# in depth against a compromised staff account or an editor bug producing
+# unexpected markup, not a statement of distrust in staff specifically.
+BLOG_CONTENT_ALLOWED_TAGS = [
+    "p", "br", "strong", "em", "u", "s",
+    "h2", "h3", "h4",
+    "ul", "ol", "li",
+    "a", "blockquote", "img",
+]
+BLOG_CONTENT_ALLOWED_ATTRIBUTES = {
+    "a": ["href", "title"],
+    "img": ["src", "alt"],
+}
+
+
+class BlogForm(forms.ModelForm):
+    class Meta:
+        model = Blog
+        fields = ["title", "slug", "summary", "content", "thumbnail", "video_url", "is_published", "is_featured"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "slug": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "summary": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 2}),
+            "content": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 10}),
+            "video_url": forms.URLInput(attrs={"class": INPUT_CLASSES, "placeholder": "https://youtube.com/watch?v=..."}),
+            "is_published": forms.CheckboxInput(attrs={"class": "eo-checkbox"}),
+            "is_featured": forms.CheckboxInput(attrs={"class": "eo-checkbox"}),
+        }
+
+    def clean_content(self):
+        # The rich-text editor sends real HTML (bold/italic/lists/images) --
+        # sanitized here before it ever reaches the database, so what's
+        # stored is exactly what the public site can safely render with
+        # dangerouslySetInnerHTML, without needing to re-sanitize on the way
+        # out.
+        content = self.cleaned_data["content"]
+        return bleach.clean(
+            content, tags=BLOG_CONTENT_ALLOWED_TAGS, attributes=BLOG_CONTENT_ALLOWED_ATTRIBUTES, strip=True,
+        )
+
+
+class TestimonialForm(forms.ModelForm):
+    class Meta:
+        model = Testimonial
+        fields = ["name", "role", "quote", "photo", "display_order", "is_active"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "role": forms.TextInput(attrs={"class": INPUT_CLASSES}),
+            "quote": forms.Textarea(attrs={"class": INPUT_CLASSES, "rows": 4}),
+            "display_order": forms.NumberInput(attrs={"class": INPUT_CLASSES}),
+            "is_active": forms.CheckboxInput(attrs={"class": "eo-checkbox"}),
+        }
 
 
 class ProjectForm(forms.ModelForm):

@@ -1,0 +1,58 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Inquiries — RealmOpus Staff{% endblock %}
+{% block content %}
+<div class="mb-6">
+  <h1 class="eo-title mb-1">Inquiries</h1>
+  <p class="eo-subtitle">Leads submitted through the public site's inquiry form.</p>
+</div>
+
+<form method="get" class="mb-4">
+  <select name="status" onchange="this.form.submit()" class="eo-input" style="width: auto;">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="eo-card overflow-hidden">
+  <div class="eo-table-scroll"><table class="eo-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th class="hidden sm:table-cell">Email</th>
+        <th class="hidden sm:table-cell">Regarding</th>
+        <th>Received</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inquiry in inquiries %}
+      <tr>
+        <td>{{ inquiry.name }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">{{ inquiry.email }}</td>
+        <td class="hidden sm:table-cell eo-subtitle">
+          {% if inquiry.related_lot %}{{ inquiry.related_lot.project.name }} — Blk {{ inquiry.related_lot.block_number }}, Lot {{ inquiry.related_lot.lot_number }}{% else %}General{% endif %}
+        </td>
+        <td class="eo-num">{{ inquiry.created_at|date:"Y-m-d" }}</td>
+        <td>
+          <span class="eo-stamp
+            {% if inquiry.status == 'new' %}eo-stamp--gold
+            {% elif inquiry.status == 'responded' %}eo-stamp--green
+            {% else %}eo-stamp--gray{% endif %}">
+            {{ inquiry.get_status_display }}
+          </span>
+        </td>
+        <td class="text-right">
+          <a href="{% url 'admin_panel:inquiry_detail' inquiry.id %}" class="eo-link">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center eo-subtitle py-6">No inquiries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% include "admin_panel/_pagination.html" with page_obj=inquiries per_page=per_page %}
+{% endblock %}

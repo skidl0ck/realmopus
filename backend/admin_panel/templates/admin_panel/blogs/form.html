@@ -1,0 +1,110 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+{% block title %}{{ title }} — RealmOpus Staff{% endblock %}
+{% block content %}
+<link href="{% static 'vendor/quill/quill.snow.css' %}" rel="stylesheet">
+<style>
+  #quill-editor { background: #fff; min-height: 260px; }
+  .ql-editor { min-height: 260px; }
+</style>
+
+<h1 class="eo-title mb-6">{{ title }}</h1>
+<form method="post" enctype="multipart/form-data" class="max-w-2xl eo-card eo-card-pad space-y-4" id="blog-form">
+  {% csrf_token %}
+  {% for field in form %}
+    {% if field.name == 'content' %}
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+        <div id="quill-editor"></div>
+        <div style="display: none;">{{ field }}</div>
+        {% if field.help_text %}<p class="text-xs eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+    {% else %}
+      <div>
+        <label class="eo-eyebrow block mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="text-xs eo-subtitle mt-1">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+      </div>
+    {% endif %}
+  {% endfor %}
+  <button type="submit" class="eo-btn-primary">
+    Save
+  </button>
+</form>
+
+<script src="{% static 'vendor/quill/quill.min.js' %}"></script>
+<script>
+(function () {
+  var hiddenTextarea = document.querySelector('#blog-form textarea[name="content"]');
+  var uploadUrl = "{% url 'admin_panel:blog_upload_image' %}";
+  var csrfToken = document.querySelector('#blog-form [name=csrfmiddlewaretoken]').value;
+
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: [
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ header: [2, 3, 4, false] }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['blockquote', 'link', 'image'],
+          ['clean'],
+        ],
+        handlers: { image: imageHandler },
+      },
+    },
+  });
+
+  if (hiddenTextarea.value) {
+    quill.root.innerHTML = hiddenTextarea.value;
+  }
+
+  quill.on('text-change', function () {
+    hiddenTextarea.value = quill.root.innerHTML;
+  });
+
+  function imageHandler() {
+    var input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = function () {
+      var file = input.files[0];
+      if (!file) return;
+
+      var formData = new FormData();
+      formData.append('image', file);
+
+      fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData,
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().then(function (data) {
+              throw new Error(data.error || 'Upload failed.');
+            });
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          var range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', data.url);
+          quill.setSelection(range.index + 1);
+        })
+        .catch(function (err) {
+          alert('Image upload failed: ' + err.message);
+        });
+    };
+  }
+
+  document.getElementById('blog-form').addEventListener('submit', function () {
+    hiddenTextarea.value = quill.root.innerHTML;
+  });
+})();
+</script>
+{% endblock %}

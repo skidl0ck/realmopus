@@ -210,3 +210,18 @@ html::-webkit-scrollbar-thumb:hover {
 .themed-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-600);
 }
+/* Rendered rich-text blog content (from the admin panel's Quill editor,
+   sanitized server-side before storage -- see backend/admin_panel/forms.py
+   BlogForm.clean_content). Only styles the tags that sanitization actually
+   allows through: p, strong/em/u/s, h2-h4, ul/ol/li, a, blockquote, img. */
+.prose-content h2 { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; font-size: 1.5rem; margin: 1.5rem 0 0.75rem; }
+.prose-content h3 { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; font-size: 1.25rem; margin: 1.25rem 0 0.5rem; }
+.prose-content h4 { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; margin: 1rem 0 0.5rem; }
+.prose-content p { margin: 0 0 1rem; }
+.prose-content ul, .prose-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+.prose-content ul { list-style: disc; }
+.prose-content ol { list-style: decimal; }
+.prose-content li { margin-bottom: 0.25rem; }
+.prose-content a { color: var(--color-accent-700); text-decoration: underline; }
+.prose-content blockquote { border-left: 3px solid var(--color-divider); padding-left: 1rem; margin: 1rem 0; color: var(--color-neutral-600); font-style: italic; }
+.prose-content img { max-width: 100%; height: auto; margin: 1.5rem 0; }

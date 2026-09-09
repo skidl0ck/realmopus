@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -60,6 +61,7 @@ export default function LotCheckoutPage() {
   const [cvc, setCvc] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function handlePayPal(popup: Window | null) {
     if (!lot) return;
@@ -266,9 +268,24 @@ export default function LotCheckoutPage() {
             </p>
           )}
 
+          <label className="flex items-start gap-2 mb-4 text-sm text-neutral-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 cursor-pointer"
+            />
+            <span>
+              By checking this box, I agree to the{" "}
+              <Link href="/terms" target="_blank" className="text-accent font-medium hover:underline">
+                Reservation Agreement
+              </Link>
+            </span>
+          </label>
+
           <button
             onClick={handlePay}
-            disabled={submitting || fee === undefined}
+            disabled={submitting || fee === undefined || !agreedToTerms}
             className="btn btn-primary btn-block w-full"
           >
             {submitting ? "Processing…" : fee !== undefined ? `Pay ${currency}${fee.toLocaleString()}` : "Loading…"}

@@ -29,8 +29,12 @@ export function SiteFooter() {
           <p className="text-xs uppercase tracking-wide text-neutral-400 font-semibold mb-3">Explore</p>
           <ul className="space-y-2 text-sm text-neutral-300">
             <li><Link href="/lots" className="hover:text-accent-300 transition">Browse lots</Link></li>
+            <li><Link href="/blogs" className="hover:text-accent-300 transition">Blog</Link></li>
             <li><Link href="/#offerings" className="hover:text-accent-300 transition">What we offer</Link></li>
             <li><Link href="/#how-it-works" className="hover:text-accent-300 transition">How it works</Link></li>
+            <li><Link href="/buyers-guide" className="hover:text-accent-300 transition">Buyer&apos;s Guide</Link></li>
+            <li><Link href="/about" className="hover:text-accent-300 transition">About Us</Link></li>
+            <li><Link href="/contact" className="hover:text-accent-300 transition">Contact Us</Link></li>
           </ul>
         </div>
 
@@ -55,6 +59,7 @@ export function SiteFooter() {
         <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-neutral-400">
           <p>© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
           <div className="flex gap-4">
+            <Link href="/terms" className="hover:text-accent-300 transition">Terms</Link>
             <Link href="/privacy" className="hover:text-accent-300 transition">Privacy &amp; Cookies</Link>
             <button onClick={openCookieSettings} className="hover:text-accent-300 transition cursor-pointer">
               Cookie Settings

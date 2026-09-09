@@ -1,0 +1,52 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ inquiry.name }} — RealmOpus Staff{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="eo-title mb-1">{{ inquiry.name }}</h1>
+    <p class="eo-subtitle">Submitted {{ inquiry.created_at|date:"Y-m-d H:i" }}</p>
+  </div>
+  <span class="eo-stamp
+    {% if inquiry.status == 'new' %}eo-stamp--gold
+    {% elif inquiry.status == 'responded' %}eo-stamp--green
+    {% else %}eo-stamp--gray{% endif %}">
+    {{ inquiry.get_status_display }}
+  </span>
+</div>
+
+<div class="eo-card eo-card-pad max-w-2xl space-y-4">
+  <div>
+    <p class="eo-eyebrow mb-1">Contact</p>
+    <p>{{ inquiry.email }}{% if inquiry.phone %} · {{ inquiry.phone }}{% endif %}</p>
+  </div>
+
+  {% if inquiry.related_lot %}
+  <div>
+    <p class="eo-eyebrow mb-1">Regarding</p>
+    <p>{{ inquiry.related_lot.project.name }} — Block {{ inquiry.related_lot.block_number }}, Lot {{ inquiry.related_lot.lot_number }}</p>
+  </div>
+  {% endif %}
+
+  <div>
+    <p class="eo-eyebrow mb-1">Message</p>
+    <p class="whitespace-pre-line">{{ inquiry.message }}</p>
+  </div>
+
+  <div class="pt-4 border-t border-divider flex gap-3">
+    {% if inquiry.status != 'responded' %}
+    <form method="post" action="{% url 'admin_panel:inquiry_set_status' inquiry.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="responded">
+      <button type="submit" class="eo-btn-primary">Mark Responded</button>
+    </form>
+    {% endif %}
+    {% if inquiry.status != 'closed' %}
+    <form method="post" action="{% url 'admin_panel:inquiry_set_status' inquiry.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="closed">
+      <button type="submit" class="eo-btn-secondary">Close</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
