@@ -11,6 +11,9 @@ import { Blueprint } from "@/components/blueprint";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { useCurrencySymbol } from "@/lib/currency";
 import { useCompanyName } from "@/lib/site-config";
+import { TestimonialsSection } from "@/components/testimonials-section";
+import { FeaturedBlogsSection } from "@/components/featured-blogs-section";
+import { InquiryForm } from "@/components/inquiry-form";
 
 async function fetchFeaturedLots(): Promise<Lot[]> {
   const { data } = await apiClient.get("/properties/lots/?status=available");
@@ -260,6 +263,26 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      <FeaturedBlogsSection />
+
+      <TestimonialsSection />
+
+      <section id="contact" className="bg-surface border-y border-divider">
+        <div className="mx-auto max-w-4xl px-6 py-20 grid gap-10 sm:grid-cols-2">
+          <Reveal>
+            <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">08 · Get in touch</span>
+            <hr className="border-0 h-px bg-divider mb-9" />
+            <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">Have a question?</h2>
+            <p className="text-neutral-600 max-w-xs">
+              Send us a message and we&apos;ll get back to you — no need to wait for office hours.
+            </p>
+          </Reveal>
+          <Reveal delay={80}>
+            <InquiryForm source="homepage" />
+          </Reveal>
         </div>
       </section>
 

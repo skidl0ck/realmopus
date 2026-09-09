@@ -31,6 +31,8 @@ export interface Lot {
   total_price: string;
   status: LotStatus;
   thumbnail: string | null;
+  description?: string;
+  floor_plan?: string | null;
   images?: LotImage[];
 }
 

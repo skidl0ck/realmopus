@@ -1,10 +1,11 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import action
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
-from .models import Notification
-from .serializers import NotificationSerializer
+from .models import Notification, Testimonial, Inquiry, Blog
+from .serializers import NotificationSerializer, TestimonialSerializer, InquirySerializer, BlogSerializer
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -34,6 +35,53 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({"status": "ok"})
 
 
+class TestimonialViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public, read-only — the landing page's testimonials section. No auth
+    required, and only ever returns testimonials a staff member has marked
+    active, in the display order they configured."""
+
+    serializer_class = TestimonialSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = Testimonial.objects.filter(is_active=True)
+
+
+class BlogViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public, read-only — the blog list and detail pages. Only ever returns
+    posts a staff member has actually published; a draft is never reachable
+    through this API regardless of whether someone knows or guesses its
+    slug. Looked up by slug rather than the numeric/UUID id, since that's
+    what the detail page's URL actually uses."""
+
+    serializer_class = BlogSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = Blog.objects.filter(is_published=True)
+    lookup_field = "slug"
+
+
+class InquiryRateThrottle(AnonRateThrottle):
+    """Same reasoning as accounts.auth.RegistrationRateThrottle -- a public,
+    unauthenticated endpoint that creates a database row needs its own rate
+    limit regardless of how low-stakes the row itself is, or it's an open
+    invitation to scripted spam submissions. IP-keyed, since there's no
+    account to key against here at all."""
+    scope = "inquiry"
+    rate = "5/hour"
+
+
+class InquiryCreateView(generics.CreateAPIView):
+    """Public, write-only by design -- deliberately built on CreateAPIView
+    rather than a ModelViewSet, so there is no list/retrieve/update/delete
+    action for this to ever accidentally gain. An anonymous submitter (or
+    anyone else hitting this endpoint) can create an inquiry and nothing
+    else; reading submitted inquiries back only ever happens through the
+    staff admin panel, which is entirely separate, session-authenticated
+    Django views, not this API at all."""
+
+    serializer_class = InquirySerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [InquiryRateThrottle]
+
+
 @api_view(["GET"])
 @permission_classes([permissions.AllowAny])
 def site_config(request):
@@ -48,6 +96,10 @@ def site_config(request):
         "currency_symbol": settings_row.currency_symbol,
         "company_name": settings_row.company_name,
         "default_reservation_fee": str(settings_row.default_reservation_fee),
+        "default_penalty_rate_percent": str(settings_row.default_penalty_rate_percent),
+        "default_interest_rate_percent": str(settings_row.default_interest_rate_percent),
+        "reservation_hold_days": settings_row.reservation_hold_days,
+        "max_reservation_extensions": settings_row.max_reservation_extensions,
     })
 
 
