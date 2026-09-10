@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -11,6 +12,10 @@ import { useDefaultReservationFee } from "@/lib/site-config";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { Blueprint } from "@/components/blueprint";
+import { Reveal } from "@/components/reveal";
+import { InquiryForm } from "@/components/inquiry-form";
+import { LotCard } from "@/components/lot-card";
+import { useSiteConfigQuery } from "@/lib/site-config";
 
 const STATUS_STYLES: Record<string, string> = {
   available: "tag-accent",
@@ -24,6 +29,11 @@ async function fetchLot(lotId: string): Promise<Lot> {
   return data;
 }
 
+async function fetchLots(): Promise<Lot[]> {
+  const { data } = await apiClient.get("/properties/lots/");
+  return Array.isArray(data) ? data : data.results ?? [];
+}
+
 export default function LotDetailPage() {
   const { lotId } = useParams<{ lotId: string }>();
   const router = useRouter();
@@ -34,19 +44,25 @@ export default function LotDetailPage() {
   const openAuthModal = useAuthModalStore((s) => s.open);
   const [activeImage, setActiveImage] = useState(0);
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
+  const { data: siteConfig } = useSiteConfigQuery();
 
   const { data: lot, isLoading } = useQuery({
     queryKey: ["lot", lotId],
     queryFn: () => fetchLot(lotId),
   });
 
+  const { data: allLots } = useQuery({
+    queryKey: ["lots"],
+    queryFn: fetchLots,
+  });
+
   const reserveMutation = useMutation({
     mutationFn: (id: string) => apiClient.post("/properties/reservations/", { lot: id }),
     onSuccess: () => {
-      setFeedback({ type: "success", message: "Lot reserved — check My Reservations for next steps." });
+      setFeedback({ type: "success", message: "Lot reserved - check My Reservations for next steps." });
       queryClient.invalidateQueries({ queryKey: ["lot", lotId] });
     },
-    onError: () => setFeedback({ type: "error", message: "Couldn't reserve this lot — it may no longer be available." }),
+    onError: () => setFeedback({ type: "error", message: "Couldn't reserve this lot - it may no longer be available." }),
   });
 
   function handleReserve() {
@@ -78,6 +94,9 @@ export default function LotDetailPage() {
 
   const images = lot.images && lot.images.length > 0 ? lot.images : null;
   const isAvailable = lot.status === "available";
+  const recommendedLots = (allLots ?? [])
+    .filter((candidate) => candidate.id !== lot.id && candidate.status === "available" && candidate.project_name === lot.project_name)
+    .slice(0, 3);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
@@ -93,7 +112,7 @@ export default function LotDetailPage() {
 
       {images ? (
         <>
-          <Blueprint className="duotone relative w-full aspect-[16/7] overflow-hidden mb-3">
+          <Blueprint className="relative w-full aspect-[16/7] overflow-hidden mb-3">
             <Image src={images[activeImage].image} alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`} fill className="object-cover" sizes="(min-width: 1024px) 1024px, 100vw" />
           </Blueprint>
           {images.length > 1 && (
@@ -116,12 +135,18 @@ export default function LotDetailPage() {
         </Blueprint>
       )}
 
-      <div className="grid sm:grid-cols-3 gap-8">
+      <div className="grid sm:grid-cols-3 gap-8 mb-20">
         <div className="sm:col-span-2">
           {lot.description && (
             <div className="mb-6">
               <p className="text-xs uppercase tracking-wide text-neutral-500 mb-1">Description</p>
               <p className="text-neutral-700 leading-relaxed whitespace-pre-line">{lot.description}</p>
+            </div>
+          )}
+          {lot.project_location && (
+            <div className="mb-6">
+              <p className="text-xs uppercase tracking-wide text-neutral-500 mb-1">Location</p>
+              <p className="text-neutral-700">{lot.project_location}</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-4 text-sm max-w-xs">
@@ -137,9 +162,22 @@ export default function LotDetailPage() {
         </div>
 
         <div>
-          <p className="text-ink font-semibold text-3xl font-data mb-4">
-            {currency}{Number(lot.total_price).toLocaleString()}
-          </p>
+          <div className="mb-4 border-divider bg-surface px-3 py-2">
+            <label>Total Price</label>
+            <p className="text-ink font-semibold text-3xl font-data mb-4">
+              {currency}{Number(lot.total_price).toLocaleString()}
+            </p>
+          </div>
+
+          {reservationFee !== undefined && reservationFee > 0 && (
+            <>
+              <div className="mb-4 rounded-lg border border-divider bg-surface px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">Reservation fee</p>
+                <p className="text-ink font-medium mt-1">{currency}{Number(reservationFee).toLocaleString()}</p>
+                <p className="text-neutral-500 text-xs mt-1">Reserve this lot for {siteConfig?.reservation_hold_days || 3} days while you complete your payment.</p>
+              </div>
+            </>
+          )}
 
           {feedback && (
             <p className={`text-sm px-3 py-2 mb-4 border ${feedback.type === "error" ? "bg-red-50 text-red-800 border-red-200" : "bg-green-50 text-green-800 border-green-200"}`}>
@@ -148,16 +186,56 @@ export default function LotDetailPage() {
           )}
 
           {isAvailable && (
-            <button
-              onClick={handleReserve}
-              disabled={reserveMutation.isPending}
-              className="btn btn-primary btn-block w-full"
-            >
-              {reserveMutation.isPending ? "Reserving…" : "Reserve this lot"}
-            </button>
+            <>
+              <button
+                onClick={handleReserve}
+                disabled={reserveMutation.isPending}
+                className="btn btn-primary btn-block w-full"
+              >
+                {reserveMutation.isPending ? "Reserving…" : reservationFee !== undefined && reservationFee > 0 ? "Reserve this lot" : "Reserve this lot"}
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {recommendedLots.length > 0 && (
+        <section className="bg-surface border-y border-divider">
+          <div className="mx-auto max-w-6xl px-6 py-20">
+            <Reveal>
+              <div className="flex items-baseline justify-between gap-6 mb-10">
+                <h2 className="font-display font-semibold uppercase text-3xl text-ink">Recommended For You</h2>
+                <Link href="/lots" className="text-accent-700 font-medium hover:underline text-sm whitespace-nowrap">
+                  View all lots →
+                </Link>
+              </div>
+            </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedLots.map((lot, i) => (
+                <Reveal key={lot.id} delay={i * 100}>
+                  <LotCard lot={lot} currency={currency} />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      
+      
+      <section id="contact" className="bg-surface border-y border-divider">
+        <div className="mx-auto max-w-4xl px-6 py-20 grid gap-10 sm:grid-cols-2">
+          <Reveal>
+            <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">Have a question?</h2>
+            <p className="text-neutral-600 max-w-xs">
+              Send us a message and we&apos;ll get back to you - no need to wait for office hours.
+            </p>
+          </Reveal>
+          <Reveal delay={80}>
+            <InquiryForm source="lots/{lot.id}" />
+          </Reveal>
+        </div>
+      </section>
     </div>
   );
 }

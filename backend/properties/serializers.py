@@ -31,6 +31,7 @@ class LotImageSerializer(serializers.ModelSerializer):
 
 class LotSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source="project.name", read_only=True)
+    project_location = serializers.CharField(source="project.location", read_only=True)
     # Auto-computed from area_sqm * price_per_sqm when not explicitly supplied — see validate().
     total_price = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
     images = LotImageSerializer(many=True, read_only=True)
@@ -39,7 +40,7 @@ class LotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lot
         fields = [
-            "id", "project", "project_name", "block_number", "lot_number",
+            "id", "project", "project_name", "project_location", "block_number", "lot_number",
             "area_sqm", "price_per_sqm", "total_price", "status", "view_count",
             "description", "floor_plan", "images", "thumbnail", "created_at", "updated_at",
         ]
