@@ -1,20 +1,83 @@
 {% extends "admin_panel/base.html" %}
-{% block title %}Sign in — EstateOS Staff{% endblock %}
+{% load static %}
+{% block title %}Sign in - RealmOpus Staff{% endblock %}
 {% block content %}
-<div class="min-h-[70vh] flex items-center justify-center">
-  <form method="post" class="w-full max-w-sm eo-card eo-card-pad">
-    {% csrf_token %}
-    <p class="eo-wordmark text-xl mb-6">EstateOS</p>
-    <h1 class="eo-title mb-1" style="font-size: 1.125rem;">Staff sign in</h1>
-    <p class="eo-subtitle mb-6">Internal use only.</p>
+<style>
+  /* Plain CSS for the core two-panel structure, deliberately not relying on
+     Tailwind utility classes for this -- if the Tailwind CDN script were
+     ever slow or unreachable, this page's fundamental layout should still
+     work correctly, same reasoning as self-hosting Quill instead of using
+     its CDN (see backend/core/static/vendor/quill/). */
+  .login-split { position: fixed; inset: 0; display: flex; }
+  .login-form-side { flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: #fff; overflow-y: auto; }
+  .login-brand-side {
+    flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; background: #111827;
+    background-image: url('{% static "vendor/login-bg.jpg" %}');
+    background-size: cover; background-position: center;
+  }
+  .login-brand-overlay {
+    /* Dark navy tint over the photo, matching the sidebar's own color --
+       keeps the white text readable regardless of what's happening in the
+       photo underneath, same principle as the site's "duotone" treatment
+       on the public frontend. */
+    position: absolute; inset: 0; background: rgba(17, 24, 39, 0.82);
+  }
+  @media (max-width: 640px) { .login-brand-side { display: none; } }
+</style>
 
-    <label class="eo-eyebrow block mb-1">Username</label>
-    <input type="text" name="username" required class="eo-input mb-4">
+<div class="login-split">
+  <div class="login-form-side">
+    <div style="width: 100%; max-width: 24rem; padding: 2.5rem 0;">
+      <form method="post" class="eo-card eo-card-pad">
+        {% csrf_token %}
+        <p class="ro-wordmark text-xl mb-6">RealmOpus</p>
+        <h1 class="eo-title mb-1" style="font-size: 1.125rem;">Staff sign in</h1>
+        <p class="eo-subtitle mb-6">Internal use only.</p>
 
-    <label class="eo-eyebrow block mb-1">Password</label>
-    <input type="password" name="password" required class="eo-input mb-6">
+        <label class="eo-eyebrow block mb-1">Username</label>
+        <input type="text" name="username" required class="eo-input mb-4">
 
-    <button type="submit" class="eo-btn-primary w-full">Sign in</button>
-  </form>
+        <label class="eo-eyebrow block mb-1">Password</label>
+        <input type="password" name="password" required class="eo-input mb-6">
+
+        <button type="submit" class="eo-btn-primary w-full">Sign in</button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="username" value="demo_staff">
+          <input type="hidden" name="password" value="DemoStaff2026!">
+          <p class="eo-subtitle mb-2">Just want to look around?</p>
+          <button type="submit" class="eo-btn-secondary w-full">Try the demo - no signup needed</button>
+          <p class="text-xs eo-subtitle mt-2">View-only staff access - browsing and reports only, no changes can be saved.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-brand-side">
+    <div class="login-brand-overlay"></div>
+    <svg style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.15;" preserveAspectRatio="none">
+      <defs>
+        <pattern id="corner-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+          <path d="M0 12 V0 H12" fill="none" stroke="#9CA3AF" stroke-width="1"/>
+          <path d="M68 0 H80 V12" fill="none" stroke="#9CA3AF" stroke-width="1"/>
+          <path d="M80 68 V80 H68" fill="none" stroke="#9CA3AF" stroke-width="1"/>
+          <path d="M12 80 H0 V68" fill="none" stroke="#9CA3AF" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#corner-grid)"/>
+    </svg>
+
+    <div style="position: relative; z-index: 1; max-width: 24rem; padding: 0 2.5rem; text-align: center;">
+      <p class="ro-wordmark text-3xl mb-4" style="color: #F9FAFB;">RealmOpus</p>
+      <p style="font-size: 0.875rem; line-height: 1.6; color: #9CA3AF;">
+        The internal console for managing projects, lots, contracts, and payments -
+        everything staff need to run sales and operations day to day, in one place.
+      </p>
+    </div>
+  </div>
 </div>
 {% endblock %}

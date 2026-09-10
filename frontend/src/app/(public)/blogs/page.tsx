@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Reveal } from "@/components/reveal";
@@ -21,12 +22,15 @@ async function fetchBlogs(): Promise<Blog[]> {
   return data.results ?? data;
 }
 
-function ThumbnailOrPlaceholder({ blog, className }: { blog: Blog; className: string }) {
+function ThumbnailOrPlaceholder({ blog, aspect }: { blog: Blog; aspect: string }) {
   if (blog.thumbnail) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={blog.thumbnail} alt={blog.title} className={className} />;
+    return (
+      <div className={`relative w-full ${aspect}`}>
+        <Image src={blog.thumbnail} alt={blog.title} fill className="object-cover" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
+      </div>
+    );
   }
-  return <div className={`${className} bg-accent-100 flex items-center justify-center`}>
+  return <div className={`w-full ${aspect} bg-accent-100 flex items-center justify-center`}>
     <span className="font-display font-semibold text-accent-700 text-sm">{blog.title.charAt(0).toUpperCase()}</span>
   </div>;
 }
@@ -50,7 +54,7 @@ export default function BlogsPage() {
               <Reveal key={blog.id} delay={i * 80}>
                 <Link href={`/blogs/${blog.slug}`}>
                   <Blueprint className="overflow-hidden flex flex-col h-full">
-                    <ThumbnailOrPlaceholder blog={blog} className="aspect-[4/3] object-cover w-full" />
+                    <ThumbnailOrPlaceholder blog={blog} aspect="aspect-[4/3]" />
                     <div className="p-5">
                       <p className="font-display font-semibold uppercase text-ink mb-1">{blog.title}</p>
                       <p className="text-sm text-neutral-600 line-clamp-2">{blog.summary}</p>
@@ -69,7 +73,7 @@ export default function BlogsPage() {
             <Link href={`/blogs/${blog.slug}`} className="block">
               <div className={`grid sm:grid-cols-2 gap-8 items-center ${i % 2 === 1 ? "sm:[direction:rtl]" : ""}`}>
                 <div className="sm:[direction:ltr]">
-                  <ThumbnailOrPlaceholder blog={blog} className="aspect-[16/10] object-cover w-full" />
+                  <ThumbnailOrPlaceholder blog={blog} aspect="aspect-[16/10]" />
                 </div>
                 <div className="sm:[direction:ltr]">
                   <p className="text-xs text-neutral-500 mb-2">

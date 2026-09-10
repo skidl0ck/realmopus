@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
@@ -72,8 +73,9 @@ export default function BlogDetailPage() {
       <h1 className="font-display font-semibold text-3xl uppercase text-ink mb-6">{blog.title}</h1>
 
       {blog.thumbnail && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={blog.thumbnail} alt={blog.title} className="w-full aspect-[16/9] object-cover mb-8" />
+        <div className="relative w-full aspect-[16/9] mb-8">
+          <Image src={blog.thumbnail} alt={blog.title} fill className="object-cover" sizes="(min-width: 640px) 672px, 100vw" />
+        </div>
       )}
 
       {embedUrl && (

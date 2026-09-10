@@ -14,9 +14,10 @@ import { useCompanyName } from "@/lib/site-config";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { FeaturedBlogsSection } from "@/components/featured-blogs-section";
 import { InquiryForm } from "@/components/inquiry-form";
+import { LotCard } from "@/components/lot-card";
 
 async function fetchFeaturedLots(): Promise<Lot[]> {
-  const { data } = await apiClient.get("/properties/lots/?status=available");
+  const { data } = await apiClient.get("/properties/lots/?status=available&ordering=-view_count");
   const lots = data.results ?? data;
   return lots.slice(0, 3);
 }
@@ -188,24 +189,7 @@ export default function HomePage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredLots.map((lot, i) => (
                 <Reveal key={lot.id} delay={i * 100}>
-                  <Blueprint className="p-5 flex flex-col">
-                    <div className="duotone relative aspect-[4/3] mb-5">
-                      <Image
-                        src="/images/lot-placeholder.jpg"
-                        alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`}
-                        fill
-                        className="object-cover"
-                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      />
-                    </div>
-                    <p className="font-display font-semibold uppercase text-lg mb-1 text-ink">
-                      Block {lot.block_number}, Lot {lot.lot_number}
-                    </p>
-                    <p className="text-neutral-600 text-sm mb-3">{lot.area_sqm} sqm</p>
-                    <p className="text-ink font-semibold text-2xl font-data">
-                      {currency}{Number(lot.total_price).toLocaleString()}
-                    </p>
-                  </Blueprint>
+                  <LotCard lot={lot} currency={currency} />
                 </Reveal>
               ))}
             </div>
