@@ -16,11 +16,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         // Production: S3-backed media (lot photos, blog thumbnails/inline
-        // images, testimonial photos). Scoped to this specific AWS region
-        // rather than a blanket amazonaws.com wildcard, since that would
-        // trust every S3 bucket in existence, not just this project's own.
+        // images, testimonial photos). The exact bucket hostname, not a
+        // wildcard -- django-storages generates URLs in the bucket.s3.
+        // amazonaws.com form (no region in the hostname) for this bucket,
+        // confirmed against a real presigned URL from production. A
+        // wildcard like *.s3.amazonaws.com would trust every S3 bucket in
+        // every AWS account, not just this project's own.
         protocol: "https",
-        hostname: "*.s3.ap-southeast-1.amazonaws.com",
+        hostname: "realmopus-media-533354334579-ap-southeast-1-an.s3.amazonaws.com",
       },
       {
         // Local development: Django's own local media serving when
