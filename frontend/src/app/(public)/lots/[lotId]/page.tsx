@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -10,8 +11,6 @@ import { useDefaultReservationFee } from "@/lib/site-config";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
 import { Blueprint } from "@/components/blueprint";
-import { Reveal } from "@/components/reveal";
-import { InquiryForm } from "@/components/inquiry-form";
 
 const STATUS_STYLES: Record<string, string> = {
   available: "tag-accent",
@@ -94,9 +93,8 @@ export default function LotDetailPage() {
 
       {images ? (
         <>
-          <Blueprint className="relative w-full aspect-[16/7] overflow-hidden mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={images[activeImage].image} alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`} className="w-full h-full object-cover" />
+          <Blueprint className="duotone relative w-full aspect-[16/7] overflow-hidden mb-3">
+            <Image src={images[activeImage].image} alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`} fill className="object-cover" sizes="(min-width: 1024px) 1024px, 100vw" />
           </Blueprint>
           {images.length > 1 && (
             <div className="flex gap-2 mb-12">
@@ -104,10 +102,9 @@ export default function LotDetailPage() {
                 <button
                   key={img.id}
                   onClick={() => setActiveImage(i)}
-                  className={`w-20 h-20 overflow-hidden border-2 ${i === activeImage ? "border-accent" : "border-transparent"}`}
+                  className={`relative w-20 h-20 overflow-hidden border-2 ${i === activeImage ? "border-accent" : "border-transparent"}`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.image} alt="" className="w-full h-full object-cover" />
+                  <Image src={img.image} alt="" fill className="object-cover" sizes="80px" />
                 </button>
               ))}
             </div>
@@ -119,7 +116,7 @@ export default function LotDetailPage() {
         </Blueprint>
       )}
 
-      <div className="grid sm:grid-cols-3 gap-8 py-12">
+      <div className="grid sm:grid-cols-3 gap-8">
         <div className="sm:col-span-2">
           {lot.description && (
             <div className="mb-6">
@@ -161,20 +158,6 @@ export default function LotDetailPage() {
           )}
         </div>
       </div>
-      
-      <section id="contact" className="bg-surface border-y border-divider">
-        <div className="mx-auto max-w-4xl px-6 py-20 grid gap-10 sm:grid-cols-2">
-          <Reveal>
-            <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">Have a question?</h2>
-            <p className="text-neutral-600 max-w-xs">
-              Send us a message and we&apos;ll get back to you — no need to wait for office hours.
-            </p>
-          </Reveal>
-          <Reveal delay={80}>
-            <InquiryForm source="lot/{lotId}" />
-          </Reveal>
-        </div>
-      </section>
     </div>
   );
 }

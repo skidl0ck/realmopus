@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -30,8 +31,11 @@ function checkoutErrorMessage(err: unknown): string {
 
 function LotThumbnail({ url }: { url: string | null | undefined }) {
   if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="Lot" className="duotone w-full h-44 object-cover mb-4" />;
+    return (
+      <div className="relative w-full h-44 mb-4">
+        <Image src={url} alt="Lot" fill className="duotone object-cover" sizes="(min-width: 640px) 400px, 100vw" />
+      </div>
+    );
   }
   return (
     <div className="w-full h-44 mb-4 bg-bg flex items-center justify-center border border-divider">
@@ -276,7 +280,7 @@ export default function LotCheckoutPage() {
               className="mt-0.5 cursor-pointer"
             />
             <span>
-              By checking this box, I agree to the{" "}
+              I agree to the{" "}
               <Link href="/terms" target="_blank" className="text-accent font-medium hover:underline">
                 Reservation Agreement
               </Link>

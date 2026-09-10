@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -10,14 +9,7 @@ import { useCurrencySymbol } from "@/lib/currency";
 import { useDefaultReservationFee } from "@/lib/site-config";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAuthModalStore } from "@/lib/auth-modal-store";
-import { Blueprint } from "@/components/blueprint";
-
-const STATUS_STYLES: Record<string, string> = {
-  available: "tag-accent",
-  reserved: "tag-neutral",
-  sold: "tag-neutral opacity-60",
-  on_hold: "bg-red-100 text-red-800",
-};
+import { LotCard } from "@/components/lot-card";
 
 const PAGE_SIZE = 20;
 
@@ -63,22 +55,6 @@ async function reserveLot(lotId: string): Promise<Reservation> {
 interface Feedback {
   type: "success" | "error";
   message: string;
-}
-
-function LotThumbnail({ lot }: { lot: Lot }) {
-  if (lot.thumbnail) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={lot.thumbnail} alt={`Block ${lot.block_number}, Lot ${lot.lot_number}`} className="duotone w-full h-40 object-cover mb-5" />;
-  }
-  // Themed placeholder - a simple lot/house glyph rather than a generic gray box.
-  return (
-    <div className="w-full h-40 mb-5 bg-surface flex items-center justify-center border border-divider">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-neutral-400">
-        <path d="M3 10.5L12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
 }
 
 export default function LotsPage() {
@@ -204,8 +180,9 @@ export default function LotsPage() {
       <div className="border border-divider p-5 mb-8">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2 field">
-            <label>Search</label>
+            <label htmlFor="lot-search">Search</label>
             <input
+              id="lot-search"
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -214,8 +191,9 @@ export default function LotsPage() {
             />
           </div>
           <div className="field">
-            <label>Project</label>
+            <label htmlFor="lot-project">Project</label>
             <select
+              id="lot-project"
               value={project}
               onChange={(e) => setProject(e.target.value)}
               className="input"
@@ -227,8 +205,8 @@ export default function LotsPage() {
             </select>
           </div>
           <div className="field">
-            <label>Sort by</label>
-            <select value={sort} onChange={(e) => setSort(e.target.value)} className="input">
+            <label htmlFor="lot-sort">Sort by</label>
+            <select id="lot-sort" value={sort} onChange={(e) => setSort(e.target.value)} className="input">
               <option value="price-asc">Price: low to high</option>
               <option value="price-desc">Price: high to low</option>
               <option value="area-asc">Size: small to large</option>
@@ -240,32 +218,36 @@ export default function LotsPage() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           <div className="field">
-            <label>Min price ({currency})</label>
+            <label htmlFor="lot-price-min">Min price ({currency})</label>
             <input
+              id="lot-price-min"
               type="number" min="0" value={priceMinInput}
               onChange={(e) => setPriceMinInput(e.target.value)}
               className="input"
             />
           </div>
           <div className="field">
-            <label>Max price ({currency})</label>
+            <label htmlFor="lot-price-max">Max price ({currency})</label>
             <input
+              id="lot-price-max"
               type="number" min="0" value={priceMaxInput}
               onChange={(e) => setPriceMaxInput(e.target.value)}
               className="input"
             />
           </div>
           <div className="field">
-            <label>Min size (sqm)</label>
+            <label htmlFor="lot-area-min">Min size (sqm)</label>
             <input
+              id="lot-area-min"
               type="number" min="0" value={areaMinInput}
               onChange={(e) => setAreaMinInput(e.target.value)}
               className="input"
             />
           </div>
           <div className="field">
-            <label>Max size (sqm)</label>
+            <label htmlFor="lot-area-max">Max size (sqm)</label>
             <input
+              id="lot-area-max"
               type="number" min="0" value={areaMaxInput}
               onChange={(e) => setAreaMaxInput(e.target.value)}
               className="input"
@@ -286,37 +268,15 @@ export default function LotsPage() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedLots.map((lot) => {
-          const isAvailable = lot.status === "available";
           const isReservingThis = reserveMutation.isPending && reserveMutation.variables === lot.id;
-
           return (
-            <Blueprint key={lot.id} className="p-5 hover:border-accent transition">
-              <Link href={`/lots/${lot.id}`}>
-                <LotThumbnail lot={lot} />
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-display font-semibold uppercase text-lg text-ink">
-                    Block {lot.block_number}, Lot {lot.lot_number}
-                  </span>
-                  <span className={`tag ${STATUS_STYLES[lot.status]}`}>
-                    {lot.status.replace("_", " ")}
-                  </span>
-                </div>
-                <p className="text-neutral-600 text-sm mb-1">{lot.area_sqm} sqm</p>
-                <p className="text-ink font-semibold text-xl font-data mb-4">
-                  {currency}{Number(lot.total_price).toLocaleString()}
-                </p>
-              </Link>
-
-              {isAvailable && (
-                <button
-                  onClick={() => handleReserve(lot)}
-                  disabled={isReservingThis}
-                  className="btn btn-primary btn-block w-full"
-                >
-                  {isReservingThis ? "Reserving…" : "Reserve this lot"}
-                </button>
-              )}
-            </Blueprint>
+            <LotCard
+              key={lot.id}
+              lot={lot}
+              currency={currency}
+              onReserve={handleReserve}
+              reserving={isReservingThis}
+            />
           );
         })}
       </div>

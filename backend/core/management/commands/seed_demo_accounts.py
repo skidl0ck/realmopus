@@ -62,9 +62,9 @@ class Command(BaseCommand):
             # itself (see admin_panel/decorators.py), independent of role.
             staff, _ = User.objects.get_or_create(
                 username=options["staff_username"],
-                defaults={"role": User.Role.SALES_AGENT, "first_name": "Demo", "last_name": "Staff"},
+                defaults={"role": User.Role.ADMIN, "first_name": "Demo", "last_name": "Staff"},
             )
-            staff.role = User.Role.SALES_AGENT
+            staff.role = User.Role.ADMIN
             staff.first_name = "Demo"
             staff.last_name = "Staff"
             staff.is_demo_account = True

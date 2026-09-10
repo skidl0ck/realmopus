@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Reveal } from "@/components/reveal";
@@ -49,8 +50,7 @@ export function TestimonialsSection() {
               <p className="text-neutral-700 leading-relaxed text-sm flex-1 mb-4">&ldquo;{t.quote}&rdquo;</p>
               <div className="flex items-center gap-3">
                 {t.photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={t.photo} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <Image src={t.photo} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center font-display font-semibold text-accent-700">
                     {t.name.charAt(0).toUpperCase()}

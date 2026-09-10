@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { Reveal } from "@/components/reveal";
@@ -46,8 +47,9 @@ export function FeaturedBlogsSection() {
             <Link href={`/blogs/${blog.slug}`}>
               <Blueprint className="overflow-hidden flex flex-col h-full">
                 {blog.thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={blog.thumbnail} alt={blog.title} className="aspect-[4/3] object-cover w-full" />
+                  <div className="relative aspect-[4/3] w-full">
+                    <Image src={blog.thumbnail} alt={blog.title} fill className="object-cover" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" />
+                  </div>
                 ) : (
                   <div className="aspect-[4/3] bg-accent-100 flex items-center justify-center">
                     <span className="font-display font-semibold text-accent-700">{blog.title.charAt(0).toUpperCase()}</span>

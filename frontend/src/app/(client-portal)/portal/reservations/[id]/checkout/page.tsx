@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
@@ -26,8 +27,11 @@ function checkoutErrorMessage(err: unknown): string {
 
 function LotThumbnail({ url }: { url: string | null | undefined }) {
   if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="Lot" className="duotone w-full h-44 object-cover mb-4" />;
+    return (
+      <div className="relative w-full h-44 mb-4">
+        <Image src={url} alt="Lot" fill className="duotone object-cover" sizes="(min-width: 640px) 400px, 100vw" />
+      </div>
+    );
   }
   return (
     <div className="w-full h-44 mb-4 bg-bg flex items-center justify-center border border-divider">

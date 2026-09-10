@@ -55,7 +55,7 @@ class LotViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = LotFilter
     search_fields = ["lot_number", "block_number"]
-    ordering_fields = ["total_price", "area_sqm", "created_at"]
+    ordering_fields = ["total_price", "area_sqm", "created_at", "view_count"]
 
     def get_queryset(self):
         qs = Lot.objects.select_related("project").all()
