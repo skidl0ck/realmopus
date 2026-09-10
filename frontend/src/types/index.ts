@@ -24,6 +24,7 @@ export interface Lot {
   id: string;
   project: string;
   project_name?: string;
+  project_location?: string;
   block_number: string;
   lot_number: string;
   area_sqm: string;

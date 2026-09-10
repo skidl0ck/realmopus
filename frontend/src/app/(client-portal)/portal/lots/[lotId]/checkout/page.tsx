@@ -133,7 +133,7 @@ export default function LotCheckoutPage() {
       return;
     }
     if (result.unknown) {
-      setError("We couldn't tell whether that payment went through — check My Reservations, or try again.");
+      setError("We couldn't tell whether that payment went through - check My Reservations, or try again.");
       return;
     }
     setError(result.detail || "We couldn't confirm this payment.");
@@ -172,21 +172,31 @@ export default function LotCheckoutPage() {
 
   return (
     <div>
-      <h1 className="font-display font-semibold uppercase text-2xl mb-1 text-ink">Checkout</h1>
-      <p className="text-neutral-600 text-sm mb-8">Pay your reservation fee to hold this lot.</p>
+      <div className="mb-8">
+        <p className="text-accent text-xs font-semibold uppercase tracking-[0.18em] mb-2">Secure reservation</p>
+        <h1 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">Checkout</h1>
+        <p className="text-neutral-600 text-sm">Pay your reservation fee to hold this lot.</p>
+      </div>
 
-      <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8 items-start">
         {/* Left: payment methods */}
-        <div className="border border-divider p-6">
-          <p className="text-sm font-medium text-neutral-600 mb-3">Choose a payment method</p>
-          <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="border border-divider bg-white p-5 sm:p-7">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div>
+              <h2 className="font-display font-semibold uppercase text-lg text-ink">Payment method</h2>
+              <p className="text-neutral-500 text-sm mt-1">Choose how you&apos;d like to pay.</p>
+            </div>
+            <span className="hidden sm:inline text-xs text-neutral-500 border border-divider px-2 py-1">Secure checkout</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
             {(["paypal", "gcash", "paymaya", "card"] as Method[]).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMethod(m)}
-                className={`border px-3 py-2 text-sm font-medium cursor-pointer ${
-                  method === m ? "border-accent bg-accent-100 text-accent-800" : "border-divider text-neutral-600"
+                aria-pressed={method === m}
+                className={`border px-3 py-3 text-sm font-medium cursor-pointer transition-colors ${
+                  method === m ? "border-accent bg-accent-100 text-accent-800 shadow-sm" : "border-divider text-neutral-600 hover:border-accent hover:bg-bg"
                 }`}
               >
                 {m === "paypal" ? "PayPal" : m === "gcash" ? "GCash" : m === "paymaya" ? "Maya" : "Card"}
@@ -202,11 +212,19 @@ export default function LotCheckoutPage() {
           )}
 
           {method === "card" && (
-            <div className="space-y-3">
+            <div className="space-y-4 border-t border-divider pt-5">
+              <div>
+                <h3 className="font-medium text-ink">Card details</h3>
+                <p className="text-neutral-500 text-xs mt-1">Your payment information is handled securely.</p>
+              </div>
               <div className="field">
-                <label>Card number</label>
+                <label htmlFor="card-number">Card number</label>
                 <input
+                  id="card-number"
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  placeholder="1234 5678 9012 3456"
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value)}
                   className="input"
@@ -214,27 +232,39 @@ export default function LotCheckoutPage() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="field">
-                  <label>MM</label>
+                  <label htmlFor="exp-month">MM</label>
                   <input
+                    id="exp-month"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="cc-exp-month"
+                    placeholder="MM"
                     value={expMonth}
                     onChange={(e) => setExpMonth(e.target.value)}
                     className="input"
                   />
                 </div>
                 <div className="field">
-                  <label>YYYY</label>
+                  <label htmlFor="exp-year">YYYY</label>
                   <input
+                    id="exp-year"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="cc-exp-year"
+                    placeholder="YYYY"
                     value={expYear}
                     onChange={(e) => setExpYear(e.target.value)}
                     className="input"
                   />
                 </div>
                 <div className="field">
-                  <label>CVC</label>
+                  <label htmlFor="cvc">CVC</label>
                   <input
+                    id="cvc"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    placeholder="123"
                     value={cvc}
                     onChange={(e) => setCvc(e.target.value)}
                     className="input"
@@ -246,7 +276,11 @@ export default function LotCheckoutPage() {
         </div>
 
         {/* Right: lot summary + pay button */}
-        <div className="border border-divider p-6 h-fit lg:sticky lg:top-6">
+        <div className="border border-divider bg-white p-5 sm:p-7 h-fit lg:sticky lg:top-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-semibold uppercase text-lg text-ink">Order summary</h2>
+            <span className="text-xs text-neutral-500">1 item</span>
+          </div>
           <LotThumbnail url={lot.thumbnail} />
           <h2 className="font-display font-semibold uppercase text-lg text-ink mb-1">
             Block {lot.block_number}, Lot {lot.lot_number}
@@ -257,12 +291,16 @@ export default function LotCheckoutPage() {
             Lot price: {currency}{Number(lot.total_price).toLocaleString()}
           </p>
 
-          <div className="border-t border-divider pt-4 mb-4">
+          <div className="border-t border-divider pt-4 mb-5">
             <div className="flex items-center justify-between mb-1">
               <span className="text-neutral-600 text-sm">Reservation fee</span>
               <span className="text-ink font-semibold font-data">
                 {fee !== undefined ? `${currency}${fee.toLocaleString()}` : "…"}
               </span>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-divider">
+              <span className="font-medium text-ink">Due today</span>
+              <span className="text-ink font-semibold font-data">{fee !== undefined ? `${currency}${fee.toLocaleString()}` : "…"}</span>
             </div>
           </div>
 
@@ -274,6 +312,7 @@ export default function LotCheckoutPage() {
 
           <label className="flex items-start gap-2 mb-4 text-sm text-neutral-600 cursor-pointer">
             <input
+              aria-label="Agree to Reservation Agreement"
               type="checkbox"
               checked={agreedToTerms}
               onChange={(e) => setAgreedToTerms(e.target.checked)}
@@ -290,7 +329,7 @@ export default function LotCheckoutPage() {
           <button
             onClick={handlePay}
             disabled={submitting || fee === undefined || !agreedToTerms}
-            className="btn btn-primary btn-block w-full"
+            className="btn btn-primary btn-block w-full py-3 transition-opacity"
           >
             {submitting ? "Processing…" : fee !== undefined ? `Pay ${currency}${fee.toLocaleString()}` : "Loading…"}
           </button>
