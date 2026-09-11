@@ -3,6 +3,8 @@
 A real estate sales & operations platform - reservation-to-contract-to-installment-payments,
 end to end, for a real estate firm still running on spreadsheets and manual paperwork.
 
+> This repository is source-available for portfolio and evaluation purposes - see [LICENSE](LICENSE). For licensing or commercial use inquiries, feel free to reach out.
+
 **Live demo:** https://main.d28tjv1ja32pvs.amplifyapp.com
 Click **"Try the demo - no signup needed"** on the login screen. It logs you straight into a
 populated client account (a real contract, a partial payment history, live receipts) - no
