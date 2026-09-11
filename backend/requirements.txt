@@ -12,7 +12,7 @@
 # a PR whenever a pinned version here has a newer release, especially ones
 # with a security advisory, so patches still surface promptly; they're just
 # reviewed as a diff rather than silently applied on the next install.
-Django==5.2.17
+Django==6.1.1
 djangorestframework==3.18.0
 djangorestframework-simplejwt==5.5.1
 django-filter==26.1
