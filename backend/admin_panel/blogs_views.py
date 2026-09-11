@@ -1,11 +1,11 @@
 from django.contrib import messages
-from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django import forms as django_forms
 
 from core.models import Blog
+from core.storage import get_public_media_storage
 
 from .decorators import dynamic_permission, audit_action
 from .forms import BlogForm
@@ -24,7 +24,13 @@ def blog_upload_image(request):
 
     Same validation as _save_uploaded_images in lots_views.py -- checks the
     actual file content is a genuine image, not just its extension or
-    declared content-type, both of which are trivially spoofable."""
+    declared content-type, both of which are trivially spoofable.
+
+    Uses the public media storage, not the app's default storage -- this
+    image ends up embedded in published, publicly-readable blog content, so
+    it needs the same permanent (non-expiring) URL treatment as the blog's
+    thumbnail field, not the private/presigned behavior meant for
+    contracts and receipts."""
 
     file = request.FILES.get("image")
     if not file:
@@ -36,17 +42,18 @@ def blog_upload_image(request):
     except django_forms.ValidationError as e:
         return JsonResponse({"error": "; ".join(e.messages)}, status=400)
 
-    path = default_storage.save(f"blogs/content/{file.name}", file)
-    # default_storage.url() returns a *relative* URL for local filesystem
-    # storage (e.g. "/media/blogs/content/x.jpg") -- fine for same-origin
-    # use, but this URL gets embedded directly into blog content that's
-    # later rendered on an entirely different origin (the Next.js
-    # frontend), where a relative URL would resolve against the wrong
-    # domain entirely. build_absolute_uri() makes it unambiguous
-    # regardless of which origin ends up rendering it. (S3-backed storage
-    # in production already returns absolute URLs on its own, so this is a
-    # no-op there -- it only matters for local/dev filesystem storage.)
-    return JsonResponse({"url": request.build_absolute_uri(default_storage.url(path))})
+    storage = get_public_media_storage()
+    path = storage.save(f"blogs/content/{file.name}", file)
+    # storage.url() returns a *relative* URL for local filesystem storage
+    # (e.g. "/media/blogs/content/x.jpg") -- fine for same-origin use, but
+    # this URL gets embedded directly into blog content that's later
+    # rendered on an entirely different origin (the Next.js frontend),
+    # where a relative URL would resolve against the wrong domain
+    # entirely. build_absolute_uri() makes it unambiguous regardless of
+    # which origin ends up rendering it. (S3-backed storage in production
+    # already returns absolute URLs on its own, so this is a no-op there
+    # -- it only matters for local/dev filesystem storage.)
+    return JsonResponse({"url": request.build_absolute_uri(storage.url(path))})
 
 
 @dynamic_permission("blogs", "view")

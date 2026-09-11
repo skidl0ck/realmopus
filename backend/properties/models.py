@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, timedelta
 from django.db import models
+from core.storage import get_public_media_storage
 
 
 class Project(models.Model):
@@ -11,7 +12,7 @@ class Project(models.Model):
     slug = models.SlugField(unique=True)
     location = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    cover_image = models.ImageField(upload_to="projects/covers/", blank=True, null=True)
+    cover_image = models.ImageField(upload_to="projects/covers/", storage=get_public_media_storage, blank=True, null=True)
     is_published = models.BooleanField(default=False, help_text="Visible on the public client portal")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -42,7 +43,7 @@ class Lot(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AVAILABLE)
     view_count = models.PositiveIntegerField(default=0)
     description = models.TextField(blank=True, help_text="e.g. corner lot, mountain view, near clubhouse")
-    floor_plan = models.FileField(upload_to="lots/floor_plans/", blank=True, null=True)
+    floor_plan = models.FileField(upload_to="lots/floor_plans/", storage=get_public_media_storage, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -67,7 +68,7 @@ class LotImage(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="lots/photos/")
+    image = models.ImageField(upload_to="lots/photos/", storage=get_public_media_storage)
     is_thumbnail = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from core.storage import get_public_media_storage
 
 
 class StaffAuditLog(models.Model):
@@ -57,7 +58,7 @@ class PlatformSettings(models.Model):
         help_text="Displayed throughout the site and on all documents. Purely a display label — no conversion is ever applied.",
     )
     company_address = models.CharField(max_length=255, blank=True)
-    company_logo = models.ImageField(upload_to="settings/", blank=True, null=True)
+    company_logo = models.ImageField(upload_to="settings/", storage=get_public_media_storage, blank=True, null=True)
     support_email = models.EmailField(blank=True)
     document_footer_note = models.TextField(
         blank=True,

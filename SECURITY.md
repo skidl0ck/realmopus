@@ -72,6 +72,26 @@ someone walk the entire customer list by guessing filenames.
 knowing or guessing a filename alone grants nothing without a valid, freshly-generated
 signature.
 
+### Public marketing media was incorrectly using the same private, expiring URLs as sensitive documents
+The presigned-URL fix above is correct for contracts, receipts, and expense documents -
+per-customer files that should never be reachable without a fresh, authorized signature.
+But the same storage configuration was being applied globally, which meant public,
+non-sensitive content - lot photos, blog images, testimonial photos, project cover images,
+floor plans, and the site's own logo - was *also* getting private ACLs and one-hour-expiring
+URLs. The functional effect: any of these images would silently stop loading an hour after
+the page was generated, for anyone with a cached page, a bookmark, or a search engine's
+indexed copy.
+
+**Fix:** a separate storage backend (`core/storage.py`) for public-facing media
+specifically - public-read ACL, no query-string signing, permanent URLs - applied only to
+the fields that are genuinely meant to be public. Contracts, receipts, and expense
+documents were left untouched on the original private/presigned storage.
+
+**Verification:** confirmed the public storage backend correctly falls back to local
+filesystem storage in development (no crash when S3 isn't configured), and confirmed it
+resolves to an S3 backend with `querystring_auth=False` and `default_acl="public-read"`
+when S3 configuration is present.
+
 ### Leaked credentials in an uploaded `.env` file
 An early project snapshot included a real `.env` with live API keys (payment gateways, AI
 API key). Rotated, and a proper `.gitignore` added - this had never existed for the
@@ -94,11 +114,20 @@ the role-based permission system and audit logging that `admin_panel` carefully 
 ## Injection & input handling
 
 No raw SQL, `.extra()`, `.raw()`, `eval`, `exec`, `pickle`, or `subprocess` anywhere in the
-backend - everything goes through the Django ORM. No `dangerouslySetInnerHTML` anywhere in
-the frontend. PDF generation (`xhtml2pdf`) was checked specifically for SSRF risk via
-external image references - no exploitable path found in any current template, though the
-underlying library capability is noted as an architectural risk worth re-checking if new
-templates are ever added with user-influenced image sources.
+backend - everything goes through the Django ORM. PDF generation (`xhtml2pdf`) was checked
+specifically for SSRF risk via external image references - no exploitable path found in any
+current template, though the underlying library capability is noted as an architectural
+risk worth re-checking if new templates are ever added with user-influenced image sources.
+
+One deliberate exception to an otherwise strict no-raw-HTML rule: blog post content is
+rendered on the frontend via `dangerouslySetInnerHTML`, since it comes from a genuine
+rich-text editor (bold, italic, lists, inline images) rather than plain text. This is safe
+because the content is never trusted at render time - it's sanitized server-side
+(`bleach`, an explicit tag/attribute allowlist) at the moment it's saved, in
+`admin_panel/forms.py`'s `BlogForm.clean_content`. Verified directly with a deliberately
+malicious payload - `<script>` tags, `onerror`/`onclick` event handlers, and
+`javascript:` URLs were all confirmed stripped, while legitimate formatting and real links
+passed through untouched.
 
 ## Infrastructure & secrets
 
@@ -121,10 +150,10 @@ templates are ever added with user-influenced image sources.
 | Category | Status |
 |---|---|
 | A01 Broken Access Control (incl. SSRF) | Direct IDOR testing, PDF/SSRF review, admin view permission audit |
-| A02 Security Misconfiguration | `DEBUG`/`SECRET_KEY` fail-safe startup checks, HTTPS/HSTS enforced, CORS explicitly scoped |
+| A02 Security Misconfiguration | `DEBUG`/`SECRET_KEY` fail-safe startup checks, HTTPS/HSTS enforced, CORS explicitly scoped, public vs. private storage now correctly separated |
 | A03 Software Supply Chain Failures | Dependencies pinned to exact tested versions, Dependabot configured for update PRs |
 | A04 Cryptographic Failures | Token blacklisting on password change, TLS enforced end to end, `pbkdf2_sha256` password hashing (Django's current default, verified - not overridden to anything weaker) |
-| A05 Injection | ORM-only, no raw SQL, no XSS vectors found |
+| A05 Injection | ORM-only, no raw SQL. One sanitized exception for rich-text blog content (see "Injection & input handling") - verified against real XSS payloads, not just reasoned about |
 | A06 Insecure Design | Payment amounts always server-computed from the database, never trusted from the client - tested directly by attempting to submit a manipulated amount |
 | A07 Authentication Failures | Rate limiting (login, registration, chatbot), account deactivation tested directly, session invalidation on password change |
 | A08 Software/Data Integrity Failures | Pinned dependencies, Dependabot, no insecure deserialization anywhere |
