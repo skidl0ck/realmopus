@@ -152,7 +152,6 @@ export default function HomePage() {
       {/* Offerings */}
       <section id="offerings" className="mx-auto max-w-6xl px-6 py-20">
         <Reveal>
-          <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">hat we offer</span>
           <hr className="border-0 h-px bg-divider mb-9" />
           <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">What we offer</h2>
           <p className="text-neutral-600 mb-14 max-w-xl">
@@ -176,7 +175,6 @@ export default function HomePage() {
         <section className="bg-surface border-y border-divider">
           <div className="mx-auto max-w-6xl px-6 py-20">
             <Reveal>
-              <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">Available now</span>
               <hr className="border-0 h-px bg-divider mb-3" />
               <div className="flex items-baseline justify-between gap-6 mb-10">
                 <h2 className="font-display font-semibold uppercase text-3xl text-ink">Available now</h2>
@@ -198,10 +196,6 @@ export default function HomePage() {
 
       {/* How it works */}
       <section id="how-it-works" className="mx-auto max-w-6xl px-6 py-20">
-        <Reveal>
-          <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">How it works</span>
-          <hr className="border-0 h-px bg-divider mb-2" />
-        </Reveal>
         <div className="grid gap-6 sm:grid-cols-5 mt-8">
           {STEPS.map((step, i) => (
             <Reveal key={step.title} delay={i * 100}>

@@ -36,7 +36,7 @@ export function TestimonialsSection() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-20">
       <Reveal>
-        <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">07 · What buyers say</span>
+        <span className="block text-xs tracking-widest uppercase font-semibold text-accent-700 mb-3">What buyers say</span>
         <hr className="border-0 h-px bg-divider mb-9" />
         <h2 className="font-display font-semibold uppercase text-3xl mb-2 text-ink">What buyers say</h2>
         <p className="text-neutral-600 mb-14 max-w-xl">
