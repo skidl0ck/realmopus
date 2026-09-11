@@ -112,7 +112,6 @@ export default function HomePage() {
           <Blueprint className="p-5 bg-bg">
             <div className="flex justify-between gap-3 text-xs tracking-widest uppercase font-semibold text-neutral-600 mb-3.5">
               <span>Site plan</span>
-            <span>Live inventory</span>
           </div>
           <LotGridAnimation />
           </Blueprint>
