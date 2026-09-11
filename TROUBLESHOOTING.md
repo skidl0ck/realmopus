@@ -63,18 +63,6 @@ refuses to proceed at all if the two files don't match exactly - specifically so
 stay reproducible. Fix: `npm install` locally to regenerate the lock file correctly, then
 commit and push it.
 
-## "Pasting a multi-line block into a remote SSH session produces a file that looks right but isn't"
-
-Multi-line pastes into an interactive terminal (`nano`, a raw shell prompt) aren't always
-reliable - a dropped first line, collapsed newlines merging several lines into one, or
-commands arriving in an unexpected order have all genuinely happened during this project's
-own deployment. The safest pattern for anything long or exact (a systemd unit file, an
-`.env` file): build it as a single, complete command using a heredoc
-(`cat > file << 'EOF' ... EOF` or, for a privileged file, `sudo tee file << 'EOF' ...`),
-and always verify the result afterward (`cat` it back, or in `nano` specifically, jump to
-the end with Ctrl+End and check the reported line count matches what was actually pasted)
-before trusting it and moving on.
-
 ## A meta-lesson about searching a codebase for something
 
 A few points in this project's own documentation process, a "find every occurrence of X"

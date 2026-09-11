@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from core.storage import get_public_media_storage
 
 
 class Notification(models.Model):
@@ -108,7 +109,7 @@ class Testimonial(models.Model):
         help_text="Optional context shown under the name, e.g. 'Homeowner, Block 4' or 'Lot buyer, 2026'.",
     )
     quote = models.TextField()
-    photo = models.ImageField(upload_to="testimonials/", blank=True, null=True)
+    photo = models.ImageField(upload_to="testimonials/", storage=get_public_media_storage, blank=True, null=True)
     display_order = models.PositiveIntegerField(
         default=0, help_text="Lower numbers show first. Testimonials with the same order fall back to newest first.",
     )
@@ -177,7 +178,7 @@ class Blog(models.Model):
                    "sanitized HTML (bleach-cleaned on save) -- safe to render directly on "
                    "the public site.",
     )
-    thumbnail = models.ImageField(upload_to="blogs/thumbnails/", blank=True, null=True)
+    thumbnail = models.ImageField(upload_to="blogs/thumbnails/", storage=get_public_media_storage, blank=True, null=True)
     video_url = models.URLField(
         blank=True, help_text="Optional YouTube or Vimeo URL, embedded on the post's detail page.",
     )
